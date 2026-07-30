@@ -1,0 +1,113 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  /* Semantic Colors - Bko Podcast Dark & Gold Media Design System */
+  --bg-app: #0B0F17;
+  --bg-surface: #161B22;
+  --bg-surface-elevated: #1F242D;
+  --bg-surface-hover: #262C36;
+  
+  --border-subtle: #21262D;
+  --border-strong: #30363D;
+  
+  --text-primary: #F0F6FC;
+  --text-secondary: #8B949E;
+  --text-muted: #6E7681;
+  
+  --accent-gold: #E6B009;
+  --accent-gold-hover: #F2C029;
+  --accent-gold-pressed: #CD9C07;
+  --accent-gold-subtle: rgba(230, 176, 9, 0.12);
+  
+  --state-success: #238636;
+  --state-error: #DA3633;
+  --state-warning: #D29922;
+  --state-info: #388BFD;
+
+  --max-content-width: 1440px;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-gold);
+}
+
+/* Base Layout Container */
+.bko-container {
+  max-width: var(--max-content-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .bko-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Glassmorphism & Surface Utilities (Solid / Semi-transparent without gradient) */
+.bko-header-glass {
+  background-color: rgba(11, 15, 23, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.bko-card-surface {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.bko-card-surface:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-surface-hover);
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Skeleton Loading */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.bko-skeleton {
+  background-color: var(--bg-surface-elevated);
+  border-radius: 0.375rem;
+  animation: pulseSubtle 1.8s ease-in-out infinite;
+}

@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+
+# Priorités importantes
+Allow: /services
+Allow: /studio
+Allow: /tarifs
+Allow: /portfolio
+Allow: /contact
+Allow: /a-propos
+
+# Fichiers statiques
+Allow: /images/
+Allow: /favicon.ico
+
+# Interdire les fichiers techniques
+Disallow: /api/
+Disallow: /_next/
+Disallow: /node_modules/
+Disallow: /.well-known/
+
+# Sitemap
+Sitemap: https://bamakopodcast.com/sitemap.xml
+
+# Délai entre les crawls (en secondes)
+Crawl-delay: 1
