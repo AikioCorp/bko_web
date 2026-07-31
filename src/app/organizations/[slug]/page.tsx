@@ -1,10 +1,11 @@
+import { API_BASE_URL } from "@/lib/api";
 import React from "react";
 import Link from "next/link";
 import { Building2, Globe, Radio } from "lucide-react";
 
 async function getOrgData(slug: string) {
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/organizations/${slug}`, {
+    const res = await fetch(`${API_BASE_URL}/organizations/${slug}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;

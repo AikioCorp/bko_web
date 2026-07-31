@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { Users, Mic, Radio, FileAudio, AlertTriangle, ShieldCheck, Rss, Layers, CheckCircle } from "lucide-react";
@@ -11,7 +12,7 @@ export default function AdminDashboardPage() {
     const token = localStorage.getItem("bko_access_token");
     if (!token) return;
 
-    fetch("http://localhost:8080/api/v1/admin/dashboard", {
+    fetch(`${API_BASE_URL}/admin/dashboard`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())

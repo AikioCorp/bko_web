@@ -16,6 +16,7 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
 
   try {
     const res = await fetch(url, {
+      credentials: "include",
       ...options,
       headers,
     });

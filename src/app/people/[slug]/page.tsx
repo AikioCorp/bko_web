@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -12,7 +13,7 @@ export default function PublicPersonPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:8080/api/v1/search?q=${slug}`)
+    fetch(`${API_BASE_URL}/search?q=${slug}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data.people?.length > 0) {

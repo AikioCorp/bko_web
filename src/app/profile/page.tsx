@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
 import { useAuthStore } from "../../store/authStore";
@@ -31,7 +32,7 @@ export default function ProfilePage() {
     if (!token) return;
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/me", {
+      const res = await fetch(`${API_BASE_URL}/me`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

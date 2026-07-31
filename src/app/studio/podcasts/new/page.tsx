@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -27,7 +28,7 @@ export default function NewPodcastPage() {
     }
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/creator/podcasts", {
+      const res = await fetch(`${API_BASE_URL}/creator/podcasts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

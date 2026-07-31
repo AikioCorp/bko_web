@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "@/lib/api";
 import { create } from "zustand";
 
 export interface UserProfile {
@@ -31,40 +32,46 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   setAuth: (user, accessToken) => {
-    localStorage.setItem("bko_access_token", accessToken);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("bko_access_token", accessToken);
+    }
     set({ user, accessToken, isAuthenticated: true, isLoading: false });
   },
 
   logout: async () => {
-    const token = localStorage.getItem("bko_access_token");
-    if (token) {
-      try {
-        await fetch("http://localhost:8080/api/v1/auth/logout", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      } catch (e) {}
+    const token = typeof window !== "undefined" ? localStorage.getItem("bko_access_token") : null;
+    try {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+    } catch (e) {}
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("bko_access_token");
     }
-    localStorage.removeItem("bko_access_token");
     set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
   },
 
   checkAuth: async () => {
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) {
-      set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
-      return;
-    }
+    const token = typeof window !== "undefined" ? localStorage.getItem("bko_access_token") : null;
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/me", {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`${API_BASE_URL}/me`, {
+        credentials: "include",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
       const json = await res.json();
       if (json.success) {
         set({ user: json.data, accessToken: token, isAuthenticated: true, isLoading: false });
       } else {
-        localStorage.removeItem("bko_access_token");
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("bko_access_token");
+        }
         set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
       }
     } catch (err) {

@@ -1,10 +1,12 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
 import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
-import { Bookmark, Play, Clock, ListMusic, Mic, Trash2 } from "lucide-react";
+import { Bookmark, Play, Clock, ListMusic, Mic, Trash2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LibraryPage() {
   const { user, isAuthenticated, isLoading } = useAuthStore();
@@ -27,7 +29,7 @@ export default function LibraryPage() {
     if (!token) return;
 
     if (activeTab === "saved") {
-      fetch("http://localhost:8080/api/v1/me/saved", {
+      fetch(`${API_BASE_URL}/me/saved`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => res.json())
@@ -36,7 +38,7 @@ export default function LibraryPage() {
         })
         .catch(() => {});
     } else if (activeTab === "history") {
-      fetch("http://localhost:8080/api/v1/me/history", {
+      fetch(`${API_BASE_URL}/me/history`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => res.json())
@@ -45,7 +47,7 @@ export default function LibraryPage() {
         })
         .catch(() => {});
     } else if (activeTab === "playlists") {
-      fetch("http://localhost:8080/api/v1/me/playlists", {
+      fetch(`${API_BASE_URL}/me/playlists`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => res.json())
@@ -63,11 +65,31 @@ export default function LibraryPage() {
     if (!token) return;
 
     try {
-      await fetch("http://localhost:8080/api/v1/me/history", {
+      await fetch(`${API_BASE_URL}/me/history`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       setHistory([]);
+    } catch (e) {}
+  };
+
+  const handleCreatePlaylist = async () => {
+    const name = typeof window !== "undefined" ? window.prompt("Nom de la nouvelle playlist ?") : null;
+    if (!name || !name.trim()) return;
+
+    const token = localStorage.getItem("bko_access_token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/playlists`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setPlaylists((prev) => [{ ...json.data, _count: { items: 0 } }, ...prev]);
+      }
     } catch (e) {}
   };
 
@@ -233,21 +255,41 @@ export default function LibraryPage() {
       {/* Contenu de l'onglet Playlists */}
       {activeTab === "playlists" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {playlists.map((pl) => (
-              <div key={pl.id} className="bg-[#121722] border border-[#1E2638] rounded-xl p-5 space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-[#E5A93C]/10 text-[#E5A93C] rounded-lg flex items-center justify-center font-bold">
-                    <ListMusic className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-sm">{pl.name}</h4>
-                    <p className="text-xs text-gray-400">{pl._count?.items || 0} épisodes • {pl.visibility}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="flex justify-end">
+            <button
+              onClick={handleCreatePlaylist}
+              className="bg-[#E5A93C] text-black font-extrabold px-4 py-2 rounded-full text-xs hover:bg-[#F5B82E] transition flex items-center space-x-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span>CRÉER UNE PLAYLIST</span>
+            </button>
           </div>
+
+          {playlists.length === 0 ? (
+            <div className="text-center py-12 text-gray-400 text-xs bg-[#121722] rounded-2xl border border-[#1E2638] p-8">
+              Vous n'avez aucune playlist. Créez-en une pour organiser vos écoutes.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {playlists.map((pl) => (
+                <Link
+                  key={pl.id}
+                  href={`/playlists/${pl.id}`}
+                  className="bg-[#121722] border border-[#1E2638] hover:border-[#E5A93C]/50 rounded-xl p-5 space-y-3 transition group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-[#E5A93C]/10 text-[#E5A93C] rounded-lg flex items-center justify-center font-bold">
+                      <ListMusic className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm group-hover:text-[#E5A93C] transition">{pl.name}</h4>
+                      <p className="text-xs text-gray-400">{pl._count?.items || 0} épisodes • {pl.visibility}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

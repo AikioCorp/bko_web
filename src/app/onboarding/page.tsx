@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,7 +19,7 @@ export default function OnboardingPage() {
     const token = localStorage.getItem("bko_access_token");
     if (token) {
       try {
-        await fetch("http://localhost:8080/api/v1/me/preferences", {
+        await fetch(`${API_BASE_URL}/me/preferences`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",

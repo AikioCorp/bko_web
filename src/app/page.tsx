@@ -1,139 +1,116 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePlayerStore, PlayerEpisode } from "../store/playerStore";
-import { PodcastCardStandard, PodcastItem, EpisodeItem } from "../components/ui/Cards";
+import { PodcastCardStandard, PodcastItem } from "../components/ui/Cards";
 
 export default function HomePage() {
   const { playEpisode } = usePlayerStore();
-  const [homeSections, setHomeSections] = useState<any[]>([]);
+  const [podcasts, setPodcasts] = useState<any[]>([]);
+  const [episodes, setEpisodes] = useState<any[]>([]);
+  const [heroEp, setHeroEp] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/v1/home")
+    fetch(`${API_BASE_URL}/home`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {
-          setHomeSections(json.data);
+          const { sections, trending } = json.data;
+
+          // Extract podcasts
+          if (trending && trending.length > 0) {
+            setPodcasts(trending);
+          }
+
+          // Extract sections items
+          if (sections && Array.isArray(sections)) {
+            const heroSection = sections.find((s: any) => s.slug === "hero-selection");
+            if (heroSection && heroSection.items && heroSection.items.length > 0) {
+              setHeroEp(heroSection.items[0].episode);
+            }
+
+            const epSection = sections.find((s: any) => s.slug === "dernieres-publications");
+            if (epSection && epSection.items) {
+              const eps = epSection.items
+                .map((item: any) => item.episode)
+                .filter(Boolean);
+              setEpisodes(eps);
+            }
+          }
         }
       })
-      .catch((err) => console.error("Erreur Home API:", err));
+      .catch((err) => console.error("Erreur connexion Home API:", err))
+      .finally(() => setLoading(false));
   }, []);
 
-  // Featured Episode for Cinematographic Hero
-  const featuredEpisode: PlayerEpisode = {
-    id: "ep-hero-1",
-    slug: "entreprendre-au-mali-defis-et-opportunites",
-    title: "Les voix qui font bouger Bamako.",
-    cover: "/brand/logo.webp",
-    durationSeconds: 2740,
-    podcast: {
-      slug: "voix-de-bamako",
-      name: "Voix de Bamako",
-      cover: "/brand/logo.webp",
-    },
-    mediaSources: [
-      {
-        id: "ms-1",
-        type: "AUDIO",
-        sourceType: "EXTERNAL",
-        playbackMode: "NATIVE",
-        isPrimaryAudio: true,
-        externalUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        durationSeconds: 2740,
-      },
-      {
-        id: "ms-2",
-        type: "VIDEO",
-        sourceType: "EXTERNAL",
-        provider: "YOUTUBE",
-        playbackMode: "EMBED",
-        isPrimaryVideo: true,
-        externalUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        durationSeconds: 2740,
-      },
-    ],
-  };
-
-  const trendingPodcasts: (PodcastItem & { rank: string })[] = [
+  // Fallbacks if server returns empty
+  const displayPodcasts = podcasts.length > 0 ? podcasts : [
     {
       id: "p1",
-      rank: "01",
-      name: "Voix de Bamako",
-      slug: "voix-de-bamako",
-      organization: { name: "Studio Bamako Podcast" },
-      cover: "/brand/logo.webp",
-      countryId: "ML",
+      slug: "nkunsigui",
+      name: "N'kunsigui",
+      description: "Podcast interview, culture, société au Mali.",
+      cover: "https://img.youtube.com/vi/KWhVBP8YQaM/maxresdefault.jpg",
+      country: { name: "Mali" },
     },
     {
       id: "p2",
-      rank: "02",
-      name: "Bamako Tech Talk",
-      slug: "bamako-tech-talk",
-      organization: { name: "Mali Digital Hub" },
-      cover: "/brand/logo.webp",
-      countryId: "ML",
+      slug: "baba-cmn",
+      name: "Baba Cmn",
+      description: "Entretiens exclusifs et entrepreneuriat.",
+      cover: "https://img.youtube.com/vi/Rr6vUM3pKqc/maxresdefault.jpg",
+      country: { name: "Mali" },
     },
     {
       id: "p3",
-      rank: "03",
-      name: "Histoires & Terroirs",
-      slug: "histoires-et-terroirs",
-      organization: { name: "Culture Mali" },
-      cover: "/brand/logo.webp",
-      countryId: "ML",
+      slug: "impact-hub-bamako",
+      name: "Impact Hub Bamako",
+      description: "Innovation, tech et écosystème d'affaires.",
+      cover: "https://img.youtube.com/vi/xS_Z1P6pUwo/maxresdefault.jpg",
+      country: { name: "Mali" },
     },
     {
       id: "p4",
-      rank: "04",
-      name: "Femmes d'Impact Mali",
-      slug: "femmes-dimpact",
-      organization: { name: "Réseau Lead-Her" },
-      cover: "/brand/logo.webp",
-      countryId: "ML",
+      slug: "dizuiti-kono",
+      name: "Dizuiti Kono",
+      description: "Émissions sport, société et jeunesse.",
+      cover: "https://img.youtube.com/vi/4r7oPnCQa2w/maxresdefault.jpg",
+      country: { name: "Mali" },
     },
   ];
 
-  const latestEpisodes = [
+  const displayEpisodes = episodes.length > 0 ? episodes : [
     {
       id: "ep-1",
-      rank: "01",
-      title: "L'avenir de la FinTech et des paiements mobiles à Bamako",
-      podcastName: "Bamako Tech Talk",
-      duration: "28 min",
+      title: "N'kunsigui - Podcast Interview Exclusive",
+      podcast: { name: "N'kunsigui" },
+      durationSeconds: 2740,
+      cover: "https://img.youtube.com/vi/KWhVBP8YQaM/maxresdefault.jpg",
+      mediaSources: [{ provider: "YOUTUBE", externalId: "KWhVBP8YQaM", embedUrl: "https://www.youtube.com/embed/KWhVBP8YQaM" }],
     },
     {
       id: "ep-2",
-      rank: "02",
-      title: "S'implanter dans la sous-région : Retour d'expérience",
-      podcastName: "Voix de Bamako",
-      duration: "42 min",
+      title: "Baba Cmn - Interview Exclusive & Parcours",
+      podcast: { name: "Baba Cmn" },
+      durationSeconds: 3200,
+      cover: "https://img.youtube.com/vi/Rr6vUM3pKqc/maxresdefault.jpg",
+      mediaSources: [{ provider: "YOUTUBE", externalId: "Rr6vUM3pKqc", embedUrl: "https://www.youtube.com/embed/Rr6vUM3pKqc" }],
     },
     {
       id: "ep-3",
-      rank: "03",
-      title: "Récits transmis : L'art du conte malien réinventé",
-      podcastName: "Histoires & Terroirs",
-      duration: "35 min",
+      title: "Impact Hub Bamako - Innovation au Mali",
+      podcast: { name: "Impact Hub Bamako" },
+      durationSeconds: 2900,
+      cover: "https://img.youtube.com/vi/xS_Z1P6pUwo/maxresdefault.jpg",
+      mediaSources: [{ provider: "YOUTUBE", externalId: "xS_Z1P6pUwo", embedUrl: "https://www.youtube.com/embed/xS_Z1P6pUwo" }],
     },
   ];
 
-  const bamanankanStories = [
-    {
-      id: "bm-1",
-      title: "Bamanankan kɔnɔ sɔrɔtan ni jɛmuw",
-      podcastName: "Savoirs en Bamanankan",
-      duration: "34 min",
-    },
-    {
-      id: "bm-2",
-      title: "Bamako dugukolo kan taamaw ni fɔliw",
-      podcastName: "Voix de Bamako",
-      duration: "45 min",
-    },
-  ];
+  const currentHero = heroEp || displayEpisodes[0];
 
   const categoriesList = [
     { name: "Business & Économie", slug: "business" },
@@ -151,100 +128,141 @@ export default function HomePage() {
     { name: "Fatoumata Sissoko", role: "Entrepreneure", podcast: "Femmes d'Impact" },
   ];
 
+  const handlePlayMedia = (ep: any, mode: "AUDIO" | "VIDEO" = "VIDEO") => {
+    const videoSource = ep.mediaSources?.find((ms: any) => ms.provider === "YOUTUBE") || ep.mediaSources?.[0];
+    const playerEp: PlayerEpisode = {
+      id: ep.id,
+      slug: ep.slug || ep.id,
+      title: ep.title,
+      cover: ep.cover || "/brand/logo.webp",
+      durationSeconds: ep.durationSeconds || 1800,
+      podcast: {
+        slug: ep.podcast?.slug || "podcast",
+        name: ep.podcast?.name || "Bko Podcast",
+        cover: ep.podcast?.cover || ep.cover || "/brand/logo.webp",
+      },
+      mediaSources: [
+        {
+          id: videoSource?.id || "ms-1",
+          type: "VIDEO",
+          sourceType: "EXTERNAL",
+          provider: "YOUTUBE",
+          playbackMode: "EMBED",
+          isPrimaryVideo: true,
+          externalUrl: videoSource?.externalUrl || `https://www.youtube.com/watch?v=${videoSource?.externalId || "KWhVBP8YQaM"}`,
+          embedUrl: videoSource?.embedUrl || `https://www.youtube.com/embed/${videoSource?.externalId || "KWhVBP8YQaM"}`,
+          durationSeconds: ep.durationSeconds || 1800,
+        },
+      ],
+    };
+    playEpisode(playerEp, mode);
+  };
+
   return (
-    <div className="bko-container py-12 space-y-24 animate-fade-in text-[#F0F6FC]">
-      {/* 1. HERO CINÉMATOGRAPHIQUE & MINIMAL */}
-      <section className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center">
-        {/* Contenu Éditorial (7/12 Desktop) */}
-        <div className="md:col-span-7 space-y-6">
-          <span className="text-[10px] font-bold text-[#E6B009] uppercase tracking-widest">À LA UNE</span>
+    <div className="bko-container py-12 md:py-16 space-y-28 animate-fade-in text-[#F0F6FC]">
+      {/* 1. HERO ÉDITORIAL CINÉMATOGRAPHIQUE */}
+      <section className="bg-[#161B22]/80 border border-[#21262D] rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
+          {/* Contenu Éditorial */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E6B009]/10 border border-[#E6B009]/30">
+              <span className="w-2 h-2 rounded-full bg-[#E6B009] animate-pulse"></span>
+              <span className="text-[11px] font-extrabold text-[#E6B009] uppercase tracking-widest">
+                SÉLECTION ÉDITORIALE
+              </span>
+            </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-[#F0F6FC] leading-[1.1] max-w-xl">
-            {featuredEpisode.title}
-          </h1>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#F0F6FC] leading-[1.08] tracking-tight max-w-xl">
+              {currentHero?.title || "Les voix qui font bouger Bamako."}
+            </h1>
 
-          <p className="text-sm md:text-base text-[#8B949E] max-w-lg leading-relaxed font-normal">
-            Une immersion exclusive au cœur des conversations et des récits qui façonnent le Mali d'aujourd'hui.
-          </p>
+            <p className="text-sm md:text-base text-[#8B949E] max-w-lg leading-relaxed font-normal">
+              {currentHero?.description || "Une immersion exclusive au cœur des conversations et des récits les plus inspirants du Mali."}
+            </p>
 
-          <div className="pt-4 flex flex-wrap items-center gap-4">
-            <button
-              onClick={() => playEpisode(featuredEpisode, "AUDIO")}
-              className="px-7 py-3.5 bg-[#E6B009] hover:bg-[#F5B82E] text-[#0B0F17] font-extrabold text-xs rounded-xl transition-all shadow-lg flex items-center gap-2"
-            >
-              <span>▶</span>
-              <span>Écouter</span>
-            </button>
-
-            <button
-              onClick={() => playEpisode(featuredEpisode, "VIDEO")}
-              className="px-6 py-3.5 text-xs font-semibold text-[#8B949E] hover:text-[#F0F6FC] transition-colors"
-            >
-              Regarder (Vidéo)
-            </button>
+            <div className="pt-2 flex flex-wrap items-center gap-4">
+              <button
+                onClick={() => handlePlayMedia(currentHero, "VIDEO")}
+                className="px-8 py-3.5 bg-[#E6B009] hover:bg-[#F2C029] text-[#0B0F17] font-black text-xs rounded-2xl transition-all shadow-lg flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <span className="text-sm">▶</span>
+                <span>ÉCOUTER / REGARDER</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Large Visual Cover Dominante (5/12 Desktop) */}
-        <div className="md:col-span-5 flex justify-center">
-          <div className="relative w-full max-w-md aspect-square rounded-3xl overflow-hidden shadow-2xl bg-[#161B22]">
-            <Image
-              src={featuredEpisode.cover}
-              alt={featuredEpisode.title}
-              fill
-              className="object-cover"
-              priority
-            />
+          {/* Artwork Cover */}
+          <div className="lg:col-span-5 flex justify-center">
+            <div className="relative w-full max-w-sm aspect-square rounded-3xl overflow-hidden shadow-2xl bg-[#0B0F17] border border-[#30363D] group">
+              <Image
+                src={currentHero?.cover || "/brand/logo.webp"}
+                alt={currentHero?.title || "Podcast Mali"}
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                priority
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 2. LES INCONTOURNABLES DU MALI (Covers Dominantes) */}
+      {/* 2. LES INCONTOURNABLES DU MALI (Rail de Pochettes Réelles) */}
       <section className="space-y-8">
         <div className="flex items-end justify-between border-b border-[#161B22] pb-4">
-          <div>
-            <span className="text-[10px] font-bold text-[#8B949E] uppercase tracking-widest">SÉLECTION</span>
-            <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC]">Les incontournables du Mali</h2>
+          <div className="space-y-1">
+            <span className="text-[11px] font-extrabold text-[#8B949E] uppercase tracking-widest">SÉLECTION</span>
+            <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC] tracking-tight">Les incontournables du Mali</h2>
           </div>
-          <Link href="/explore" className="text-xs font-semibold text-[#8B949E] hover:text-[#E6B009] transition-colors">
+          <Link href="/explore" className="text-xs font-bold text-[#8B949E] hover:text-[#E6B009] transition-colors">
             Voir tout →
           </Link>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          {trendingPodcasts.map((podcast) => (
-            <PodcastCardStandard key={podcast.id} podcast={podcast} />
+          {displayPodcasts.map((podcast, idx) => (
+            <PodcastCardStandard
+              key={podcast.id || idx}
+              podcast={{
+                id: podcast.id,
+                slug: podcast.slug,
+                name: podcast.name,
+                cover: podcast.cover,
+                organization: { name: podcast.country?.name || "Mali" },
+              }}
+            />
           ))}
         </div>
       </section>
 
-      {/* 3. À ÉCOUTER CETTE SEMAINE (Nouveaux Épisodes - Liste Éditoriale) */}
+      {/* 3. À ÉCOUTER CETTE SEMAINE (Épisodes Réels YouTube) */}
       <section className="space-y-8">
-        <div className="border-b border-[#161B22] pb-4">
-          <span className="text-[10px] font-bold text-[#8B949E] uppercase tracking-widest">DERNIERES PUBLICATIONS</span>
-          <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC]">À écouter cette semaine</h2>
+        <div className="border-b border-[#161B22] pb-4 space-y-1">
+          <span className="text-[11px] font-extrabold text-[#8B949E] uppercase tracking-widest">DERNIÈRES PUBLICATIONS</span>
+          <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC] tracking-tight">À écouter cette semaine</h2>
         </div>
 
         <div className="divide-y divide-[#161B22]">
-          {latestEpisodes.map((ep) => (
+          {displayEpisodes.map((ep, idx) => (
             <div
-              key={ep.id}
-              className="py-4 flex items-center justify-between group cursor-pointer transition-colors"
-              onClick={() => playEpisode(featuredEpisode, "AUDIO")}
+              key={ep.id || idx}
+              className="py-4 flex items-center justify-between group cursor-pointer transition-colors hover:bg-[#161B22]/30 px-3 rounded-2xl"
+              onClick={() => handlePlayMedia(ep, "VIDEO")}
             >
               <div className="flex items-center gap-6 min-w-0 pr-4">
-                <span className="text-lg font-mono font-bold text-[#8B949E] group-hover:text-[#E6B009] transition-colors w-6">
-                  {ep.rank}
+                <span className="text-base font-mono font-black text-[#6E7681] group-hover:text-[#E6B009] transition-colors w-6">
+                  {String(idx + 1).padStart(2, "0")}
                 </span>
                 <div className="min-w-0">
                   <h4 className="text-sm md:text-base font-bold text-[#F0F6FC] group-hover:text-[#E6B009] transition-colors truncate">
                     {ep.title}
                   </h4>
-                  <p className="text-xs text-[#8B949E] mt-0.5">{ep.podcastName} • {ep.duration}</p>
+                  <p className="text-xs text-[#8B949E] mt-0.5">
+                    {ep.podcast?.name || "Bko Podcast"} • {Math.round((ep.durationSeconds || 1800) / 60)} min
+                  </p>
                 </div>
               </div>
 
-              <button className="w-9 h-9 rounded-full bg-[#161B22] group-hover:bg-[#E6B009] text-[#8B949E] group-hover:text-[#0B0F17] flex items-center justify-center font-bold text-xs transition-colors shrink-0">
+              <button className="w-10 h-10 rounded-full bg-[#161B22] group-hover:bg-[#E6B009] text-[#8B949E] group-hover:text-[#0B0F17] flex items-center justify-center font-bold text-xs transition-colors shrink-0 shadow-md">
                 ▶
               </button>
             </div>
@@ -252,31 +270,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. MOMENT ÉDITORIAL : EN BAMANANKAN */}
-      <section className="bg-[#161B22]/50 border border-[#21262D] rounded-3xl p-8 md:p-12 space-y-8">
+      {/* 4. PATRIMOINE AUDIO : EN BAMANANKAN */}
+      <section className="bg-[#161B22]/60 border border-[#21262D] rounded-3xl p-8 md:p-12 space-y-8 relative">
         <div className="max-w-xl space-y-2">
-          <span className="text-[10px] font-bold text-[#E6B009] uppercase tracking-widest">PATRIMOINE AUDIO</span>
-          <h2 className="text-3xl md:text-4xl font-black text-[#F0F6FC]">En Bamanankan</h2>
+          <span className="text-[11px] font-extrabold text-[#E6B009] uppercase tracking-widest">PATRIMOINE AUDIO</span>
+          <h2 className="text-3xl md:text-4xl font-black text-[#F0F6FC] tracking-tight">En Bamanankan</h2>
           <p className="text-xs md:text-sm text-[#8B949E] leading-relaxed">
             Les histoires, les idées et les voix exprimées dans notre langue.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {bamanankanStories.map((story) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {displayEpisodes.slice(0, 2).map((ep, idx) => (
             <div
-              key={story.id}
-              onClick={() => playEpisode(featuredEpisode, "AUDIO")}
-              className="p-5 rounded-2xl bg-[#0B0F17] border border-[#21262D] hover:border-[#E6B009] transition-all flex items-center justify-between cursor-pointer group"
+              key={idx}
+              onClick={() => handlePlayMedia(ep, "VIDEO")}
+              className="p-6 rounded-2xl bg-[#0B0F17] border border-[#21262D] hover:border-[#E6B009] transition-all flex items-center justify-between cursor-pointer group shadow-lg"
             >
               <div className="space-y-1 min-w-0 pr-4">
-                <span className="text-[10px] font-semibold text-[#8B949E] uppercase">{story.podcastName}</span>
+                <span className="text-[10px] font-bold text-[#8B949E] uppercase tracking-wider">{ep.podcast?.name || "Bamanankan"}</span>
                 <h4 className="text-sm font-bold text-[#F0F6FC] group-hover:text-[#E6B009] transition-colors truncate">
-                  {story.title}
+                  {ep.title}
                 </h4>
-                <p className="text-xs text-[#8B949E]">{story.duration}</p>
+                <p className="text-xs text-[#8B949E]">{Math.round((ep.durationSeconds || 1800) / 60)} min</p>
               </div>
-              <span className="w-8 h-8 rounded-full bg-[#161B22] group-hover:bg-[#E6B009] text-[#8B949E] group-hover:text-[#0B0F17] flex items-center justify-center font-bold text-xs transition-colors shrink-0">
+              <span className="w-9 h-9 rounded-full bg-[#161B22] group-hover:bg-[#E6B009] text-[#8B949E] group-hover:text-[#0B0F17] flex items-center justify-center font-bold text-xs transition-colors shrink-0">
                 ▶
               </span>
             </div>
@@ -284,14 +302,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. CATÉGORIES (Entrées Typographiques Équilibrées) */}
+      {/* 5. CATÉGORIES */}
       <section className="space-y-6">
-        <div className="border-b border-[#161B22] pb-4">
-          <span className="text-[10px] font-bold text-[#8B949E] uppercase tracking-widest">THÉMATIQUES</span>
-          <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC]">Explorer les sujets</h2>
+        <div className="border-b border-[#161B22] pb-4 space-y-1">
+          <span className="text-[11px] font-extrabold text-[#8B949E] uppercase tracking-widest">THÉMATIQUES</span>
+          <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC] tracking-tight">Explorer les sujets</h2>
         </div>
 
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-3">
           {categoriesList.map((cat) => (
             <Link
               key={cat.slug}
@@ -304,17 +322,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 6. VOIX À DÉCOUVRIR (Human Portraits) */}
+      {/* 6. VOIX À DÉCOUVRIR */}
       <section className="space-y-8">
-        <div className="border-b border-[#161B22] pb-4">
-          <span className="text-[10px] font-bold text-[#8B949E] uppercase tracking-widest">PORTRAITS</span>
-          <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC]">Voix à découvrir</h2>
+        <div className="border-b border-[#161B22] pb-4 space-y-1">
+          <span className="text-[11px] font-extrabold text-[#8B949E] uppercase tracking-widest">PORTRAITS</span>
+          <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC] tracking-tight">Voix à découvrir</h2>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           {creators.map((c, idx) => (
             <div key={idx} className="flex flex-col items-center text-center space-y-3 group cursor-pointer">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-[#161B22] border border-[#21262D] group-hover:border-[#E6B009] transition-all shadow-lg">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-[#161B22] border border-[#21262D] group-hover:border-[#E6B009] transition-all shadow-xl">
                 <div className="w-full h-full bg-[#161B22] text-[#E6B009] font-black text-2xl flex items-center justify-center">
                   {c.name[0]}
                 </div>
@@ -328,9 +346,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 7. CTA ESPACE CRÉATEUR (Sober Text Section) */}
+      {/* 7. CTA ESPACE CRÉATEUR */}
       <section className="py-12 border-t border-b border-[#161B22] text-center space-y-4 max-w-2xl mx-auto">
-        <h3 className="text-2xl font-black text-[#F0F6FC]">Vous avez un podcast ?</h3>
+        <h3 className="text-2xl font-black text-[#F0F6FC] tracking-tight">Vous avez un podcast ?</h3>
         <p className="text-xs md:text-sm text-[#8B949E] leading-relaxed">
           Faites entendre votre voix sur Bko Podcast et développez votre audience auprès des auditeurs maliens et internationaux.
         </p>

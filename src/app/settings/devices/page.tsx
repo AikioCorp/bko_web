@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { Laptop, Smartphone, Trash2, ShieldAlert } from "lucide-react";
@@ -13,7 +14,7 @@ export default function DevicesPage() {
     const token = localStorage.getItem("bko_access_token");
     if (!token) return;
 
-    fetch("http://localhost:8080/api/v1/me/devices", {
+    fetch(`${API_BASE_URL}/me/devices`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -29,7 +30,7 @@ export default function DevicesPage() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:8080/api/v1/me/devices/${id}`, {
+      await fetch(`${API_BASE_URL}/me/devices/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -44,7 +45,7 @@ export default function DevicesPage() {
     if (!token) return;
 
     try {
-      await fetch("http://localhost:8080/api/v1/auth/logout-all", {
+      await fetch(`${API_BASE_URL}/auth/logout-all`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

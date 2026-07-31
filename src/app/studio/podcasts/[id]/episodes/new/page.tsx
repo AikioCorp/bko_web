@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -45,7 +46,7 @@ export default function NewEpisodePage() {
 
     try {
       // 1. Créer l'épisode en brouillon
-      const epRes = await fetch(`http://localhost:8080/api/v1/creator/podcasts/${podcastId}/episodes`, {
+      const epRes = await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/episodes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,7 +71,7 @@ export default function NewEpisodePage() {
 
       // 2. Ajouter la source média si fournie
       if (rawUrl) {
-        await fetch(`http://localhost:8080/api/v1/creator/episodes/${episodeId}/media-sources`, {
+        await fetch(`${API_BASE_URL}/creator/episodes/${episodeId}/media-sources`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -81,7 +82,7 @@ export default function NewEpisodePage() {
       }
 
       // 3. Publier l'épisode
-      const pubRes = await fetch(`http://localhost:8080/api/v1/creator/episodes/${episodeId}/publish`, {
+      const pubRes = await fetch(`${API_BASE_URL}/creator/episodes/${episodeId}/publish`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

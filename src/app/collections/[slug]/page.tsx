@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "@/lib/api";
 import React from "react";
 import Link from "next/link";
 import { FolderHeart } from "lucide-react";
@@ -6,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 async function getCollectionData(slug: string) {
   try {
-    const res = await fetch(`http://localhost:8080/api/v1/collections/${slug}`, {
+    const res = await fetch(`${API_BASE_URL}/collections/${slug}`, {
       cache: "no-store",
     });
     if (!res.ok) return null;

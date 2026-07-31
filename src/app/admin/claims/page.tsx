@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { ShieldCheck, Check, X, FileText, User, Radio, ExternalLink } from "lucide-react";
@@ -12,7 +13,7 @@ export default function AdminClaimsPage() {
     const token = localStorage.getItem("bko_access_token");
     if (!token) return;
 
-    fetch("http://localhost:8080/api/v1/admin/claims", {
+    fetch(`${API_BASE_URL}/admin/claims`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -32,7 +33,7 @@ export default function AdminClaimsPage() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:8080/api/v1/admin/claims/${claimId}/review`, {
+      await fetch(`${API_BASE_URL}/admin/claims/${claimId}/review`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

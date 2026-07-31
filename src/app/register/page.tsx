@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,7 +20,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/register", {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName, email, phoneNumber, password }),
@@ -27,8 +28,8 @@ export default function RegisterPage() {
       const json = await res.json();
 
       if (json.success) {
-        // Redirection vers onboarding
-        router.push("/onboarding");
+        // Le compte est créé mais non vérifié : passage par l'étape OTP.
+        router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
       } else {
         setError(json.error?.message || "Erreur lors de l'inscription");
       }

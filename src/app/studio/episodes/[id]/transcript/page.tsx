@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
@@ -26,7 +27,7 @@ export default function EpisodeTranscriptEditorPage() {
     const token = localStorage.getItem("bko_access_token");
     if (!token) return;
 
-    fetch(`http://localhost:8080/api/v1/episodes/${episodeId}/transcript`, {
+    fetch(`${API_BASE_URL}/episodes/${episodeId}/transcript`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -70,7 +71,7 @@ export default function EpisodeTranscriptEditorPage() {
     if (!token || !srtContent) return;
 
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/creator/episodes/${episodeId}/transcripts/import`, {
+      const res = await fetch(`${API_BASE_URL}/creator/episodes/${episodeId}/transcripts/import`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -96,7 +97,7 @@ export default function EpisodeTranscriptEditorPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/creator/episodes/${episodeId}/transcripts/generate`, {
+      const res = await fetch(`${API_BASE_URL}/creator/episodes/${episodeId}/transcripts/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -117,7 +118,7 @@ export default function EpisodeTranscriptEditorPage() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:8080/api/v1/creator/transcripts/segments/${segmentId}`, {
+      await fetch(`${API_BASE_URL}/creator/transcripts/segments/${segmentId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

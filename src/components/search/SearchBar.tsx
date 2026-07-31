@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState, useEffect, useRef } from "react";
 import { Search, X, Clock, Trash2 } from "lucide-react";
@@ -50,7 +51,7 @@ export const SearchBar = ({ initialQuery = "" }: { initialQuery?: string }) => {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`http://localhost:8080/api/v1/search/suggestions?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`${API_BASE_URL}/search/suggestions?q=${encodeURIComponent(query)}`);
         const json = await res.json();
         if (json.success) {
           setSuggestions(json.data);

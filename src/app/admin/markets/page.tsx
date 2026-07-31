@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { Globe, Shield, Check, X, Power, Edit3 } from "lucide-react";
@@ -11,7 +12,7 @@ export default function AdminMarketsPage() {
     const token = localStorage.getItem("bko_access_token");
     if (!token) return;
 
-    fetch("http://localhost:8080/api/v1/admin/markets", {
+    fetch(`${API_BASE_URL}/admin/markets`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -31,7 +32,7 @@ export default function AdminMarketsPage() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:8080/api/v1/admin/markets/${countryCode}`, {
+      await fetch(`${API_BASE_URL}/admin/markets/${countryCode}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -48,7 +49,7 @@ export default function AdminMarketsPage() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:8080/api/v1/admin/markets/${countryCode}/activate`, {
+      await fetch(`${API_BASE_URL}/admin/markets/${countryCode}/activate`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -61,7 +62,7 @@ export default function AdminMarketsPage() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:8080/api/v1/admin/markets/${countryCode}/suspend`, {
+      await fetch(`${API_BASE_URL}/admin/markets/${countryCode}/suspend`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -181,6 +182,12 @@ export default function AdminMarketsPage() {
 
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center space-x-2">
+                      <a
+                        href={`/admin/markets/${m.countryId}/creators`}
+                        className="bg-[#E5A93C]/10 text-[#E5A93C] border border-[#E5A93C]/30 px-2.5 py-1 rounded text-[10px] font-bold hover:bg-[#E5A93C]/20"
+                      >
+                        Créateurs
+                      </a>
                       {m.status !== "ACTIVE" ? (
                         <button
                           onClick={() => handleActivate(m.countryId)}

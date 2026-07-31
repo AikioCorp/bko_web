@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -23,7 +24,7 @@ function SearchContent() {
     if (!query.trim()) return;
 
     setLoading(true);
-    fetch(`http://localhost:8080/api/v1/search?q=${encodeURIComponent(query)}`)
+    fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success) setResults(json.data);

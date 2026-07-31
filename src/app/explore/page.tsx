@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -10,7 +11,7 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/v1/explore")
+    fetch(`${API_BASE_URL}/explore`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success) setExploreData(json.data);

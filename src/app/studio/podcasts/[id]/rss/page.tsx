@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -20,7 +21,7 @@ export default function PodcastRssPage() {
     const token = localStorage.getItem("bko_access_token");
     if (!token) return;
 
-    fetch(`http://localhost:8080/api/v1/creator/podcasts/${podcastId}/rss`, {
+    fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -48,7 +49,7 @@ export default function PodcastRssPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/creator/podcasts/${podcastId}/rss/preview`, {
+      const res = await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss/preview`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -75,7 +76,7 @@ export default function PodcastRssPage() {
     if (!token || !feedUrl) return;
 
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/creator/podcasts/${podcastId}/rss/connect`, {
+      const res = await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss/connect`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -103,7 +104,7 @@ export default function PodcastRssPage() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:8080/api/v1/creator/podcasts/${podcastId}/rss/sync`, {
+      await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss/sync`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -123,7 +124,7 @@ export default function PodcastRssPage() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:8080/api/v1/creator/podcasts/${podcastId}/rss`, {
+      await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

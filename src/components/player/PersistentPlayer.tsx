@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useRef } from "react";
 import { usePlayerStore } from "../../store/playerStore";
@@ -44,7 +45,7 @@ export const PersistentPlayer = () => {
     const interval = setInterval(() => {
       const token = localStorage.getItem("bko_access_token");
       if (token) {
-        fetch("http://localhost:8080/api/v1/me/history", {
+        fetch(`${API_BASE_URL}/me/history`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -75,8 +76,45 @@ export const PersistentPlayer = () => {
   const hasVideo = currentEpisode.mediaSources.some((s) => s.type === "VIDEO");
   const hasAudio = currentEpisode.mediaSources.some((s) => s.type === "AUDIO");
 
+  const getEmbedUrl = () => {
+    if (activeSource?.embedUrl) return activeSource.embedUrl;
+    if (activeSource?.externalUrl) {
+      if (activeSource.externalUrl.includes("youtube.com/watch?v=")) {
+        const videoId = activeSource.externalUrl.split("v=")[1]?.split("&")[0];
+        if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+      } else if (activeSource.externalUrl.includes("youtu.be/")) {
+        const videoId = activeSource.externalUrl.split("youtu.be/")[1]?.split("?")[0];
+        if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+      }
+    }
+    const videoSource = currentEpisode.mediaSources.find((s) => s.type === "VIDEO");
+    if (videoSource?.embedUrl) return videoSource.embedUrl;
+    if (videoSource?.externalUrl) {
+      if (videoSource.externalUrl.includes("youtube.com/watch?v=")) {
+        const videoId = videoSource.externalUrl.split("v=")[1]?.split("&")[0];
+        if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+      }
+    }
+    return null;
+  };
+
+  const embedUrl = getEmbedUrl();
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0A0D14] border-t border-[#1E2638] text-white p-3 shadow-2xl transition-all duration-300">
+      {/* Container Vidéo YouTube si Mode VIDEO actif */}
+      {mode === "VIDEO" && embedUrl && (
+        <div className="max-w-4xl mx-auto mb-3 aspect-video rounded-xl overflow-hidden shadow-2xl border border-[#1E2638] bg-black">
+          <iframe
+            src={embedUrl}
+            title={currentEpisode.title}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        </div>
+      )}
+
       {/* Audio Element pour NATIVE AUDIO */}
       {activeSource.type === "AUDIO" && activeSource.externalUrl && (
         <audio

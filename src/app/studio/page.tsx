@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
@@ -24,7 +25,7 @@ export default function CreatorStudioDashboard() {
     if (!token) return;
 
     // Charger le profil créateur
-    fetch("http://localhost:8080/api/v1/me/creator-profile", {
+    fetch(`${API_BASE_URL}/me/creator-profile`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -34,7 +35,7 @@ export default function CreatorStudioDashboard() {
       .catch(() => {});
 
     // Charger le dashboard créateur
-    fetch("http://localhost:8080/api/v1/creator/dashboard", {
+    fetch(`${API_BASE_URL}/creator/dashboard`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -50,7 +51,7 @@ export default function CreatorStudioDashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/me/creator-profile", {
+      const res = await fetch(`${API_BASE_URL}/me/creator-profile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -19,7 +20,7 @@ export default function PublicPodcastDetailPage() {
   const [submittingClaim, setSubmittingClaim] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:8080/api/v1/podcasts/${slug}`)
+    fetch(`${API_BASE_URL}/podcasts/${slug}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success) setPodcast(json.data);
@@ -41,7 +42,7 @@ export default function PublicPodcastDetailPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/podcasts/${podcast.id}/claims`, {
+      const res = await fetch(`${API_BASE_URL}/podcasts/${podcast.id}/claims`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

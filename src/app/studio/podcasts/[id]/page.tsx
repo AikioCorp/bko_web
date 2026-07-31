@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -18,7 +19,7 @@ export default function CreatorPodcastDetailPage() {
     const token = localStorage.getItem("bko_access_token");
     if (!token) return;
 
-    fetch(`http://localhost:8080/api/v1/creator/podcasts/${podcastId}`, {
+    fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -27,7 +28,7 @@ export default function CreatorPodcastDetailPage() {
       })
       .catch(() => {});
 
-    fetch(`http://localhost:8080/api/v1/creator/podcasts/${podcastId}/episodes`, {
+    fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/episodes`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -36,7 +37,7 @@ export default function CreatorPodcastDetailPage() {
       })
       .catch(() => {});
 
-    fetch(`http://localhost:8080/api/v1/creator/podcasts/${podcastId}/members`, {
+    fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/members`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())

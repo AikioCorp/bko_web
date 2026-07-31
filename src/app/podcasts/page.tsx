@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -14,7 +15,7 @@ export default function PodcastsCatalogPage() {
   const [sortBy, setSortBy] = useState<"POPULAR" | "NEWEST" | "ALPHA">("POPULAR");
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/v1/podcasts")
+    fetch(`${API_BASE_URL}/podcasts`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data)) {

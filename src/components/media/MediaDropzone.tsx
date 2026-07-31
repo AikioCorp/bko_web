@@ -1,4 +1,5 @@
 "use client";
+import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
 import { UploadCloud, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
@@ -36,7 +37,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({ mediaType, episode
 
     try {
       // 1. Demande de session d'upload au backend Express
-      const sessionRes = await fetch("http://localhost:8080/api/v1/creator/uploads", {
+      const sessionRes = await fetch("${API_BASE_URL}/creator/uploads", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,7 +88,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({ mediaType, episode
 
       // 3. Notification de fin d'upload au backend Express
       setStatus("PROCESSING");
-      const completeRes = await fetch(`http://localhost:8080/api/v1/creator/uploads/${uploadSessionId}/complete`, {
+      const completeRes = await fetch(`${API_BASE_URL}/creator/uploads/${uploadSessionId}/complete`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -5,6 +5,7 @@ import { PersistentPlayer } from "../components/player/PersistentPlayer";
 import "./globals.css";
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://bamakopodcast.studio"),
   title: "Bko Podcast — Les voix du Mali et de l'Afrique",
   description: "La plateforme de référence pour découvrir, écouter et regarder les podcasts du Mali et d'Afrique.",
   icons: {
