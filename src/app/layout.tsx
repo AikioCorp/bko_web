@@ -1,6 +1,7 @@
 import React from "react";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
+import { Sidebar } from "../components/Sidebar";
 import { PersistentPlayer } from "../components/player/PersistentPlayer";
 import "./globals.css";
 
@@ -34,10 +35,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#0B0F17] text-[#F0F6FC] min-h-screen flex flex-col font-sans selection:bg-[#E6B009] selection:text-[#0B0F17]">
+      <body className="bg-[#0B0F17] text-[#F0F6FC] h-screen overflow-hidden flex flex-col font-sans selection:bg-[#E6B009] selection:text-[#0B0F17]">
         <Header />
-        <main className="flex-1 pb-24">{children}</main>
-        <Footer />
+        
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar />
+          
+          <div className="flex-1 overflow-y-auto relative scrollbar-thin scrollbar-thumb-[#21262D] scrollbar-track-transparent">
+            <main className="min-h-full pb-32">
+              {children}
+            </main>
+            <Footer />
+          </div>
+        </div>
+
         <PersistentPlayer />
       </body>
     </html>

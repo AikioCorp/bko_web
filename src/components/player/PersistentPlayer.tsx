@@ -4,6 +4,7 @@ import { API_BASE_URL } from "@/lib/api";
 import React, { useEffect, useRef } from "react";
 import { usePlayerStore } from "../../store/playerStore";
 import { Play, Pause, Volume2, Video, Headphones } from "lucide-react";
+import ReactPlayer from "react-player";
 
 export const PersistentPlayer = () => {
   const {
@@ -20,16 +21,26 @@ export const PersistentPlayer = () => {
     setPlaybackRate,
   } = usePlayerStore();
 
+  const playerRef = useRef<ReactPlayer>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Fix SSR hydration mismatch for react-player
+  const [isMounted, setIsMounted] = React.useState(false);
+  const [isReady, setIsReady] = React.useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Sync playback rates
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.playbackRate = playbackRate;
     }
   }, [playbackRate]);
 
+  // Sync Native Audio Play/Pause
   useEffect(() => {
-    if (audioRef.current) {
+    if (audioRef.current && activeSource?.type === "AUDIO") {
       if (isPlaying) {
         audioRef.current.play().catch(() => {});
       } else {
@@ -38,19 +49,15 @@ export const PersistentPlayer = () => {
     }
   }, [isPlaying, activeSource]);
 
-  // Synchronisation périodique de l'historique de lecture (toutes les 10 secondes)
+  // Sync History
   useEffect(() => {
     if (!currentEpisode || !isPlaying || currentTime <= 0) return;
-
     const interval = setInterval(() => {
       const token = localStorage.getItem("bko_access_token");
       if (token) {
         fetch(`${API_BASE_URL}/me/history`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             episodeId: currentEpisode.id,
             positionSeconds: Math.floor(currentTime),
@@ -59,7 +66,6 @@ export const PersistentPlayer = () => {
         }).catch(() => {});
       }
     }, 10000);
-
     return () => clearInterval(interval);
   }, [currentEpisode, isPlaying, currentTime]);
 
@@ -68,6 +74,7 @@ export const PersistentPlayer = () => {
   }
 
   const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
@@ -76,41 +83,52 @@ export const PersistentPlayer = () => {
   const hasVideo = currentEpisode.mediaSources.some((s) => s.type === "VIDEO");
   const hasAudio = currentEpisode.mediaSources.some((s) => s.type === "AUDIO");
 
-  const getEmbedUrl = () => {
-    if (activeSource?.embedUrl) return activeSource.embedUrl;
-    if (activeSource?.externalUrl) {
-      if (activeSource.externalUrl.includes("youtube.com/watch?v=")) {
-        const videoId = activeSource.externalUrl.split("v=")[1]?.split("&")[0];
-        if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-      } else if (activeSource.externalUrl.includes("youtu.be/")) {
-        const videoId = activeSource.externalUrl.split("youtu.be/")[1]?.split("?")[0];
-        if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-      }
+  const getYoutubeUrl = () => {
+    const src = activeSource.type === "VIDEO" ? activeSource : currentEpisode.mediaSources.find((s) => s.type === "VIDEO");
+    if (src?.externalUrl && (src.externalUrl.includes("youtube.com") || src.externalUrl.includes("youtu.be"))) {
+      return src.externalUrl;
     }
-    const videoSource = currentEpisode.mediaSources.find((s) => s.type === "VIDEO");
-    if (videoSource?.embedUrl) return videoSource.embedUrl;
-    if (videoSource?.externalUrl) {
-      if (videoSource.externalUrl.includes("youtube.com/watch?v=")) {
-        const videoId = videoSource.externalUrl.split("v=")[1]?.split("&")[0];
-        if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-      }
+    // Fallback for mock data that might only have externalId or embedUrl
+    if (src?.externalId && src.provider === "YOUTUBE") {
+      return `https://www.youtube.com/watch?v=${src.externalId}`;
     }
     return null;
   };
 
-  const embedUrl = getEmbedUrl();
+  const ytUrl = getYoutubeUrl();
+
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = parseFloat(e.target.value);
+    seek(newTime);
+    if (activeSource.type === "AUDIO" && audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    } else if (mode === "VIDEO" && playerRef.current) {
+      playerRef.current.seekTo(newTime, "seconds");
+    }
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0A0D14] border-t border-[#1E2638] text-white p-3 shadow-2xl transition-all duration-300">
-      {/* Container Vidéo YouTube si Mode VIDEO actif */}
-      {mode === "VIDEO" && embedUrl && (
-        <div className="max-w-4xl mx-auto mb-3 aspect-video rounded-xl overflow-hidden shadow-2xl border border-[#1E2638] bg-black">
-          <iframe
-            src={embedUrl}
-            title={currentEpisode.title}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
+      
+      {/* ReactPlayer Container Vidéo (seulement si YouTube) */}
+      {isMounted && mode === "VIDEO" && ytUrl && (
+        <div className="max-w-4xl mx-auto mb-3 aspect-video rounded-xl overflow-hidden shadow-2xl border border-[#1E2638] bg-black relative">
+          
+          <ReactPlayer
+            ref={playerRef}
+            url={ytUrl}
+            playing={isPlaying}
+            playbackRate={playbackRate}
+            width="100%"
+            height="100%"
+            onProgress={({ playedSeconds }) => {
+              if (isPlaying) {
+                seek(playedSeconds);
+              }
+            }}
+            onEnded={() => {
+              if (isPlaying) togglePlay();
+            }}
           />
         </div>
       )}
@@ -121,7 +139,7 @@ export const PersistentPlayer = () => {
           ref={audioRef}
           src={activeSource.externalUrl}
           onTimeUpdate={(e) => seek(e.currentTarget.currentTime)}
-          onEnded={() => togglePlay()}
+          onEnded={() => { if (isPlaying) togglePlay(); }}
         />
       )}
 
@@ -197,11 +215,7 @@ export const PersistentPlayer = () => {
               min={0}
               max={duration || 100}
               value={currentTime}
-              onChange={(e) => {
-                const newTime = parseFloat(e.target.value);
-                seek(newTime);
-                if (audioRef.current) audioRef.current.currentTime = newTime;
-              }}
+              onChange={handleSeekChange}
               className="w-full h-1 bg-[#1E2638] rounded-lg appearance-none cursor-pointer accent-[#E5A93C]"
             />
             <span>{formatTime(duration)}</span>

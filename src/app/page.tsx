@@ -5,13 +5,18 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePlayerStore, PlayerEpisode } from "../store/playerStore";
-import { PodcastCardStandard, PodcastItem } from "../components/ui/Cards";
+
+// Composant local pour masquer la scrollbar via utilitaire
+const ScrollArea = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+  <div className={`flex overflow-x-auto snap-x snap-mandatory gap-6 pb-6 pt-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
+    {children}
+  </div>
+);
 
 export default function HomePage() {
   const { playEpisode } = usePlayerStore();
   const [podcasts, setPodcasts] = useState<any[]>([]);
   const [episodes, setEpisodes] = useState<any[]>([]);
-  const [heroEp, setHeroEp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,19 +25,10 @@ export default function HomePage() {
       .then((json) => {
         if (json.success && json.data) {
           const { sections, trending } = json.data;
-
-          // Extract podcasts
           if (trending && trending.length > 0) {
             setPodcasts(trending);
           }
-
-          // Extract sections items
           if (sections && Array.isArray(sections)) {
-            const heroSection = sections.find((s: any) => s.slug === "hero-selection");
-            if (heroSection && heroSection.items && heroSection.items.length > 0) {
-              setHeroEp(heroSection.items[0].episode);
-            }
-
             const epSection = sections.find((s: any) => s.slug === "dernieres-publications");
             if (epSection && epSection.items) {
               const eps = epSection.items
@@ -47,70 +43,20 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Fallbacks if server returns empty
   const displayPodcasts = podcasts.length > 0 ? podcasts : [
-    {
-      id: "p1",
-      slug: "nkunsigui",
-      name: "N'kunsigui",
-      description: "Podcast interview, culture, société au Mali.",
-      cover: "https://img.youtube.com/vi/KWhVBP8YQaM/maxresdefault.jpg",
-      country: { name: "Mali" },
-    },
-    {
-      id: "p2",
-      slug: "baba-cmn",
-      name: "Baba Cmn",
-      description: "Entretiens exclusifs et entrepreneuriat.",
-      cover: "https://img.youtube.com/vi/Rr6vUM3pKqc/maxresdefault.jpg",
-      country: { name: "Mali" },
-    },
-    {
-      id: "p3",
-      slug: "impact-hub-bamako",
-      name: "Impact Hub Bamako",
-      description: "Innovation, tech et écosystème d'affaires.",
-      cover: "https://img.youtube.com/vi/xS_Z1P6pUwo/maxresdefault.jpg",
-      country: { name: "Mali" },
-    },
-    {
-      id: "p4",
-      slug: "dizuiti-kono",
-      name: "Dizuiti Kono",
-      description: "Émissions sport, société et jeunesse.",
-      cover: "https://img.youtube.com/vi/4r7oPnCQa2w/maxresdefault.jpg",
-      country: { name: "Mali" },
-    },
+    { id: "p1", slug: "nkunsigui", name: "N'kunsigui", description: "Podcast interview, culture, société au Mali.", cover: "https://img.youtube.com/vi/KWhVBP8YQaM/maxresdefault.jpg", country: { name: "Mali" } },
+    { id: "p2", slug: "baba-cmn", name: "Baba Cmn", description: "Entretiens exclusifs et entrepreneuriat.", cover: "https://img.youtube.com/vi/Rr6vUM3pKqc/maxresdefault.jpg", country: { name: "Mali" } },
+    { id: "p3", slug: "impact-hub-bamako", name: "Impact Hub Bamako", description: "Innovation, tech et écosystème d'affaires.", cover: "https://img.youtube.com/vi/xS_Z1P6pUwo/maxresdefault.jpg", country: { name: "Mali" } },
+    { id: "p4", slug: "dizuiti-kono", name: "Dizuiti Kono", description: "Émissions sport, société et jeunesse.", cover: "https://img.youtube.com/vi/4r7oPnCQa2w/maxresdefault.jpg", country: { name: "Mali" } },
+    { id: "p5", slug: "bko-tech", name: "Bko Tech", description: "La tech au Mali.", cover: "https://img.youtube.com/vi/KWhVBP8YQaM/maxresdefault.jpg", country: { name: "Mali" } },
   ];
 
   const displayEpisodes = episodes.length > 0 ? episodes : [
-    {
-      id: "ep-1",
-      title: "N'kunsigui - Podcast Interview Exclusive",
-      podcast: { name: "N'kunsigui" },
-      durationSeconds: 2740,
-      cover: "https://img.youtube.com/vi/KWhVBP8YQaM/maxresdefault.jpg",
-      mediaSources: [{ provider: "YOUTUBE", externalId: "KWhVBP8YQaM", embedUrl: "https://www.youtube.com/embed/KWhVBP8YQaM" }],
-    },
-    {
-      id: "ep-2",
-      title: "Baba Cmn - Interview Exclusive & Parcours",
-      podcast: { name: "Baba Cmn" },
-      durationSeconds: 3200,
-      cover: "https://img.youtube.com/vi/Rr6vUM3pKqc/maxresdefault.jpg",
-      mediaSources: [{ provider: "YOUTUBE", externalId: "Rr6vUM3pKqc", embedUrl: "https://www.youtube.com/embed/Rr6vUM3pKqc" }],
-    },
-    {
-      id: "ep-3",
-      title: "Impact Hub Bamako - Innovation au Mali",
-      podcast: { name: "Impact Hub Bamako" },
-      durationSeconds: 2900,
-      cover: "https://img.youtube.com/vi/xS_Z1P6pUwo/maxresdefault.jpg",
-      mediaSources: [{ provider: "YOUTUBE", externalId: "xS_Z1P6pUwo", embedUrl: "https://www.youtube.com/embed/xS_Z1P6pUwo" }],
-    },
+    { id: "ep-1", title: "N'kunsigui - Podcast Interview Exclusive", podcast: { name: "N'kunsigui" }, durationSeconds: 2740, cover: "https://img.youtube.com/vi/KWhVBP8YQaM/maxresdefault.jpg", mediaSources: [{ provider: "YOUTUBE", externalId: "KWhVBP8YQaM", embedUrl: "https://www.youtube.com/embed/KWhVBP8YQaM" }] },
+    { id: "ep-2", title: "Baba Cmn - Interview Exclusive & Parcours", podcast: { name: "Baba Cmn" }, durationSeconds: 3200, cover: "https://img.youtube.com/vi/Rr6vUM3pKqc/maxresdefault.jpg", mediaSources: [{ provider: "YOUTUBE", externalId: "Rr6vUM3pKqc", embedUrl: "https://www.youtube.com/embed/Rr6vUM3pKqc" }] },
+    { id: "ep-3", title: "Impact Hub Bamako - Innovation au Mali", podcast: { name: "Impact Hub Bamako" }, durationSeconds: 2900, cover: "https://img.youtube.com/vi/xS_Z1P6pUwo/maxresdefault.jpg", mediaSources: [{ provider: "YOUTUBE", externalId: "xS_Z1P6pUwo", embedUrl: "https://www.youtube.com/embed/xS_Z1P6pUwo" }] },
+    { id: "ep-4", title: "Dizuiti Kono - Épisode 4", podcast: { name: "Dizuiti Kono" }, durationSeconds: 1500, cover: "https://img.youtube.com/vi/4r7oPnCQa2w/maxresdefault.jpg", mediaSources: [{ provider: "YOUTUBE", externalId: "4r7oPnCQa2w", embedUrl: "https://www.youtube.com/embed/4r7oPnCQa2w" }] },
   ];
-
-  const currentHero = heroEp || displayEpisodes[0];
 
   const categoriesList = [
     { name: "Business & Économie", slug: "business" },
@@ -122,10 +68,11 @@ export default function HomePage() {
   ];
 
   const creators = [
-    { name: "Mohamed Traoré", role: "Entrepreneur · Animateur", podcast: "Voix de Bamako" },
-    { name: "Aminata Diallo", role: "Journaliste Tech", podcast: "Bamako Tech Talk" },
-    { name: "Oumar Coulibaly", role: "Historien · Conteur", podcast: "Histoires & Terroirs" },
-    { name: "Fatoumata Sissoko", role: "Entrepreneure", podcast: "Femmes d'Impact" },
+    { name: "Mohamed Traoré", role: "Entrepreneur", initials: "MT" },
+    { name: "Aminata Diallo", role: "Journaliste", initials: "AD" },
+    { name: "Oumar Coulibaly", role: "Historien", initials: "OC" },
+    { name: "Fatoumata Sissoko", role: "Entrepreneure", initials: "FS" },
+    { name: "Sidiki Diabaté", role: "Artiste", initials: "SD" },
   ];
 
   const handlePlayMedia = (ep: any, mode: "AUDIO" | "VIDEO" = "VIDEO") => {
@@ -159,208 +106,139 @@ export default function HomePage() {
   };
 
   return (
-    <div className="bko-container py-12 md:py-16 space-y-28 animate-fade-in text-[#F0F6FC]">
-      {/* 1. HERO ÉDITORIAL CINÉMATOGRAPHIQUE */}
-      <section className="bg-[#161B22]/80 border border-[#21262D] rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
-          {/* Contenu Éditorial */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E6B009]/10 border border-[#E6B009]/30">
-              <span className="w-2 h-2 rounded-full bg-[#E6B009] animate-pulse"></span>
-              <span className="text-[11px] font-extrabold text-[#E6B009] uppercase tracking-widest">
-                SÉLECTION ÉDITORIALE
-              </span>
+    <div className="py-8 md:py-12 space-y-12 md:space-y-16 animate-fade-in text-[#F0F6FC]">
+      
+      {/* 1. NOUVEAUTÉS (Apple Podcasts Hero Style) */}
+      <section className="px-6 md:px-10">
+        <h2 className="text-2xl md:text-[28px] font-bold text-[#F0F6FC] tracking-tight mb-6">Nouveautés</h2>
+        <ScrollArea>
+          {displayEpisodes.map((ep, idx) => (
+            <div 
+              key={idx}
+              className="snap-start shrink-0 w-[85vw] sm:w-[600px] md:w-[700px] aspect-[16/9] md:aspect-[21/9] relative rounded-2xl overflow-hidden group cursor-pointer shadow-lg"
+              onClick={() => handlePlayMedia(ep, "VIDEO")}
+            >
+              {/* Image Blur Background (Apple Style) */}
+              <Image src={ep.cover || "/brand/logo.webp"} alt="" fill className="object-cover absolute inset-0 blur-xl scale-110 opacity-40 group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F17]/90 via-[#0B0F17]/40 to-transparent" />
+              
+              <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                <span className="text-[11px] font-bold text-[#E6B009] uppercase tracking-wider mb-2">Nouvel Épisode</span>
+                <h3 className="text-2xl md:text-3xl font-black text-white leading-tight mb-2 drop-shadow-md">
+                  {ep.title}
+                </h3>
+                <p className="text-sm text-[#C9D1D9] drop-shadow-md font-medium">
+                  {ep.podcast?.name} • {Math.round((ep.durationSeconds || 1800) / 60)} min
+                </p>
+                <div className="mt-4 flex items-center gap-3 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                  <button className="px-5 py-2 bg-white text-black font-bold text-sm rounded-full flex items-center gap-2">
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                    Lecture
+                  </button>
+                </div>
+              </div>
             </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#F0F6FC] leading-[1.08] tracking-tight max-w-xl">
-              {currentHero?.title || "Les voix qui font bouger Bamako."}
-            </h1>
-
-            <p className="text-sm md:text-base text-[#8B949E] max-w-lg leading-relaxed font-normal">
-              {currentHero?.description || "Une immersion exclusive au cœur des conversations et des récits les plus inspirants du Mali."}
-            </p>
-
-            <div className="pt-2 flex flex-wrap items-center gap-4">
-              <button
-                onClick={() => handlePlayMedia(currentHero, "VIDEO")}
-                className="px-8 py-3.5 bg-[#E6B009] hover:bg-[#F2C029] text-[#0B0F17] font-black text-xs rounded-2xl transition-all shadow-lg flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <span className="text-sm">▶</span>
-                <span>ÉCOUTER / REGARDER</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Artwork Cover */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="relative w-full max-w-sm aspect-square rounded-3xl overflow-hidden shadow-2xl bg-[#0B0F17] border border-[#30363D] group">
-              <Image
-                src={currentHero?.cover || "/brand/logo.webp"}
-                alt={currentHero?.title || "Podcast Mali"}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. LES INCONTOURNABLES DU MALI (Rail de Pochettes Réelles) */}
-      <section className="space-y-8">
-        <div className="flex items-end justify-between border-b border-[#161B22] pb-4">
-          <div className="space-y-1">
-            <span className="text-[11px] font-extrabold text-[#8B949E] uppercase tracking-widest">SÉLECTION</span>
-            <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC] tracking-tight">Les incontournables du Mali</h2>
-          </div>
-          <Link href="/explore" className="text-xs font-bold text-[#8B949E] hover:text-[#E6B009] transition-colors">
-            Voir tout →
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          {displayPodcasts.map((podcast, idx) => (
-            <PodcastCardStandard
-              key={podcast.id || idx}
-              podcast={{
-                id: podcast.id,
-                slug: podcast.slug,
-                name: podcast.name,
-                cover: podcast.cover,
-                organization: { name: podcast.country?.name || "Mali" },
-              }}
-            />
           ))}
-        </div>
+        </ScrollArea>
       </section>
 
-      {/* 3. À ÉCOUTER CETTE SEMAINE (Épisodes Réels YouTube) */}
-      <section className="space-y-8">
-        <div className="border-b border-[#161B22] pb-4 space-y-1">
-          <span className="text-[11px] font-extrabold text-[#8B949E] uppercase tracking-widest">DERNIÈRES PUBLICATIONS</span>
-          <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC] tracking-tight">À écouter cette semaine</h2>
+      {/* 2. TOP SHOWS (Horizontal Scrollable Grid - Apple/Spotify Style) */}
+      <section className="px-6 md:px-10">
+        <div className="flex items-end justify-between mb-6">
+          <h2 className="text-xl md:text-2xl font-bold text-[#F0F6FC] tracking-tight">Top Shows</h2>
+          <Link href="/podcasts" className="text-xs font-semibold text-[#8B949E] hover:text-white transition-colors">Tout voir</Link>
         </div>
+        <ScrollArea>
+          {displayPodcasts.map((podcast, idx) => (
+            <Link href={`/podcasts/${podcast.slug}`} key={podcast.id || idx} className="snap-start shrink-0 w-[140px] sm:w-[160px] md:w-[180px] flex flex-col group">
+              <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-3 shadow-md bg-[#161B22]">
+                <Image src={podcast.cover || "/brand/logo.webp"} alt={podcast.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <h4 className="text-sm font-semibold text-[#F0F6FC] truncate group-hover:underline">{podcast.name}</h4>
+              <p className="text-[13px] text-[#8B949E] truncate">{podcast.country?.name || "Mali"}</p>
+            </Link>
+          ))}
+        </ScrollArea>
+      </section>
 
-        <div className="divide-y divide-[#161B22]">
+      {/* 3. À ÉCOUTER CETTE SEMAINE (Spotify List Style) */}
+      <section className="px-6 md:px-10 max-w-5xl">
+        <h2 className="text-xl md:text-2xl font-bold text-[#F0F6FC] tracking-tight mb-6">Derniers épisodes</h2>
+        <div className="flex flex-col">
           {displayEpisodes.map((ep, idx) => (
             <div
               key={ep.id || idx}
-              className="py-4 flex items-center justify-between group cursor-pointer transition-colors hover:bg-[#161B22]/30 px-3 rounded-2xl"
-              onClick={() => handlePlayMedia(ep, "VIDEO")}
+              className="flex items-center gap-4 py-2.5 px-3 rounded-lg hover:bg-[#161B22]/60 group cursor-pointer transition-colors"
+              onDoubleClick={() => handlePlayMedia(ep, "VIDEO")}
             >
-              <div className="flex items-center gap-6 min-w-0 pr-4">
-                <span className="text-base font-mono font-black text-[#6E7681] group-hover:text-[#E6B009] transition-colors w-6">
-                  {String(idx + 1).padStart(2, "0")}
-                </span>
-                <div className="min-w-0">
-                  <h4 className="text-sm md:text-base font-bold text-[#F0F6FC] group-hover:text-[#E6B009] transition-colors truncate">
-                    {ep.title}
-                  </h4>
-                  <p className="text-xs text-[#8B949E] mt-0.5">
-                    {ep.podcast?.name || "Bko Podcast"} • {Math.round((ep.durationSeconds || 1800) / 60)} min
-                  </p>
-                </div>
+              <div className="w-6 text-center shrink-0">
+                <span className="text-sm font-medium text-[#8B949E] group-hover:hidden">{idx + 1}</span>
+                <button onClick={() => handlePlayMedia(ep, "VIDEO")} className="hidden group-hover:flex items-center justify-center w-full text-white">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                </button>
               </div>
-
-              <button className="w-10 h-10 rounded-full bg-[#161B22] group-hover:bg-[#E6B009] text-[#8B949E] group-hover:text-[#0B0F17] flex items-center justify-center font-bold text-xs transition-colors shrink-0 shadow-md">
-                ▶
-              </button>
+              
+              <div className="relative w-10 h-10 shrink-0 rounded bg-[#161B22] overflow-hidden">
+                <Image src={ep.cover || "/brand/logo.webp"} alt={ep.title} fill className="object-cover" />
+              </div>
+              
+              <div className="flex-1 min-w-0 pr-4">
+                <h4 className="text-[15px] font-semibold text-white truncate group-hover:text-[#E6B009] transition-colors">{ep.title}</h4>
+                <Link href={`/podcasts/${ep.podcast?.slug || ""}`} onClick={(e) => e.stopPropagation()} className="text-[13px] text-[#8B949E] hover:underline truncate inline-block max-w-full">
+                  {ep.podcast?.name}
+                </Link>
+              </div>
+              
+              <div className="hidden sm:block shrink-0 text-[13px] text-[#8B949E] w-24 text-right">
+                {Math.round((ep.durationSeconds || 1800) / 60)} min
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 4. PATRIMOINE AUDIO : EN BAMANANKAN */}
-      <section className="bg-[#161B22]/60 border border-[#21262D] rounded-3xl p-8 md:p-12 space-y-8 relative">
-        <div className="max-w-xl space-y-2">
-          <span className="text-[11px] font-extrabold text-[#E6B009] uppercase tracking-widest">PATRIMOINE AUDIO</span>
-          <h2 className="text-3xl md:text-4xl font-black text-[#F0F6FC] tracking-tight">En Bamanankan</h2>
-          <p className="text-xs md:text-sm text-[#8B949E] leading-relaxed">
-            Les histoires, les idées et les voix exprimées dans notre langue.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {displayEpisodes.slice(0, 2).map((ep, idx) => (
-            <div
-              key={idx}
-              onClick={() => handlePlayMedia(ep, "VIDEO")}
-              className="p-6 rounded-2xl bg-[#0B0F17] border border-[#21262D] hover:border-[#E6B009] transition-all flex items-center justify-between cursor-pointer group shadow-lg"
-            >
-              <div className="space-y-1 min-w-0 pr-4">
-                <span className="text-[10px] font-bold text-[#8B949E] uppercase tracking-wider">{ep.podcast?.name || "Bamanankan"}</span>
-                <h4 className="text-sm font-bold text-[#F0F6FC] group-hover:text-[#E6B009] transition-colors truncate">
-                  {ep.title}
-                </h4>
-                <p className="text-xs text-[#8B949E]">{Math.round((ep.durationSeconds || 1800) / 60)} min</p>
-              </div>
-              <span className="w-9 h-9 rounded-full bg-[#161B22] group-hover:bg-[#E6B009] text-[#8B949E] group-hover:text-[#0B0F17] flex items-center justify-center font-bold text-xs transition-colors shrink-0">
-                ▶
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 5. CATÉGORIES */}
-      <section className="space-y-6">
-        <div className="border-b border-[#161B22] pb-4 space-y-1">
-          <span className="text-[11px] font-extrabold text-[#8B949E] uppercase tracking-widest">THÉMATIQUES</span>
-          <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC] tracking-tight">Explorer les sujets</h2>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          {categoriesList.map((cat) => (
-            <Link
-              key={cat.slug}
-              href={`/categories/${cat.slug}`}
-              className="px-5 py-3 rounded-2xl bg-[#161B22] border border-[#21262D] hover:border-[#E6B009] text-xs font-bold text-[#F0F6FC] hover:text-[#E6B009] transition-all"
-            >
-              {cat.name}
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* 6. VOIX À DÉCOUVRIR */}
-      <section className="space-y-8">
-        <div className="border-b border-[#161B22] pb-4 space-y-1">
-          <span className="text-[11px] font-extrabold text-[#8B949E] uppercase tracking-widest">PORTRAITS</span>
-          <h2 className="text-2xl md:text-3xl font-black text-[#F0F6FC] tracking-tight">Voix à découvrir</h2>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+      {/* 4. VOIX À DÉCOUVRIR (Creators Row - Spotify Artist Style) */}
+      <section className="px-6 md:px-10">
+        <h2 className="text-xl md:text-2xl font-bold text-[#F0F6FC] tracking-tight mb-6">Populaires</h2>
+        <ScrollArea>
           {creators.map((c, idx) => (
-            <div key={idx} className="flex flex-col items-center text-center space-y-3 group cursor-pointer">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-[#161B22] border border-[#21262D] group-hover:border-[#E6B009] transition-all shadow-xl">
-                <div className="w-full h-full bg-[#161B22] text-[#E6B009] font-black text-2xl flex items-center justify-center">
-                  {c.name[0]}
+            <div key={idx} className="snap-start shrink-0 w-[120px] sm:w-[140px] flex flex-col items-center text-center group cursor-pointer">
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden mb-3 bg-[#161B22] shadow-lg group-hover:shadow-2xl transition-all">
+                <div className="w-full h-full flex items-center justify-center text-3xl font-black text-[#8B949E] group-hover:text-white transition-colors bg-[#1A202C]">
+                  {c.initials}
                 </div>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-[#F0F6FC] group-hover:text-[#E6B009] transition-colors">{c.name}</h4>
-                <p className="text-xs text-[#8B949E] mt-0.5">{c.role}</p>
-              </div>
+              <h4 className="text-sm font-semibold text-[#F0F6FC] truncate w-full">{c.name}</h4>
+              <p className="text-[13px] text-[#8B949E] truncate w-full">Artiste</p>
             </div>
           ))}
+        </ScrollArea>
+      </section>
+
+      {/* 5. EXPLORER (Categories Pills) */}
+      <section className="px-6 md:px-10 pb-8">
+        <h2 className="text-xl md:text-2xl font-bold text-[#F0F6FC] tracking-tight mb-6">Parcourir tout</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {categoriesList.map((cat, idx) => {
+            // Generating some mock colors for the Spotify-style category cards
+            const colors = ["bg-purple-600", "bg-blue-600", "bg-green-600", "bg-red-600", "bg-orange-600", "bg-teal-600"];
+            const bgColor = colors[idx % colors.length];
+            
+            return (
+              <Link
+                key={cat.slug}
+                href={`/categories/${cat.slug}`}
+                className={`relative overflow-hidden rounded-xl aspect-[4/3] ${bgColor} p-4 hover:scale-[1.02] transition-transform`}
+              >
+                <h3 className="text-base font-bold text-white leading-tight z-10 relative">{cat.name}</h3>
+                {/* Decorative shape simulating Spotify category images */}
+                <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-black/20 rounded-full blur-md rotate-12" />
+              </Link>
+            )
+          })}
         </div>
       </section>
 
-      {/* 7. CTA ESPACE CRÉATEUR */}
-      <section className="py-12 border-t border-b border-[#161B22] text-center space-y-4 max-w-2xl mx-auto">
-        <h3 className="text-2xl font-black text-[#F0F6FC] tracking-tight">Vous avez un podcast ?</h3>
-        <p className="text-xs md:text-sm text-[#8B949E] leading-relaxed">
-          Faites entendre votre voix sur Bko Podcast et développez votre audience auprès des auditeurs maliens et internationaux.
-        </p>
-        <div className="pt-2 flex items-center justify-center gap-6 text-xs font-bold">
-          <Link href="/studio" className="text-[#E6B009] hover:underline">
-            Devenir créateur →
-          </Link>
-          <Link href="/studio/claim" className="text-[#8B949E] hover:text-[#F0F6FC] transition-colors">
-            Revendiquer mon podcast
-          </Link>
-        </div>
-      </section>
     </div>
   );
 }
