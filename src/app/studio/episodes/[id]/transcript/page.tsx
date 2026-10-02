@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState, useRef } from "react";
@@ -24,7 +25,7 @@ export default function EpisodeTranscriptEditorPage() {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const fetchTranscript = () => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     fetch(`${API_BASE_URL}/episodes/${episodeId}/transcript`, {
@@ -67,7 +68,7 @@ export default function EpisodeTranscriptEditorPage() {
   };
 
   const handleImportSrt = async () => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token || !srtContent) return;
 
     try {
@@ -93,7 +94,7 @@ export default function EpisodeTranscriptEditorPage() {
   };
 
   const handleGenerate = async () => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {
@@ -114,7 +115,7 @@ export default function EpisodeTranscriptEditorPage() {
   };
 
   const handleSaveSegment = async (segmentId: string) => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {

@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
@@ -11,7 +12,7 @@ export default function DevicesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     fetch(`${API_BASE_URL}/me/devices`, {
@@ -26,7 +27,7 @@ export default function DevicesPage() {
   }, []);
 
   const handleRevokeDevice = async (id: string) => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {
@@ -41,7 +42,7 @@ export default function DevicesPage() {
   const handleLogoutAll = async () => {
     if (!confirm("Voulez-vous déconnecter TOUS les appareils ?")) return;
 
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {

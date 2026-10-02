@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
@@ -28,7 +29,7 @@ export default function ProfilePage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg("");
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {

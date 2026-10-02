@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
@@ -30,7 +31,7 @@ export default function AdminMarketCreatorsPage() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  const token = () => (typeof window !== "undefined" ? localStorage.getItem("bko_access_token") : null);
+  const token = () => (getAccessToken());
 
   const fetchMarket = () => {
     const t = token();

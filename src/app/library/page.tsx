@@ -1,295 +1,340 @@
 "use client";
-import { API_BASE_URL } from "@/lib/api";
 
-import React, { useEffect, useState } from "react";
-import { useAuthStore } from "../../store/authStore";
-import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
-import { Bookmark, Play, Clock, ListMusic, Mic, Trash2, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
+import {
+  Bookmark,
+  Clock,
+  Play,
+  Download,
+  Trash2,
+  Radio,
+  CheckCircle2,
+  Wifi,
+  MoreVertical,
+} from "lucide-react";
+import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
 
 export default function LibraryPage() {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
   const { playEpisode } = usePlayerStore();
-  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"history" | "saved" | "following" | "downloads">("history");
 
-  const [activeTab, setActiveTab] = useState<"saved" | "history" | "playlists">("saved");
-  const [savedEpisodes, setSavedEpisodes] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
-  const [playlists, setPlaylists] = useState<any[]>([]);
+  const historyEpisodes = [
+    {
+      id: "hist-1",
+      title: "Créer son activité à Bamako en 2025",
+      podcastName: "Entreprendre au Mali",
+      cover: "/images/cover-entreprendre.jpg",
+      resumeTime: "18:40",
+      durationStr: "45 min",
+      durationSeconds: 2700,
+      progressPercent: 41,
+      lang: "Français",
+    },
+    {
+      id: "hist-2",
+      title: "An ka taa Bamako • Épisode 18",
+      podcastName: "Bamanankan kuma",
+      cover: "/images/cover-griot.jpg",
+      resumeTime: "08:15",
+      durationStr: "28 min",
+      durationSeconds: 1680,
+      progressPercent: 29,
+      lang: "Bamanankan",
+    },
+    {
+      id: "hist-3",
+      title: "Les histoires que racontaient nos grands-parents",
+      podcastName: "Culture vivante",
+      cover: "/images/cover-culture.jpg",
+      resumeTime: "12:35",
+      durationStr: "38 min",
+      durationSeconds: 2330,
+      progressPercent: 35,
+      lang: "Bamanankan",
+    },
+  ];
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login?redirect=/library");
-    }
-  }, [isAuthenticated, isLoading, router]);
+  const savedEpisodes = [
+    {
+      id: "saved-1",
+      title: "La kora à l'ère numérique : transmission avec Madou Sidiki",
+      podcastName: "Culture vivante",
+      cover: "/images/cover-kora.jpg",
+      durationStr: "36 min",
+      durationSeconds: 2160,
+      date: "Ajouté hier",
+      lang: "Français",
+    },
+    {
+      id: "saved-2",
+      title: "Solaire, off-grid et agriculture résiliente le long du fleuve Niger",
+      podcastName: "Afrique Demain",
+      cover: "/images/cover-culture.jpg",
+      durationStr: "51 min",
+      durationSeconds: 3060,
+      date: "Ajouté il y a 3 jours",
+      lang: "Français",
+    },
+    {
+      id: "saved-3",
+      title: "Kalan ni dɔnko : Sɛbɛnnikɛla fitininw ka kɔrɔbɔri",
+      podcastName: "Bamanankan kuma",
+      cover: "/images/cover-griot.jpg",
+      durationStr: "24 min",
+      durationSeconds: 1440,
+      date: "Ajouté il y a 1 semaine",
+      lang: "Bamanankan",
+    },
+  ];
 
-  useEffect(() => {
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) return;
+  const followedPodcasts = [
+    {
+      slug: "culture-vivante",
+      title: "Culture vivante",
+      author: "Oumar Traoré & Awa Kouyaté",
+      episodesCount: 48,
+      cover: "/images/cover-kora.jpg",
+      badge: "Arts",
+    },
+    {
+      slug: "entreprendre-au-mali",
+      title: "Entreprendre au Mali",
+      author: "Oumar Diarra",
+      episodesCount: 22,
+      cover: "/images/cover-entreprendre.jpg",
+      badge: "Économie",
+    },
+    {
+      slug: "les-voix-de-bamako",
+      title: "Les voix de Bamako",
+      author: "Aminata Touré",
+      episodesCount: 34,
+      cover: "/images/cover-musique.jpg",
+      badge: "Société",
+    },
+  ];
 
-    if (activeTab === "saved") {
-      fetch(`${API_BASE_URL}/me/saved`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((res) => res.json())
-        .then((json) => {
-          if (json.success) setSavedEpisodes(json.data);
-        })
-        .catch(() => {});
-    } else if (activeTab === "history") {
-      fetch(`${API_BASE_URL}/me/history`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((res) => res.json())
-        .then((json) => {
-          if (json.success) setHistory(json.data);
-        })
-        .catch(() => {});
-    } else if (activeTab === "playlists") {
-      fetch(`${API_BASE_URL}/me/playlists`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((res) => res.json())
-        .then((json) => {
-          if (json.success) setPlaylists(json.data);
-        })
-        .catch(() => {});
-    }
-  }, [activeTab]);
-
-  const handleClearHistory = async () => {
-    if (!confirm("Voulez-vous vraiment effacer tout votre historique d'écoute ?")) return;
-
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) return;
-
-    try {
-      await fetch(`${API_BASE_URL}/me/history`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setHistory([]);
-    } catch (e) {}
+  const handlePlay = (ep: any) => {
+    const playerEp: PlayerEpisode = {
+      id: ep.id,
+      slug: ep.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      title: ep.title,
+      cover: ep.cover,
+      durationSeconds: ep.durationSeconds || 1800,
+      podcast: {
+        slug: "podcast",
+        name: ep.podcastName || "Bamako Podcast",
+        cover: ep.cover,
+      },
+      mediaSources: [
+        {
+          id: `src-${ep.id}`,
+          type: "AUDIO",
+          sourceType: "UPLOAD",
+          playbackMode: "NATIVE",
+          externalUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+          durationSeconds: ep.durationSeconds || 1800,
+          isPrimaryAudio: true,
+        },
+      ],
+    };
+    playEpisode(playerEp);
   };
-
-  const handleCreatePlaylist = async () => {
-    const name = typeof window !== "undefined" ? window.prompt("Nom de la nouvelle playlist ?") : null;
-    if (!name || !name.trim()) return;
-
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) return;
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/playlists`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: name.trim() }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setPlaylists((prev) => [{ ...json.data, _count: { items: 0 } }, ...prev]);
-      }
-    } catch (e) {}
-  };
-
-  if (isLoading || !isAuthenticated) {
-    return <div className="p-12 text-center text-gray-400">Chargement de votre bibliothèque...</div>;
-  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#1E2638] pb-6">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-fade-in text-white select-none">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white">Ma Bibliothèque</h1>
-          <p className="text-xs text-gray-400">Retrouvez vos épisodes enregistrés, votre historique et vos playlists</p>
+          <h1 className="text-2xl md:text-3xl font-headline font-black text-white">
+            Ma Bibliothèque
+          </h1>
+          <p className="text-xs text-[#B8B8B8]">
+            Retrouvez vos écoutes en cours, podcasts favoris et téléchargements hors-ligne.
+          </p>
         </div>
 
-        {/* Onglets */}
-        <div className="flex items-center space-x-2 bg-[#121722] p-1.5 rounded-full border border-[#1E2638]">
-          <button
-            onClick={() => setActiveTab("saved")}
-            className={`px-4 py-2 text-xs font-bold rounded-full transition flex items-center space-x-2 ${
-              activeTab === "saved" ? "bg-[#E5A93C] text-black" : "text-gray-400 hover:text-white"
-            }`}
-          >
-            <Bookmark className="w-3.5 h-3.5" />
-            <span>Enregistrés ({savedEpisodes.length})</span>
-          </button>
-
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-1.5 bg-[#141414] border border-[#242424] rounded-xl p-1 text-xs overflow-x-auto">
           <button
             onClick={() => setActiveTab("history")}
-            className={`px-4 py-2 text-xs font-bold rounded-full transition flex items-center space-x-2 ${
-              activeTab === "history" ? "bg-[#E5A93C] text-black" : "text-gray-400 hover:text-white"
+            className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${
+              activeTab === "history"
+                ? "bg-[#FFBF00] text-[#0B0B0B]"
+                : "text-[#888888] hover:text-white"
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Historique ({history.length})</span>
+            Continuer l'écoute ({historyEpisodes.length})
           </button>
-
           <button
-            onClick={() => setActiveTab("playlists")}
-            className={`px-4 py-2 text-xs font-bold rounded-full transition flex items-center space-x-2 ${
-              activeTab === "playlists" ? "bg-[#E5A93C] text-black" : "text-gray-400 hover:text-white"
+            onClick={() => setActiveTab("saved")}
+            className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${
+              activeTab === "saved"
+                ? "bg-[#FFBF00] text-[#0B0B0B]"
+                : "text-[#888888] hover:text-white"
             }`}
           >
-            <ListMusic className="w-3.5 h-3.5" />
-            <span>Playlists ({playlists.length})</span>
+            Enregistrés ({savedEpisodes.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("following")}
+            className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${
+              activeTab === "following"
+                ? "bg-[#FFBF00] text-[#0B0B0B]"
+                : "text-[#888888] hover:text-white"
+            }`}
+          >
+            Abonnements ({followedPodcasts.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("downloads")}
+            className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${
+              activeTab === "downloads"
+                ? "bg-[#FFBF00] text-[#0B0B0B]"
+                : "text-[#888888] hover:text-white"
+            }`}
+          >
+            Hors-ligne
           </button>
         </div>
       </div>
 
-      {/* Contenu de l'onglet Enregistrés */}
-      {activeTab === "saved" && (
-        <div className="space-y-4">
-          {savedEpisodes.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 text-xs bg-[#121722] rounded-2xl border border-[#1E2638] p-8">
-              Vous n'avez aucun épisode enregistré pour le moment.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {savedEpisodes.map((ep) => {
-                const playerEp: PlayerEpisode = {
-                  id: ep.id,
-                  slug: ep.slug,
-                  title: ep.title,
-                  cover: ep.cover || ep.podcast?.cover,
-                  durationSeconds: ep.durationSeconds,
-                  podcast: {
-                    slug: ep.podcast?.slug || "",
-                    name: ep.podcast?.name || "",
-                    cover: ep.podcast?.cover || "",
-                  },
-                  mediaSources: ep.mediaSources || [],
-                };
-
-                return (
-                  <div key={ep.id} className="bg-[#121722] border border-[#1E2638] rounded-xl p-4 flex items-center justify-between hover:border-[#E5A93C]/50 transition">
-                    <div className="flex items-center space-x-4">
-                      <img src={ep.cover || ep.podcast?.cover} alt={ep.title} className="w-14 h-14 rounded-lg object-cover border border-[#E5A93C]/20" />
-                      <div>
-                        <h4 className="font-bold text-white text-sm">{ep.title}</h4>
-                        <p className="text-xs text-[#E5A93C]">{ep.podcast?.name}</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => playEpisode(playerEp, "AUDIO")}
-                      className="bg-[#E5A93C] text-black px-4 py-2 rounded-full text-xs font-bold hover:bg-[#F5B82E] transition flex items-center space-x-1.5"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>Écouter</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Contenu de l'onglet Historique */}
+      {/* Tab: History */}
       {activeTab === "history" && (
         <div className="space-y-4">
-          {history.length > 0 && (
-            <div className="flex justify-end">
-              <button
-                onClick={handleClearHistory}
-                className="text-xs text-red-400 hover:text-red-300 flex items-center space-x-1 border border-red-500/20 px-3 py-1.5 rounded-full"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {historyEpisodes.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handlePlay(item)}
+                className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#333333] rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all cursor-pointer group shadow"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Effacer tout l'historique</span>
-              </button>
-            </div>
-          )}
-
-          {history.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 text-xs bg-[#121722] rounded-2xl border border-[#1E2638] p-8">
-              Votre historique d'écoute est vide.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {history.map((h) => {
-                const ep = h.episode;
-                const playerEp: PlayerEpisode = {
-                  id: ep.id,
-                  slug: ep.slug,
-                  title: ep.title,
-                  cover: ep.cover || ep.podcast?.cover,
-                  durationSeconds: ep.durationSeconds,
-                  podcast: {
-                    slug: ep.podcast?.slug || "",
-                    name: ep.podcast?.name || "",
-                    cover: ep.podcast?.cover || "",
-                  },
-                  mediaSources: ep.mediaSources || [],
-                };
-
-                return (
-                  <div key={h.episodeId} className="bg-[#121722] border border-[#1E2638] rounded-xl p-4 flex items-center justify-between hover:border-[#E5A93C]/50 transition">
-                    <div className="flex items-center space-x-4">
-                      <img src={ep.cover || ep.podcast?.cover} alt={ep.title} className="w-14 h-14 rounded-lg object-cover border border-[#E5A93C]/20" />
-                      <div>
-                        <h4 className="font-bold text-white text-sm">{ep.title}</h4>
-                        <p className="text-xs text-gray-400">
-                          Arrêté à {Math.floor(h.positionSeconds / 60)}m • {h.completed ? "Terminé" : "En cours"}
-                        </p>
-                      </div>
+                <div className="flex items-center gap-3.5">
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#282828]">
+                    <Image src={item.cover} alt={item.title} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play className="w-5 h-5 fill-white text-white" />
                     </div>
-
-                    <button
-                      onClick={() => playEpisode(playerEp, "AUDIO")}
-                      className="bg-[#E5A93C] text-black px-4 py-2 rounded-full text-xs font-bold hover:bg-[#F5B82E] transition flex items-center space-x-1.5"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>Reprendre à {Math.floor(h.positionSeconds / 60)}m</span>
-                    </button>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <div className="min-w-0 space-y-1">
+                    <span className="text-[10px] font-bold text-[#FFBF00] uppercase tracking-wider truncate block">
+                      {item.podcastName}
+                    </span>
+                    <h3 className="text-xs font-bold text-white truncate group-hover:text-[#FFBF00] transition-colors">
+                      {item.title}
+                    </h3>
+                    <span className="bg-[#1E1E1E] text-[#B8B8B8] px-2 py-0.5 rounded text-[10px] border border-[#2A2A2A]">
+                      {item.lang}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-[#222222]">
+                  <div className="flex items-center justify-between text-[11px] text-[#757575] font-mono">
+                    <span>Reprendre à {item.resumeTime}</span>
+                    <span>{item.durationStr}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-[#262626] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#FFBF00]"
+                      style={{ width: `${item.progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Contenu de l'onglet Playlists */}
-      {activeTab === "playlists" && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <button
-              onClick={handleCreatePlaylist}
-              className="bg-[#E5A93C] text-black font-extrabold px-4 py-2 rounded-full text-xs hover:bg-[#F5B82E] transition flex items-center space-x-1.5"
+      {/* Tab: Saved */}
+      {activeTab === "saved" && (
+        <div className="space-y-3">
+          {savedEpisodes.map((ep) => (
+            <div
+              key={ep.id}
+              className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#383838] rounded-2xl p-4 flex items-center justify-between gap-4 transition-all group"
             >
-              <Plus className="w-4 h-4" />
-              <span>CRÉER UNE PLAYLIST</span>
-            </button>
-          </div>
-
-          {playlists.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 text-xs bg-[#121722] rounded-2xl border border-[#1E2638] p-8">
-              Vous n'avez aucune playlist. Créez-en une pour organiser vos écoutes.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {playlists.map((pl) => (
-                <Link
-                  key={pl.id}
-                  href={`/playlists/${pl.id}`}
-                  className="bg-[#121722] border border-[#1E2638] hover:border-[#E5A93C]/50 rounded-xl p-5 space-y-3 transition group"
+              <div className="flex items-center gap-3.5 min-w-0">
+                <button
+                  onClick={() => handlePlay(ep)}
+                  className="w-9 h-9 rounded-full bg-[#1E1E1E] group-hover:bg-[#FFBF00] text-[#B8B8B8] group-hover:text-[#0B0B0B] flex items-center justify-center shrink-0 shadow transition-colors"
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-[#E5A93C]/10 text-[#E5A93C] rounded-lg flex items-center justify-center font-bold">
-                      <ListMusic className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-white text-sm group-hover:text-[#E5A93C] transition">{pl.name}</h4>
-                      <p className="text-xs text-gray-400">{pl._count?.items || 0} épisodes • {pl.visibility}</p>
-                    </div>
+                  <Play className="w-4 h-4 fill-current ml-0.5" />
+                </button>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <span className="text-[#FFBF00] font-semibold">{ep.podcastName}</span>
+                    <span className="text-[#757575]">• {ep.date}</span>
                   </div>
-                </Link>
-              ))}
+                  <h3
+                    onClick={() => handlePlay(ep)}
+                    className="text-xs md:text-sm font-bold text-white truncate cursor-pointer hover:underline"
+                  >
+                    {ep.title}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 shrink-0 text-xs">
+                <span className="font-mono text-[#B8B8B8]">{ep.durationStr}</span>
+                <button className="p-1.5 text-[#757575] hover:text-white" title="Télécharger">
+                  <Download className="w-4 h-4" />
+                </button>
+                <button className="p-1.5 text-[#757575] hover:text-white" title="Options">
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          )}
+          ))}
+        </div>
+      )}
+
+      {/* Tab: Following */}
+      {activeTab === "following" && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {followedPodcasts.map((pod) => (
+            <Link
+              key={pod.slug}
+              href={`/podcasts/${pod.slug}`}
+              className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#383838] rounded-xl p-3.5 flex flex-col gap-2.5 transition-all group"
+            >
+              <div className="relative aspect-square w-full rounded-lg overflow-hidden border border-[#282828]">
+                <Image src={pod.cover} alt={pod.title} fill className="object-cover group-hover:scale-105 transition-transform" />
+                <span className="absolute top-2 left-2 bg-[#0B0B0B]/90 text-[10px] text-white px-2 py-0.5 rounded border border-[#333333]">
+                  {pod.badge}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-white truncate group-hover:text-[#FFBF00]">
+                  {pod.title}
+                </h3>
+                <p className="text-[11px] text-[#757575] truncate">{pod.author}</p>
+                <p className="text-[10px] text-[#B8B8B8] pt-1">{pod.episodesCount} épisodes</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Tab: Downloads */}
+      {activeTab === "downloads" && (
+        <div className="bg-[#141414] border border-[#242424] rounded-2xl p-8 text-center space-y-3 max-w-lg mx-auto">
+          <div className="w-12 h-12 rounded-full bg-[#1C1A14] border border-[#FFBF00]/30 text-[#FFBF00] flex items-center justify-center mx-auto">
+            <Wifi className="w-6 h-6" />
+          </div>
+          <h3 className="text-sm font-headline font-bold text-white">Mode Hors-ligne Bamako</h3>
+          <p className="text-xs text-[#B8B8B8]">
+            Téléchargez vos épisodes en Wi-Fi pour les écouter sans connexion et sans consommer votre forfait data dans les transports à Bamako.
+          </p>
+          <div className="pt-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C1C1C] border border-[#2E2E2E] text-xs text-[#3FB950]">
+              <CheckCircle2 className="w-3.5 h-3.5" /> 1 épisode sauvegardé en cache local (32 Mo)
+            </span>
+          </div>
         </div>
       )}
     </div>

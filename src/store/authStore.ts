@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/lib/api";
 import { create } from "zustand";
+import { getAccessToken, setAccessToken, refreshAccessToken } from "@/lib/token";
 
 export interface UserProfile {
   id: string;
@@ -25,6 +26,8 @@ interface AuthState {
   checkAuth: () => Promise<void>;
 }
 
+let checkPromise: Promise<void> | null = null;
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   accessToken: null,
@@ -32,50 +35,45 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   setAuth: (user, accessToken) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("bko_access_token", accessToken);
-    }
+    setAccessToken(accessToken);
     set({ user, accessToken, isAuthenticated: true, isLoading: false });
   },
 
   logout: async () => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("bko_access_token") : null;
     try {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+      await fetch(`${API_BASE_URL}/auth/logout`, { method: "POST", credentials: "include" });
     } catch (e) {}
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("bko_access_token");
-    }
+    setAccessToken(null);
     set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
   },
 
-  checkAuth: async () => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("bko_access_token") : null;
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/me`, {
-        credentials: "include",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      const json = await res.json();
-      if (json.success) {
-        set({ user: json.data, accessToken: token, isAuthenticated: true, isLoading: false });
-      } else {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("bko_access_token");
+  // Restaure la session : le token n'existe qu'en mémoire, donc après un rechargement on
+  // le récupère via le cookie httpOnly de refresh. Dédupliqué pour les appels concurrents.
+  checkAuth: () => {
+    if (!checkPromise) {
+      checkPromise = (async () => {
+        try {
+          if (!getAccessToken()) await refreshAccessToken();
+          const token = getAccessToken();
+          if (!token) {
+            set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
+            return;
+          }
+          const res = await fetch(`${API_BASE_URL}/me`, { credentials: "include" });
+          const json = await res.json();
+          if (json.success) {
+            set({ user: json.data, accessToken: getAccessToken(), isAuthenticated: true, isLoading: false });
+          } else {
+            setAccessToken(null);
+            set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
+          }
+        } catch (err) {
+          set({ isLoading: false });
+        } finally {
+          checkPromise = null;
         }
-        set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
-      }
-    } catch (err) {
-      set({ isLoading: false });
+      })();
     }
+    return checkPromise;
   },
 }));

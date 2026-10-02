@@ -75,7 +75,7 @@ function SearchContent() {
                 {results.passages.map((p: any, idx: number) => (
                   <div
                     key={idx}
-                    className="bg-[#161B22] border border-[#21262D] hover:border-[#E6B009]/50 rounded-2xl p-5 space-y-3 transition-colors"
+                    className="bg-[#141414] border border-[#242424] hover:border-[#FFBF00]/50 rounded-2xl p-5 space-y-3 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
@@ -83,18 +83,18 @@ function SearchContent() {
                           <img
                             src={p.cover}
                             alt={p.podcastName}
-                            className="w-10 h-10 rounded-lg object-cover border border-[#21262D]"
+                            className="w-10 h-10 rounded-lg object-cover border border-[#242424]"
                           />
                         )}
                         <div>
-                          <span className="text-[10px] text-[#E6B009] font-bold uppercase">{p.podcastName}</span>
-                          <h4 className="font-extrabold text-[#F0F6FC] text-sm">{p.episodeTitle}</h4>
+                          <span className="text-[10px] text-[#FFBF00] font-bold uppercase">{p.podcastName}</span>
+                          <h4 className="font-extrabold text-white text-sm">{p.episodeTitle}</h4>
                         </div>
                       </div>
 
                       <Link
                         href={p.deepLinkUrl}
-                        className="bg-[#E6B009]/10 text-[#E6B009] border border-[#E6B009]/30 hover:bg-[#E6B009] hover:text-[#0B0F17] px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
+                        className="bg-[#1C180E] text-[#FFBF00] border border-[#FFBF00]/30 hover:bg-[#FFBF00] hover:text-[#0B0B0B] px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
                       >
                         <Clock className="w-3.5 h-3.5" />
                         <span>Écouter à {p.formattedTime}</span>
@@ -102,8 +102,8 @@ function SearchContent() {
                       </Link>
                     </div>
 
-                    <div className="bg-[#0B0F17] p-3 rounded-xl border border-[#21262D] text-xs text-[#F0F6FC] italic border-l-4 border-l-[#E6B009]">
-                      <span className="font-bold text-[#E6B009] not-italic pr-2">"{p.speakerLabel}" :</span>
+                    <div className="bg-[#0E0E0E] p-3 rounded-xl border border-[#242424] text-xs text-white italic border-l-4 border-l-[#FFBF00]">
+                      <span className="font-bold text-[#FFBF00] not-italic pr-2">"{p.speakerLabel}" :</span>
                       "{p.text}"
                     </div>
                   </div>
@@ -125,11 +125,11 @@ function SearchContent() {
                   <Link
                     key={p.id}
                     href={`/podcasts/${p.slug}`}
-                    className="bg-[#161B22] border border-[#21262D] rounded-2xl p-4 flex items-center gap-4 hover:border-[#E6B009] transition-colors"
+                    className="bg-[#141414] border border-[#242424] rounded-2xl p-4 flex items-center gap-4 hover:border-[#FFBF00] transition-colors"
                   >
-                    <img src={p.cover} alt={p.name} className="w-14 h-14 rounded-xl object-cover border border-[#21262D]" />
+                    <img src={p.cover} alt={p.name} className="w-14 h-14 rounded-xl object-cover border border-[#242424]" />
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-bold text-[#F0F6FC] text-sm truncate">{p.name}</h4>
+                      <h4 className="font-bold text-white text-sm truncate">{p.name}</h4>
                       <p className="text-xs text-[#8B949E] truncate">{p.country?.name || "Mali"} • {p.primaryLanguage?.name || "Bamanankan"}</p>
                     </div>
                   </Link>

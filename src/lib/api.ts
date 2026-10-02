@@ -1,7 +1,9 @@
+import { getAccessToken } from "@/lib/token";
+
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
 export async function fetchApi<T = any>(endpoint: string, options: RequestInit = {}): Promise<{ success: boolean; data?: T; message?: string }> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("bko_access_token") : null;
+  const token = getAccessToken();
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

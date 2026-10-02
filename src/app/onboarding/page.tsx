@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
@@ -16,7 +17,7 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   const handleFinish = async () => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (token) {
       try {
         await fetch(`${API_BASE_URL}/me/preferences`, {

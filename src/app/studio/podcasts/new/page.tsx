@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
@@ -21,7 +22,7 @@ export default function NewPodcastPage() {
     setError("");
     setLoading(true);
 
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) {
       router.push("/login");
       return;

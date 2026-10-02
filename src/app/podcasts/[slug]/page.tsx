@@ -1,230 +1,255 @@
 "use client";
-import { API_BASE_URL } from "@/lib/api";
 
-import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { Radio, Mic, Heart, Play, ShieldAlert, CheckCircle, AlertCircle, X, ExternalLink } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { Play, Pause, Share2, Bookmark, BookmarkCheck, Heart, Check } from "lucide-react";
+import { studioApi } from "@/lib/studioApi";
+import { formatDate, formatDuration, shareOrCopy, toPlayerEpisode } from "@/lib/playback";
+import { usePlayerStore } from "../../../store/playerStore";
+import { useAuthStore } from "../../../store/authStore";
+import { ReportButton } from "@/components/public/ReportButton";
 
-export default function PublicPodcastDetailPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+type Episode = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  cover?: string | null;
+  durationSeconds: number;
+  publishedAt?: string | null;
+  episodeNumber?: number | null;
+  languageCode?: string | null;
+  mediaSources: any[];
+  defaultMode: "AUDIO" | "VIDEO";
+  people: { role: string; person: { name: string } }[];
+};
+type Podcast = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  shortDescription?: string | null;
+  cover: string;
+  website?: string | null;
+  country: { name: string };
+  primaryLanguage: { name: string };
+  organization?: { name: string; slug: string } | null;
+  categories: { category: { name: string; slug: string } }[];
+  seasons: { id: string; number: number; title?: string | null }[];
+  episodes: (Episode & { seasonId?: string | null })[];
+  _count: { episodes: number; followers: number };
+  viewer: {
+    isFollowing: boolean;
+    savedEpisodeIds: string[];
+    progress: Record<string, { positionSeconds: number; completed: boolean }>;
+  } | null;
+};
 
-  const [podcast, setPodcast] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export default function PodcastPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authLoading = useAuthStore((s) => s.isLoading);
+  const { currentEpisode, isPlaying, playEpisode, togglePlay } = usePlayerStore();
 
-  // Modal de revendication (Claim)
-  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
-  const [proofDescription, setProofDescription] = useState("");
-  const [proofDocumentUrl, setProofDocumentUrl] = useState("");
-  const [claimStatus, setClaimStatus] = useState<{ success?: boolean; message?: string }>({});
-  const [submittingClaim, setSubmittingClaim] = useState(false);
+  const [podcast, setPodcast] = useState<Podcast | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "notfound" | "error">("loading");
+  const [following, setFollowing] = useState(false);
+  const [followers, setFollowers] = useState(0);
+  const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [notice, setNotice] = useState("");
+  const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/podcasts/${slug}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setPodcast(json.data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const p = await studioApi<Podcast>(`/podcasts/${slug}`);
+      setPodcast(p);
+      setFollowing(!!p.viewer?.isFollowing);
+      setFollowers(p._count.followers);
+      setSaved(new Set(p.viewer?.savedEpisodeIds ?? []));
+      setStatus("ready");
+    } catch (e: any) {
+      setStatus(/introuvable/i.test(e.message) ? "notfound" : "error");
+    }
   }, [slug]);
 
-  const handleSubmitClaim = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setClaimStatus({});
-    setSubmittingClaim(true);
+  // On recharge une fois la session restaurée, pour récupérer abonnement, favoris et progression.
+  useEffect(() => {
+    if (!authLoading) load();
+  }, [load, authLoading, isAuthenticated]);
 
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) {
-      setClaimStatus({ success: false, message: "Veuillez vous connecter pour revendiquer ce podcast." });
-      setSubmittingClaim(false);
-      return;
-    }
+  const needLogin = () => router.push(`/login?redirect=${encodeURIComponent(`/podcasts/${slug}`)}`);
+  const flash = (m: string) => {
+    setNotice(m);
+    setTimeout(() => setNotice(""), 2500);
+  };
 
+  const toggleFollow = async () => {
+    if (!podcast) return;
+    if (!isAuthenticated) return needLogin();
+    const next = !following;
+    setFollowing(next);
+    setFollowers((n) => n + (next ? 1 : -1));
     try {
-      const res = await fetch(`${API_BASE_URL}/podcasts/${podcast.id}/claims`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          proofDescription,
-          proofDocumentUrl: proofDocumentUrl || undefined,
-        }),
-      });
-
-      const json = await res.json();
-      if (json.success) {
-        setClaimStatus({ success: true, message: "Votre demande de revendication a été envoyée. L'équipe éditoriale va l'examiner sous 24h." });
-        setTimeout(() => setIsClaimModalOpen(false), 3000);
-      } else {
-        setClaimStatus({ success: false, message: json.message || "Impossible de soumettre la demande." });
-      }
-    } catch (err) {
-      setClaimStatus({ success: false, message: "Erreur réseau." });
-    } finally {
-      setSubmittingClaim(false);
+      await studioApi(`/podcasts/${podcast.id}/follow`, { method: next ? "POST" : "DELETE" });
+    } catch (e: any) {
+      setFollowing(!next);
+      setFollowers((n) => n + (next ? -1 : 1));
+      flash(e.message);
     }
   };
 
-  if (loading) return <div className="p-12 text-center text-gray-400">Chargement du podcast...</div>;
+  const toggleSave = async (ep: Episode) => {
+    if (!isAuthenticated) return needLogin();
+    const has = saved.has(ep.id);
+    const copy = new Set(saved);
+    has ? copy.delete(ep.id) : copy.add(ep.id);
+    setSaved(copy);
+    try {
+      await studioApi(`/episodes/${ep.id}/save`, { method: has ? "DELETE" : "POST" });
+    } catch (e: any) {
+      setSaved(saved);
+      flash(e.message);
+    }
+  };
 
-  if (!podcast) {
-    return <div className="p-12 text-center text-gray-400">Podcast introuvable.</div>;
-  }
+  const play = (ep: Episode) => {
+    if (!podcast) return;
+    if (currentEpisode?.id === ep.id) return togglePlay();
+    const prog = podcast.viewer?.progress[ep.id];
+    // Reprise là où l'utilisateur s'était arrêté (sauf épisode terminé).
+    const startAt = prog && !prog.completed ? prog.positionSeconds : 0;
+    playEpisode(toPlayerEpisode(ep, podcast), ep.defaultMode, startAt);
+  };
 
-  const isUnclaimed = podcast.ownershipStatus === "UNCLAIMED";
+  if (status === "loading") return <div className="max-w-5xl mx-auto px-4 py-20 text-center text-sm text-gray-500">Chargement…</div>;
+  if (status === "notfound")
+    return (
+      <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-3">
+        <h1 className="text-2xl font-extrabold text-white">Podcast introuvable</h1>
+        <p className="text-sm text-gray-400">Ce podcast n&apos;existe pas ou n&apos;est plus disponible.</p>
+        <Link href="/podcasts" className="inline-block text-[#FFBF00] font-bold text-sm">Parcourir les podcasts</Link>
+      </div>
+    );
+  if (status === "error" || !podcast)
+    return (
+      <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-3">
+        <p className="text-sm text-red-300">Impossible de charger ce podcast.</p>
+        <button onClick={load} className="bg-[#262626] text-white text-sm font-bold px-4 py-2 rounded-lg">Réessayer</button>
+      </div>
+    );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      {/* Banner & Hero Podcast */}
-      <div className="relative bg-[#121722] border border-[#1E2638] rounded-3xl overflow-hidden p-8 md:p-12 flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-8">
-        <img src={podcast.cover} alt={podcast.name} className="w-44 h-44 rounded-2xl object-cover border border-[#1E2638] shadow-2xl shrink-0" />
-
-        <div className="space-y-3 text-center md:text-left flex-1">
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-            <span className="bg-[#E5A93C]/10 text-[#E5A93C] text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#E5A93C]/30 uppercase">
-              {podcast.country?.flagEmoji} {podcast.countryId}
-            </span>
-            <span className="bg-blue-500/10 text-blue-400 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-blue-500/30 uppercase">
-              {podcast.primaryLanguage?.nativeName || podcast.primaryLanguageCode}
-            </span>
-            {isUnclaimed && (
-              <span className="bg-amber-500/10 text-amber-400 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-amber-500/30 uppercase flex items-center space-x-1">
-                <ShieldAlert className="w-3 h-3" />
-                <span>Non revendiqué</span>
-              </span>
+    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <header className="flex flex-col sm:flex-row gap-6">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={podcast.cover} alt="" className="w-44 h-44 sm:w-52 sm:h-52 rounded-2xl object-cover bg-[#1C1C1C] shrink-0 mx-auto sm:mx-0" />
+        <div className="flex-1 space-y-3">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#FFBF00]">Podcast</p>
+          <h1 className="text-3xl font-extrabold text-white">{podcast.name}</h1>
+          <p className="text-xs text-[#B8B8B8]">
+            {podcast.organization && (
+              <>
+                <Link href={`/organizations/${podcast.organization.slug}`} className="hover:text-white">{podcast.organization.name}</Link> •{" "}
+              </>
             )}
-          </div>
-
-          <h1 className="text-3xl md:text-5xl font-black text-white">{podcast.name}</h1>
-          <p className="text-sm text-gray-300 max-w-2xl leading-relaxed">{podcast.description}</p>
-
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2">
-            <button className="bg-[#E5A93C] text-black hover:bg-[#F5B82E] px-6 py-3 rounded-xl text-xs font-black flex items-center space-x-2 transition shadow-lg">
-              <Play className="w-4 h-4 fill-current" />
-              <span>Écouter le dernier épisode</span>
-            </button>
-
-            <button className="bg-[#1A2130] text-gray-200 border border-[#1E2638] hover:border-[#E5A93C]/50 px-4 py-3 rounded-xl text-xs font-bold flex items-center space-x-2 transition">
-              <Heart className="w-4 h-4 text-red-500" />
-              <span>Suivre</span>
-            </button>
-
-            {/* CTA Discret de revendication si le podcast est UNCLAIMED */}
-            {isUnclaimed && (
-              <button
-                onClick={() => setIsClaimModalOpen(true)}
-                className="text-xs text-amber-400/80 hover:text-amber-400 border border-amber-500/30 hover:border-amber-500/60 px-4 py-3 rounded-xl transition flex items-center space-x-1.5"
-              >
-                <ShieldAlert className="w-4 h-4" />
-                <span>Vous êtes l'auteur de ce podcast ? Revendiquez-le</span>
+            {podcast.country.name} • {podcast.primaryLanguage.name} • {podcast._count.episodes} épisode(s) • {followers.toLocaleString("fr-FR")} abonné(s)
+          </p>
+          {podcast.categories.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {podcast.categories.map((c) => (
+                <Link key={c.category.slug} href={`/categories/${c.category.slug}`} className="text-[11px] bg-[#1C1C1C] border border-[#2E2E2E] text-[#B8B8B8] hover:text-white px-2.5 py-1 rounded-full">
+                  {c.category.name}
+                </Link>
+              ))}
+            </div>
+          )}
+          <div className="text-sm text-[#CFCFCF] leading-relaxed">
+            <p className={expanded ? "" : "line-clamp-3"}>{podcast.description}</p>
+            {podcast.description.length > 220 && (
+              <button onClick={() => setExpanded(!expanded)} className="text-xs text-[#FFBF00] font-bold mt-1">
+                {expanded ? "Réduire" : "Lire la suite"}
               </button>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Liste des Épisodes */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-black text-white">Épisodes</h2>
-        <div className="space-y-3">
-          {podcast.episodes?.map((ep: any) => (
-            <div key={ep.id} className="bg-[#121722] border border-[#1E2638] hover:border-[#E5A93C]/40 rounded-2xl p-4 flex items-center justify-between transition group">
-              <div className="flex items-center space-x-4">
-                <button className="w-10 h-10 rounded-full bg-[#E5A93C]/10 text-[#E5A93C] group-hover:bg-[#E5A93C] group-hover:text-black flex items-center justify-center transition">
-                  <Play className="w-4 h-4 fill-current" />
-                </button>
-                <div>
-                  <h3 className="font-extrabold text-white text-sm group-hover:text-[#E5A93C] transition">{ep.title}</h3>
-                  <p className="text-xs text-gray-400 line-clamp-1">{ep.description}</p>
-                </div>
-              </div>
-              <span className="text-xs font-mono text-gray-500">{ep.durationSeconds}s</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* MODAL DE REVENDICATION (CLAIM) */}
-      {isClaimModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#121722] border border-[#1E2638] rounded-3xl max-w-lg w-full p-6 space-y-6 relative shadow-2xl">
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             <button
-              onClick={() => setIsClaimModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white p-1"
+              onClick={toggleFollow}
+              aria-pressed={following}
+              className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold ${following ? "bg-[#1C1C1C] border border-[#FFBF00]/50 text-[#FFBF00]" : "bg-[#FFBF00] text-[#0B0B0B]"}`}
             >
-              <X className="w-5 h-5" />
+              {following ? <Check className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
+              {following ? "Suivi" : "Suivre"}
             </button>
-
-            <div className="space-y-2">
-              <span className="bg-[#E5A93C]/10 text-[#E5A93C] text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#E5A93C]/30 uppercase">
-                REVENDICATION DE PROPRIÉTÉ
-              </span>
-              <h3 className="text-xl font-black text-white">Revendiquer "{podcast.name}"</h3>
-              <p className="text-xs text-gray-400">
-                Prouvez que vous êtes le créateur ou le producteur légitime de cette émission pour en obtenir le contrôle exclusif dans votre Espace Créateur.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmitClaim} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="block font-bold text-gray-300">Expliquez votre lien avec le podcast & preuve</label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Ex: Je suis l'animateur principal. Mon adresse email est présente dans le flux RSS / sur notre site officiel..."
-                  value={proofDescription}
-                  onChange={(e) => setProofDescription(e.target.value)}
-                  className="w-full bg-[#0A0D14] border border-[#1E2638] rounded-xl p-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#E5A93C]"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block font-bold text-gray-300">Lien vers une preuve ou document (facultatif)</label>
-                <input
-                  type="url"
-                  placeholder="https://votre-site.com/verification"
-                  value={proofDocumentUrl}
-                  onChange={(e) => setProofDocumentUrl(e.target.value)}
-                  className="w-full bg-[#0A0D14] border border-[#1E2638] rounded-xl p-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#E5A93C]"
-                />
-              </div>
-
-              {claimStatus.message && (
-                <div
-                  className={`p-3 rounded-xl border flex items-center space-x-2 text-xs ${
-                    claimStatus.success
-                      ? "bg-green-500/10 border-green-500/30 text-green-400"
-                      : "bg-red-500/10 border-red-500/30 text-red-400"
-                  }`}
-                >
-                  {claimStatus.success ? <CheckCircle className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-                  <span>{claimStatus.message}</span>
-                </div>
-              )}
-
-              <div className="flex justify-end space-x-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsClaimModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-[#1E2638] text-gray-400 hover:text-white"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingClaim}
-                  className="bg-[#E5A93C] text-black hover:bg-[#F5B82E] px-6 py-2 rounded-xl font-bold transition disabled:opacity-50"
-                >
-                  {submittingClaim ? "Envoi..." : "Envoyer ma revendication"}
-                </button>
-              </div>
-            </form>
+            <button
+              onClick={async () => {
+                const r = await shareOrCopy(podcast.name, `/podcasts/${podcast.slug}`);
+                if (r === "copied") flash("Lien copié");
+              }}
+              className="inline-flex items-center gap-1.5 text-xs text-[#B8B8B8] hover:text-white"
+            >
+              <Share2 className="w-3.5 h-3.5" /> Partager
+            </button>
+            <ReportButton targetType="PODCAST" targetId={podcast.id} />
+            {notice && <span className="text-xs text-[#FFBF00]" role="status">{notice}</span>}
           </div>
         </div>
-      )}
+      </header>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-extrabold text-white">Épisodes</h2>
+        {podcast.episodes.length === 0 ? (
+          <p className="text-sm text-gray-500 bg-[#161616] border border-[#262626] rounded-xl p-6 text-center">Aucun épisode publié pour le moment.</p>
+        ) : (
+          <ul className="divide-y divide-[#1F1F1F] border border-[#1F1F1F] rounded-2xl overflow-hidden">
+            {podcast.episodes.map((ep) => {
+              const current = currentEpisode?.id === ep.id;
+              const prog = podcast.viewer?.progress[ep.id];
+              const pct = prog && ep.durationSeconds ? Math.min(100, (prog.positionSeconds / ep.durationSeconds) * 100) : 0;
+              const playable = ep.mediaSources.length > 0;
+              return (
+                <li key={ep.id} className={`p-4 flex gap-4 ${current ? "bg-[#FFBF00]/5" : "bg-[#121212]"}`}>
+                  <button
+                    onClick={() => play(ep)}
+                    disabled={!playable}
+                    aria-label={current && isPlaying ? `Mettre en pause ${ep.title}` : `Lire ${ep.title}`}
+                    className="w-11 h-11 rounded-full bg-[#FFBF00] text-[#0B0B0B] flex items-center justify-center shrink-0 self-center disabled:opacity-40"
+                  >
+                    {current && isPlaying ? <Pause className="w-4 h-4 fill-current stroke-none" /> : <Play className="w-4 h-4 fill-current stroke-none ml-0.5" />}
+                  </button>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-[11px] text-[#8A8A8A]">
+                      {ep.episodeNumber ? `Épisode ${ep.episodeNumber} • ` : ""}
+                      {formatDate(ep.publishedAt)}
+                      {ep.durationSeconds ? ` • ${formatDuration(ep.durationSeconds)}` : ""}
+                      {prog?.completed ? " • Terminé" : ""}
+                    </p>
+                    <Link href={`/podcasts/${podcast.slug}/episodes/${ep.slug}`} className="block font-bold text-white hover:text-[#FFBF00] truncate">
+                      {ep.title}
+                    </Link>
+                    <p className="text-xs text-[#B8B8B8] line-clamp-2">{ep.description}</p>
+                    {pct > 0 && !prog?.completed && (
+                      <div className="h-1 bg-[#262626] rounded-full overflow-hidden w-40" aria-label="Progression">
+                        <div className="h-full bg-[#FFBF00]" style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => toggleSave(ep)}
+                    aria-label={saved.has(ep.id) ? "Retirer des favoris" : "Enregistrer"}
+                    aria-pressed={saved.has(ep.id)}
+                    className="self-center text-[#B8B8B8] hover:text-[#FFBF00] p-2"
+                  >
+                    {saved.has(ep.id) ? <BookmarkCheck className="w-5 h-5 text-[#FFBF00]" /> : <Bookmark className="w-5 h-5" />}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

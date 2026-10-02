@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
@@ -18,7 +19,7 @@ export default function PodcastRssPage() {
   const [syncing, setSyncing] = useState(false);
 
   const fetchStatus = () => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss`, {
@@ -41,7 +42,7 @@ export default function PodcastRssPage() {
     setPreviewData(null);
     setLoadingPreview(true);
 
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) {
       setErrorMessage("Veuillez vous connecter");
       setLoadingPreview(false);
@@ -72,7 +73,7 @@ export default function PodcastRssPage() {
   };
 
   const handleConnect = async () => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token || !feedUrl) return;
 
     try {
@@ -100,7 +101,7 @@ export default function PodcastRssPage() {
 
   const handleSyncNow = async () => {
     setSyncing(true);
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {
@@ -120,7 +121,7 @@ export default function PodcastRssPage() {
   const handleDisconnect = async () => {
     if (!confirm("Voulez-vous vraiment déconnecter le flux RSS ? Les épisodes déjà importés resteront sur Bamako Podcast.")) return;
 
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {

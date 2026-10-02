@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
@@ -9,7 +10,7 @@ export default function AdminMarketsPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchMarkets = () => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     fetch(`${API_BASE_URL}/admin/markets`, {
@@ -28,7 +29,7 @@ export default function AdminMarketsPage() {
   }, []);
 
   const handleToggleCapability = async (countryCode: string, field: string, currentValue: boolean) => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {
@@ -45,7 +46,7 @@ export default function AdminMarketsPage() {
   };
 
   const handleActivate = async (countryCode: string) => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {
@@ -58,7 +59,7 @@ export default function AdminMarketsPage() {
   };
 
   const handleSuspend = async (countryCode: string) => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {

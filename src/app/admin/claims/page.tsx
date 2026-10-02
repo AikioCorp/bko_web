@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState } from "react";
@@ -10,7 +11,7 @@ export default function AdminClaimsPage() {
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
   const fetchClaims = () => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     fetch(`${API_BASE_URL}/admin/claims`, {
@@ -29,7 +30,7 @@ export default function AdminClaimsPage() {
   }, []);
 
   const handleReview = async (claimId: string, status: "APPROVED" | "REJECTED") => {
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {

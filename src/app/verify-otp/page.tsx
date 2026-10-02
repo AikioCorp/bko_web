@@ -3,6 +3,7 @@ import { API_BASE_URL } from "@/lib/api";
 
 import React, { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 
 function VerifyOtpInner() {
@@ -51,16 +52,16 @@ function VerifyOtpInner() {
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-12">
-      <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-6 shadow-2xl">
+    <div className="max-w-md mx-auto px-4 py-12 animate-fade-in">
+      <div className="bg-[#121212] border border-[#242424] rounded-3xl p-8 space-y-6 shadow-2xl">
         <div className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 rounded-full bg-[#E5A93C]/10 flex items-center justify-center">
-            <ShieldCheck className="w-6 h-6 text-[#E5A93C]" />
+          <div className="mx-auto w-12 h-12 rounded-full bg-[#1C180E] border border-[#FFBF00]/30 flex items-center justify-center">
+            <ShieldCheck className="w-6 h-6 text-[#FFBF00]" />
           </div>
-          <h1 className="text-2xl font-black text-white">Vérifiez votre compte</h1>
-          <p className="text-xs text-gray-400">
+          <h1 className="text-2xl font-headline font-black text-white">Vérifiez votre compte</h1>
+          <p className="text-xs text-[#B8B8B8]">
             Saisissez le code à 6 chiffres envoyé{email ? " à " : "."}
-            {email && <span className="text-gray-200 font-semibold">{email}</span>}
+            {email && <span className="text-white font-semibold">{email}</span>}
           </p>
         </div>
 
@@ -77,7 +78,7 @@ function VerifyOtpInner() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-300 mb-1">Code de vérification</label>
+              <label className="block text-xs font-bold text-[#B8B8B8] mb-1">Code de vérification</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -87,14 +88,14 @@ function VerifyOtpInner() {
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
                 placeholder="000000"
-                className="w-full bg-[#0A0D14] border border-[#1E2638] rounded-xl py-3 px-4 text-center text-2xl tracking-[0.5em] font-black text-white outline-none focus:border-[#E5A93C]"
+                className="w-full bg-[#0E0E0E] border border-[#262626] rounded-xl py-3 px-4 text-center text-2xl tracking-[0.5em] font-black text-white outline-none focus:border-[#FFBF00]"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#E5A93C] text-black font-extrabold py-3 rounded-xl text-xs hover:bg-[#F5B82E] transition shadow-lg flex items-center justify-center space-x-2"
+              className="w-full bg-[#FFBF00] text-[#0B0B0B] font-extrabold py-3.5 rounded-xl text-xs hover:bg-[#E5AB00] transition shadow-lg flex items-center justify-center space-x-2"
             >
               <span>{loading ? "Vérification…" : "VÉRIFIER"}</span>
               <ArrowRight className="w-4 h-4" />
@@ -102,11 +103,11 @@ function VerifyOtpInner() {
           </form>
         )}
 
-        <div className="text-center pt-4 border-t border-[#1E2638] text-xs text-gray-400">
+        <div className="text-center pt-4 border-t border-[#242424] text-xs text-[#757575]">
           Mauvaise adresse ?{" "}
-          <a href="/register" className="text-[#E5A93C] font-bold hover:underline">
+          <Link href="/login?tab=register" className="text-[#FFBF00] font-bold hover:underline">
             Reprendre l'inscription
-          </a>
+          </Link>
         </div>
       </div>
     </div>

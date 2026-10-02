@@ -1,177 +1,198 @@
 "use client";
-import { API_BASE_URL } from "@/lib/api";
 
-import React, { useEffect, useState } from "react";
-import { useAuthStore } from "../../store/authStore";
-import { Mic, Radio, Users, Play, Plus, ArrowRight, Video, Link as LinkIcon, Settings } from "lucide-react";
-import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { studioApi, timeAgo } from "@/lib/studioApi";
+import { Badge, Btn, Card, Empty, ErrorBanner, Loading, PageHeader, StatCard } from "@/components/admin/ui";
+import { StatusBadge, ROLE_LABELS } from "@/components/studio/bits";
 
-export default function CreatorStudioDashboard() {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
-  const router = useRouter();
+type Podcast = {
+  id: string;
+  name: string;
+  cover: string;
+  status: string;
+  role: string;
+  reviewNote?: string | null;
+  country: { name: string };
+  _count: { episodes: number; followers: number };
+};
+type Dashboard = {
+  podcastsCount: number;
+  episodesCount: number;
+  totalFollowers: number;
+  draftEpisodes: number;
+  scheduledEpisodes: number;
+  pendingReview: number;
+  failedMedia: number;
+  plays30d: number;
+  rejected: { id: string; title: string; reviewNote: string; podcast: { id: string; name: string } }[];
+  recentEpisodes: { id: string; title: string; status: string; updatedAt: string; podcast: { id: string; name: string } }[];
+};
 
-  const [creatorProfile, setCreatorProfile] = useState<any>(null);
-  const [metrics, setMetrics] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export default function StudioDashboardPage() {
+  const [podcasts, setPodcasts] = useState<Podcast[] | null>(null);
+  const [dash, setDash] = useState<Dashboard | null>(null);
+  const [needsProfile, setNeedsProfile] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login?redirect=/studio");
+  const load = useCallback(async () => {
+    setError("");
+    try {
+      // Sans profil créateur, l'espace studio n'a pas de sens : on oriente vers l'inscription créateur.
+      try {
+        await studioApi("/me/creator-profile");
+      } catch (e: any) {
+        if (/profil créateur/i.test(e.message)) {
+          setNeedsProfile(true);
+          return;
+        }
+        throw e;
+      }
+      const [p, d] = await Promise.all([studioApi<Podcast[]>("/creator/podcasts"), studioApi<Dashboard>("/creator/dashboard")]);
+      setPodcasts(p);
+      setDash(d);
+    } catch (e: any) {
+      setError(e.message);
     }
-  }, [isAuthenticated, isLoading, router]);
-
-  useEffect(() => {
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) return;
-
-    // Charger le profil créateur
-    fetch(`${API_BASE_URL}/me/creator-profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setCreatorProfile(json.data);
-      })
-      .catch(() => {});
-
-    // Charger le dashboard créateur
-    fetch(`${API_BASE_URL}/creator/dashboard`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setMetrics(json.data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
   }, []);
 
-  const handleCreateCreatorProfile = async () => {
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) return;
+  useEffect(() => {
+    load();
+  }, [load]);
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/me/creator-profile`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          displayName: user?.fullName || "Nouveau Créateur",
-          bio: "Créateur sur Bamako Podcast",
-          createPerson: true,
-        }),
-      });
-      const json = await res.json();
-      if (json.success) setCreatorProfile(json.data);
-    } catch (e) {}
-  };
-
-  if (isLoading || loading) return <div className="p-12 text-center text-gray-400">Chargement de votre Espace Créateur...</div>;
-
-  if (!creatorProfile) {
+  if (needsProfile) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-6">
-        <div className="w-16 h-16 bg-[#E5A93C] rounded-2xl flex items-center justify-center font-black text-black text-3xl mx-auto shadow-lg">
-          🎙️
-        </div>
-        <h1 className="text-3xl font-black text-white">Devenez Créateur sur Bamako Podcast</h1>
-        <p className="text-xs text-gray-300">
-          Publiez et diffusez vos podcasts audio et vidéo au Mali et dans toute l'Afrique.
-        </p>
-        <button
-          onClick={handleCreateCreatorProfile}
-          className="bg-[#E5A93C] text-black font-extrabold px-8 py-3.5 rounded-full text-xs hover:bg-[#F5B82E] transition shadow-lg inline-flex items-center space-x-2"
-        >
-          <span>ACTIVER MON ESPACE CRÉATEUR</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+      <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-4">
+        <h1 className="text-2xl font-extrabold text-white">Devenez créateur sur Bamako Podcast</h1>
+        <p className="text-sm text-gray-400">Créez votre profil créateur pour publier vos podcasts, par fichier audio ou par lien.</p>
+        <Link href="/onboarding" className="inline-block bg-[#FFBF00] text-[#0B0B0B] font-bold text-sm px-5 py-2.5 rounded-lg">
+          Créer mon profil créateur
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      {/* En-tête Espace Créateur */}
-      <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-[#E5A93C] rounded-xl flex items-center justify-center font-black text-black text-2xl shadow-lg">
-            {creatorProfile.displayName[0]}
-          </div>
-          <div>
-            <span className="bg-[#E5A93C]/10 text-[#E5A93C] text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#E5A93C]/30">
-              ESPACE CRÉATEUR
-            </span>
-            <h1 className="text-2xl font-black text-white mt-1">{creatorProfile.displayName}</h1>
-            <p className="text-xs text-gray-400">Gérez vos podcasts, épisodes, équipes et diffusions</p>
-          </div>
-        </div>
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+      <PageHeader
+        title="Studio créateur"
+        subtitle="Créez vos émissions, ajoutez vos épisodes (fichier ou lien), programmez-les et suivez votre audience."
+        actions={
+          <Link href="/studio/podcasts/new" className="bg-[#FFBF00] text-[#0B0B0B] text-xs font-bold px-4 py-2.5 rounded-lg">
+            Nouveau podcast
+          </Link>
+        }
+      />
+      {error && <ErrorBanner message={error} onRetry={load} />}
+      {!podcasts && !error && <Loading />}
 
-        <div className="flex items-center space-x-3">
-          <a
-            href="/studio/podcasts/new"
-            className="bg-[#E5A93C] text-black font-extrabold px-5 py-2.5 rounded-full text-xs hover:bg-[#F5B82E] transition shadow flex items-center space-x-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>CRÉER UN PODCAST</span>
-          </a>
-        </div>
-      </div>
+      {dash && (
+        <>
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Podcasts" value={dash.podcastsCount} />
+            <StatCard label="Épisodes publiés" value={dash.episodesCount} hint={`${dash.draftEpisodes} brouillon(s) • ${dash.scheduledEpisodes} programmé(s)`} />
+            <StatCard label="Abonnés" value={dash.totalFollowers.toLocaleString("fr-FR")} />
+            <StatCard label="Écoutes (30 j)" value={dash.plays30d.toLocaleString("fr-FR")} />
+          </section>
 
-      {/* Cartes Métriques */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        <div className="bg-[#121722] border border-[#1E2638] rounded-xl p-5 space-y-2">
-          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Podcasts Gérés</div>
-          <div className="text-3xl font-black text-white">{metrics?.podcastsCount || 0}</div>
-        </div>
-
-        <div className="bg-[#121722] border border-[#1E2638] rounded-xl p-5 space-y-2">
-          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Épisodes Publiés</div>
-          <div className="text-3xl font-black text-[#E5A93C]">{metrics?.episodesCount || 0}</div>
-        </div>
-
-        <div className="bg-[#121722] border border-[#1E2638] rounded-xl p-5 space-y-2">
-          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Abonnés Cumulés</div>
-          <div className="text-3xl font-black text-white">{metrics?.totalFollowers || 0}</div>
-        </div>
-
-        <div className="bg-[#121722] border border-[#1E2638] rounded-xl p-5 space-y-2">
-          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Brouillons</div>
-          <div className="text-3xl font-black text-gray-400">{metrics?.draftEpisodes || 0}</div>
-        </div>
-      </div>
-
-      {/* Épisodes Récents Créateur */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-bold text-white">Dernières Activités</h3>
-        {metrics?.recentEpisodes?.length === 0 ? (
-          <div className="bg-[#121722] border border-[#1E2638] rounded-xl p-8 text-center text-xs text-gray-400">
-            Aucun épisode créé pour le moment. Créez votre première émission !
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {metrics?.recentEpisodes?.map((ep: any) => (
-              <div key={ep.id} className="bg-[#121722] border border-[#1E2638] rounded-xl p-4 flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <img src={ep.cover || ep.podcast?.cover} alt={ep.title} className="w-12 h-12 rounded-lg object-cover border border-[#E5A93C]/20" />
-                  <div>
-                    <h4 className="font-bold text-white text-sm">{ep.title}</h4>
-                    <p className="text-xs text-[#E5A93C]">{ep.podcast?.name} • <span className="uppercase text-gray-400">{ep.status}</span></p>
-                  </div>
+          {(dash.rejected.length > 0 || dash.failedMedia > 0 || dash.pendingReview > 0) && (
+            <section className="space-y-3">
+              <h2 className="text-lg font-extrabold">À traiter</h2>
+              {dash.pendingReview > 0 && (
+                <div className="bg-[#FFBF00]/10 border border-[#FFBF00]/30 text-[#FFBF00] text-sm rounded-xl p-4">
+                  {dash.pendingReview} épisode(s) en attente de validation par l&apos;équipe.
                 </div>
+              )}
+              {dash.failedMedia > 0 && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-xl p-4">
+                  {dash.failedMedia} fichier(s) n&apos;ont pas pu être traités : rouvrez l&apos;épisode concerné et renvoyez le fichier.
+                </div>
+              )}
+              {dash.rejected.map((r) => (
+                <Card key={r.id} className="p-4 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold">{r.title}</p>
+                    <p className="text-xs text-gray-400">{r.podcast.name}</p>
+                    <p className="text-sm text-red-300 mt-1">Motif du refus : {r.reviewNote}</p>
+                  </div>
+                  <Link href={`/studio/episodes/${r.id}/edit`}>
+                    <Btn variant="primary">Corriger</Btn>
+                  </Link>
+                </Card>
+              ))}
+            </section>
+          )}
+        </>
+      )}
 
-                <a
-                  href={`/studio/episodes/${ep.id}/edit`}
-                  className="bg-[#0A0D14] text-gray-300 border border-[#1E2638] px-3.5 py-1.5 rounded-lg text-xs font-semibold hover:border-[#E5A93C] transition"
-                >
-                  Modifier
-                </a>
-              </div>
+      {podcasts && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-extrabold">Mes podcasts</h2>
+          {podcasts.length === 0 ? (
+            <Card>
+              <Empty>
+                Vous n&apos;avez pas encore de podcast.{" "}
+                <Link href="/studio/podcasts/new" className="text-[#FFBF00] font-bold">
+                  Créer le premier
+                </Link>
+              </Empty>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {podcasts.map((p) => (
+                <Card key={p.id} className="p-4 space-y-3">
+                  <div className="flex gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.cover} alt="" className="w-16 h-16 rounded-lg object-cover bg-[#262626]" />
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/studio/podcasts/${p.id}`} className="font-bold hover:text-[#FFBF00] line-clamp-2">
+                        {p.name}
+                      </Link>
+                      <p className="text-xs text-gray-400">
+                        {p.country.name} • {p._count.episodes} épisodes • {p._count.followers} abonnés
+                      </p>
+                      <div className="flex gap-1.5 mt-1.5">
+                        <StatusBadge status={p.status} kind="podcast" />
+                        <Badge>{ROLE_LABELS[p.role] ?? p.role}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  {p.reviewNote && p.status === "DRAFT" && <p className="text-xs text-red-300">Refusé : {p.reviewNote}</p>}
+                  <div className="flex gap-2">
+                    <Link href={`/studio/podcasts/${p.id}`}>
+                      <Btn>Gérer</Btn>
+                    </Link>
+                    {p.role !== "ANALYST" && (
+                      <Link href={`/studio/podcasts/${p.id}/episodes/new`}>
+                        <Btn variant="primary">Ajouter un épisode</Btn>
+                      </Link>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {dash && dash.recentEpisodes.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-extrabold">Activité récente</h2>
+          <Card className="divide-y divide-[#262626]">
+            {dash.recentEpisodes.map((e) => (
+              <Link key={e.id} href={`/studio/episodes/${e.id}/edit`} className="p-4 flex items-center justify-between gap-4 hover:bg-[#1c1c1c]">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold truncate">{e.title}</p>
+                  <p className="text-xs text-gray-400">
+                    {e.podcast.name} • modifié {timeAgo(e.updatedAt)}
+                  </p>
+                </div>
+                <StatusBadge status={e.status} />
+              </Link>
             ))}
-          </div>
-        )}
-      </div>
+          </Card>
+        </section>
+      )}
     </div>
   );
 }

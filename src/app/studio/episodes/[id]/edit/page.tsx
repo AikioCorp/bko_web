@@ -1,230 +1,373 @@
 "use client";
-import { API_BASE_URL } from "@/lib/api";
 
-import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Link as LinkIcon, Plus, Check, Play, Calendar, Upload } from "lucide-react";
-import { MediaDropzone } from "../../../../../components/media/MediaDropzone";
+import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
+import { studioApi, formatBytes } from "@/lib/studioApi";
+import { Badge, Btn, Card, ErrorBanner, Loading, ReasonDialog } from "@/components/admin/ui";
+import { Field, inputCls, LANGUAGES, ReviewNotice, StatusBadge } from "@/components/studio/bits";
+import { MediaDropzone } from "@/components/media/MediaDropzone";
+
+type Source = {
+  id: string;
+  type: "AUDIO" | "VIDEO";
+  sourceType: string;
+  provider?: string | null;
+  playbackMode: string;
+  externalUrl?: string | null;
+  isPrimaryAudio: boolean;
+  isPrimaryVideo: boolean;
+  durationSeconds?: number | null;
+  mediaAsset?: { status: string; sizeBytes: number } | null;
+};
+type Episode = {
+  id: string;
+  podcastId: string;
+  title: string;
+  description: string;
+  cover?: string | null;
+  seasonId?: string | null;
+  episodeNumber?: number | null;
+  languageCode?: string | null;
+  durationSeconds: number;
+  status: string;
+  publishedAt?: string | null;
+  reviewNote?: string | null;
+  podcast: { id: string; name: string; slug: string };
+  mediaSources: Source[];
+  _count: { transcripts: number; chapters: number };
+};
+type Season = { id: string; number: number; title?: string | null };
+type Preview = { provider: string; type: "AUDIO" | "VIDEO"; meta: { title?: string } };
 
 export default function EditEpisodePage() {
-  const params = useParams();
-  const episodeId = params.id as string;
-  const router = useRouter();
+  const { id } = useParams<{ id: string }>();
+  const created = useSearchParams()?.get("created");
 
-  const [episode, setEpisode] = useState<any>(null);
-  const [newUrl, setNewUrl] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [scheduleAt, setScheduleAt] = useState("");
-  const [actionError, setActionError] = useState("");
-  const [actionMsg, setActionMsg] = useState("");
+  const [ep, setEp] = useState<Episode | null>(null);
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [form, setForm] = useState({ title: "", description: "", cover: "", seasonId: "", episodeNumber: "", languageCode: "fr" });
+  const [error, setError] = useState("");
+  const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const fetchEpisode = () => {
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) return;
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkPreview, setLinkPreview] = useState<Preview | null>(null);
+  const [uploadType, setUploadType] = useState<"AUDIO" | "VIDEO">("AUDIO");
+  const [showUpload, setShowUpload] = useState(false);
 
-    fetch(`${API_BASE_URL}/episodes/${episodeId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setEpisode(json.data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
+  const [when, setWhen] = useState("");
+  const [dialog, setDialog] = useState<null | "schedule" | "archive">(null);
+
+  const load = useCallback(async () => {
+    try {
+      const e = await studioApi<Episode>(`/creator/episodes/${id}`);
+      setEp(e);
+      setForm({
+        title: e.title,
+        description: e.description,
+        cover: e.cover ?? "",
+        seasonId: e.seasonId ?? "",
+        episodeNumber: e.episodeNumber?.toString() ?? "",
+        languageCode: e.languageCode ?? "fr",
+      });
+      studioApi<Season[]>(`/creator/podcasts/${e.podcastId}/seasons`).then(setSeasons).catch(() => {});
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }, [id]);
 
   useEffect(() => {
-    fetchEpisode();
-  }, [episodeId]);
+    load();
+  }, [load]);
 
-  const handleAddMediaSource = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUrl) return;
+  // Tant qu'un fichier est en traitement, on rafraîchit automatiquement.
+  const processing = ep?.mediaSources.some((m) => m.mediaAsset && m.mediaAsset.status !== "READY" && m.mediaAsset.status !== "FAILED");
+  useEffect(() => {
+    if (!processing) return;
+    const t = setInterval(load, 4000);
+    return () => clearInterval(t);
+  }, [processing, load]);
 
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) return;
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/creator/episodes/${episodeId}/media-sources`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ rawUrl: newUrl }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setEpisode({ ...episode, mediaSources: [...episode.mediaSources, json.data] });
-        setNewUrl("");
-      }
-    } catch (e) {}
-  };
-
-  const runAction = async (path: string, body?: any) => {
-    const token = localStorage.getItem("bko_access_token");
-    if (!token) return;
-    setActionError("");
-    setActionMsg("");
+  const act = async (fn: () => Promise<unknown>, done?: string) => {
     setBusy(true);
+    setError("");
+    setMsg("");
     try {
-      const res = await fetch(`${API_BASE_URL}/creator/episodes/${episodeId}/${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: body ? JSON.stringify(body) : undefined,
-      });
-      const json = await res.json();
-      if (json.success) {
-        setActionMsg("Épisode mis à jour avec succès.");
-        fetchEpisode();
-      } else {
-        setActionError(json.error?.message || "Action impossible.");
-      }
-    } catch (e) {
-      setActionError("Impossible de contacter le serveur.");
+      await fn();
+      if (done) setMsg(done);
+      await load();
+    } catch (e: any) {
+      setError(e.message);
     } finally {
       setBusy(false);
     }
   };
 
-  const handlePublish = () => runAction("publish");
+  const save = () =>
+    act(
+      () =>
+        studioApi(`/creator/episodes/${id}`, {
+          method: "PATCH",
+          body: {
+            title: form.title.trim(),
+            description: form.description.trim(),
+            cover: form.cover.trim() || null,
+            seasonId: form.seasonId || null,
+            episodeNumber: form.episodeNumber ? Number(form.episodeNumber) : null,
+            languageCode: form.languageCode,
+          },
+        }),
+      "Modifications enregistrées."
+    );
 
-  const handleSchedule = () => {
-    if (!scheduleAt) {
-      setActionError("Choisissez une date de planification.");
-      return;
-    }
-    runAction("schedule", { publishAt: new Date(scheduleAt).toISOString() });
-  };
+  const analyse = () =>
+    act(async () => {
+      setLinkPreview(await studioApi<Preview>("/creator/media/preview", { method: "POST", body: { url: linkUrl.trim() } }));
+    });
 
-  if (loading) return <div className="p-12 text-center text-gray-400">Chargement de l'épisode...</div>;
-  if (!episode) return <div className="p-12 text-center text-gray-400">Épisode introuvable.</div>;
+  const addLink = () =>
+    act(async () => {
+      await studioApi(`/creator/episodes/${id}/media-sources`, {
+        method: "POST",
+        body: { rawUrl: linkUrl.trim(), mediaTypePreference: linkPreview?.type, isPrimaryAudio: linkPreview?.type !== "VIDEO", isPrimaryVideo: linkPreview?.type === "VIDEO" },
+      });
+      setLinkUrl("");
+      setLinkPreview(null);
+    }, "Source ajoutée.");
+
+  if (error && !ep) return <div className="max-w-4xl mx-auto px-4 py-8"><ErrorBanner message={error} onRetry={load} /></div>;
+  if (!ep) return <Loading />;
+
+  const status = ep.status;
+  const readOnly = status === "ARCHIVED";
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <span className="bg-[#E5A93C]/10 text-[#E5A93C] border border-[#E5A93C]/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-              {episode.status}
-            </span>
-            <h1 className="text-2xl font-black text-white mt-2">{episode.title}</h1>
-            <p className="text-xs text-gray-400 mt-1">{episode.description}</p>
-          </div>
-        </div>
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <Link href={`/studio/podcasts/${ep.podcastId}`} className="text-xs text-gray-400 hover:text-white">
+        ← {ep.podcast.name}
+      </Link>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-extrabold text-white flex-1 min-w-[200px]">{ep.title}</h1>
+        <StatusBadge status={status} />
       </div>
 
-      {/* Publication / Planification */}
-      <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-6 space-y-4">
-        <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-          <Play className="w-5 h-5 text-[#E5A93C]" />
-          <span>Publication</span>
-        </h3>
+      {created && <div className="text-sm text-emerald-400">Épisode créé.</div>}
+      {error && <ErrorBanner message={error} />}
+      {msg && <div className="text-sm text-emerald-400">{msg}</div>}
+      <ReviewNotice status={status} />
+      {status === "DRAFT" && ep.reviewNote && (
+        <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-xl p-4">
+          <p className="font-bold">Renvoyé par la modération</p>
+          <p>{ep.reviewNote}</p>
+          <p className="text-xs mt-1 text-red-400">Corrigez puis publiez à nouveau.</p>
+        </div>
+      )}
 
-        {actionError && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs font-semibold">
-            {actionError}
-          </div>
-        )}
-        {actionMsg && (
-          <div className="bg-green-500/10 border border-green-500/30 text-green-400 p-3 rounded-xl text-xs font-semibold">
-            {actionMsg}
-          </div>
-        )}
-
+      {/* Publication */}
+      <Card className="p-5 space-y-3">
+        <h2 className="font-bold">Publication</h2>
         <p className="text-xs text-gray-400">
-          Statut actuel : <span className="font-bold text-gray-200 uppercase">{episode.status}</span>
+          {status === "DRAFT" && "Cet épisode n'est pas visible. Publiez-le maintenant ou programmez sa mise en ligne."}
+          {status === "SCHEDULED" && `Mise en ligne programmée le ${ep.publishedAt ? new Date(ep.publishedAt).toLocaleString("fr-FR") : "—"}.`}
+          {status === "PENDING_REVIEW" && "En attente de validation. Vous pouvez le retirer de la file pour le modifier."}
+          {status === "PUBLISHED" && `Publié${ep.publishedAt ? ` le ${new Date(ep.publishedAt).toLocaleString("fr-FR")}` : ""}.`}
+          {status === "ARCHIVED" && "Archivé : l'épisode n'est plus visible."}
         </p>
+        <div className="flex flex-wrap gap-2">
+          {status === "DRAFT" && (
+            <>
+              <Btn variant="primary" disabled={busy} onClick={() => act(() => studioApi(`/creator/episodes/${id}/publish`, { method: "POST" }), "Action effectuée.")}>
+                Publier maintenant
+              </Btn>
+              <Btn disabled={busy} onClick={() => setDialog("schedule")}>
+                Programmer…
+              </Btn>
+            </>
+          )}
+          {status === "SCHEDULED" && (
+            <Btn disabled={busy} onClick={() => act(() => studioApi(`/creator/episodes/${id}/unschedule`, { method: "POST" }), "Programmation annulée.")}>
+              Annuler la programmation
+            </Btn>
+          )}
+          {(status === "PUBLISHED" || status === "PENDING_REVIEW" || status === "UNLISTED") && (
+            <Btn disabled={busy} onClick={() => act(() => studioApi(`/creator/episodes/${id}/unpublish`, { method: "POST" }), "Épisode repassé en brouillon.")}>
+              {status === "PENDING_REVIEW" ? "Retirer de la validation" : "Dépublier"}
+            </Btn>
+          )}
+          {status === "ARCHIVED" && (
+            <Btn variant="primary" disabled={busy} onClick={() => act(() => studioApi(`/creator/episodes/${id}/restore`, { method: "POST" }), "Épisode restauré en brouillon.")}>
+              Restaurer
+            </Btn>
+          )}
+          {!readOnly && (
+            <Btn variant="danger" disabled={busy} onClick={() => setDialog("archive")}>
+              Archiver
+            </Btn>
+          )}
+        </div>
+      </Card>
 
-        {!(episode.mediaSources?.length) && (
-          <p className="text-xs text-[#E5A93C]">
-            Ajoutez au moins une source média (ci-dessous) avant de pouvoir publier ou planifier.
-          </p>
+      {/* Informations */}
+      <Card className="p-5 space-y-4">
+        <h2 className="font-bold">Informations</h2>
+        <Field label="Titre">
+          <input className={inputCls} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} disabled={readOnly} maxLength={200} />
+        </Field>
+        <Field label="Description">
+          <textarea className={inputCls} rows={6} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} disabled={readOnly} />
+        </Field>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Field label="Langue">
+            <select className={inputCls} value={form.languageCode} onChange={(e) => setForm({ ...form, languageCode: e.target.value })} disabled={readOnly}>
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>{l.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Saison">
+            <select className={inputCls} value={form.seasonId} onChange={(e) => setForm({ ...form, seasonId: e.target.value })} disabled={readOnly}>
+              <option value="">Aucune</option>
+              {seasons.map((s) => (
+                <option key={s.id} value={s.id}>Saison {s.number}{s.title ? ` — ${s.title}` : ""}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="N° d'épisode">
+            <input className={inputCls} type="number" min={0} value={form.episodeNumber} onChange={(e) => setForm({ ...form, episodeNumber: e.target.value })} disabled={readOnly} />
+          </Field>
+        </div>
+        <Field label="Image (URL)">
+          <input className={inputCls} value={form.cover} onChange={(e) => setForm({ ...form, cover: e.target.value })} disabled={readOnly} placeholder="https://" />
+        </Field>
+        {!readOnly && (
+          <Btn variant="primary" disabled={busy || !form.title.trim() || !form.description.trim()} onClick={save}>
+            Enregistrer les modifications
+          </Btn>
+        )}
+      </Card>
+
+      {/* Sources média */}
+      <Card className="p-5 space-y-4">
+        <h2 className="font-bold">Sources audio / vidéo</h2>
+        {ep.mediaSources.length === 0 ? (
+          <p className="text-sm text-gray-500">Aucune source. Ajoutez un lien ou envoyez un fichier pour pouvoir publier.</p>
+        ) : (
+          <div className="divide-y divide-[#262626]">
+            {ep.mediaSources.map((m) => {
+              const primary = m.type === "AUDIO" ? m.isPrimaryAudio : m.isPrimaryVideo;
+              const st = m.mediaAsset?.status;
+              return (
+                <div key={m.id} className="py-3 flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge tone="blue">{m.sourceType === "UPLOAD" ? "Fichier hébergé" : m.provider && m.provider !== "OTHER" ? m.provider : "Lien"}</Badge>
+                      <Badge>{m.type === "VIDEO" ? "Vidéo" : "Audio"}</Badge>
+                      {primary && <Badge tone="green">Principale</Badge>}
+                      {st === "PROCESSING" && <Badge tone="amber">Traitement…</Badge>}
+                      {st === "FAILED" && <Badge tone="red">Échec du traitement</Badge>}
+                    </div>
+                    <p className="text-xs text-gray-400 truncate">
+                      {m.externalUrl && m.sourceType !== "UPLOAD" ? m.externalUrl : m.mediaAsset ? formatBytes(m.mediaAsset.sizeBytes) : ""}
+                      {m.durationSeconds ? ` • ${Math.round(m.durationSeconds / 60)} min` : ""}
+                    </p>
+                  </div>
+                  {!readOnly && (
+                    <div className="flex gap-2">
+                      {!primary && st !== "FAILED" && (
+                        <Btn disabled={busy} onClick={() => act(() => studioApi(`/creator/episodes/${id}/media-sources/${m.id}/primary`, { method: "POST" }))}>
+                          Définir comme principale
+                        </Btn>
+                      )}
+                      <Btn
+                        variant="danger"
+                        disabled={busy}
+                        onClick={() => {
+                          if (window.confirm("Retirer cette source ?")) act(() => studioApi(`/creator/episodes/${id}/media-sources/${m.id}`, { method: "DELETE" }));
+                        }}
+                      >
+                        Retirer
+                      </Btn>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <button
-            disabled={busy || episode.status === "PUBLISHED" || !(episode.mediaSources?.length)}
-            onClick={handlePublish}
-            className="bg-[#E5A93C] text-black font-extrabold px-5 py-2.5 rounded-xl text-xs hover:bg-[#F5B82E] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-          >
-            <Play className="w-4 h-4" />
-            <span>{episode.status === "PUBLISHED" ? "Déjà publié" : "Publier maintenant"}</span>
-          </button>
-
-          <span className="text-[10px] text-gray-500 uppercase font-bold sm:mx-1">ou</span>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="datetime-local"
-              value={scheduleAt}
-              onChange={(e) => setScheduleAt(e.target.value)}
-              className="bg-[#0A0D14] border border-[#1E2638] rounded-xl py-2.5 px-3 text-xs text-white outline-none focus:border-[#E5A93C]"
-            />
-            <button
-              disabled={busy || !(episode.mediaSources?.length)}
-              onClick={handleSchedule}
-              className="bg-[#0A0D14] text-gray-200 border border-[#1E2638] px-4 py-2.5 rounded-xl text-xs font-semibold hover:border-[#E5A93C] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Planifier</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Upload Média Natif R2 */}
-      <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-6 space-y-4">
-        <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-          <Upload className="w-5 h-5 text-[#E5A93C]" />
-          <span>Upload Média Natif Bamako Podcast (Direct R2)</span>
-        </h3>
-        <MediaDropzone
-          mediaType="AUDIO"
-          episodeId={episodeId}
-          onUploadSuccess={() => fetchEpisode()}
-        />
-      </div>
-
-      {/* Sources Médias Rattachées */}
-      <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-6 space-y-4">
-        <h3 className="text-lg font-bold text-white">Toutes les Sources Médias Rattachées</h3>
-
-        <div className="space-y-3">
-          {episode.mediaSources?.map((src: any) => (
-            <div key={src.id} className="bg-[#0A0D14] border border-[#1E2638] p-4 rounded-xl flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-[#E5A93C] uppercase">{src.provider || src.sourceType} ({src.type})</span>
-                <p className="text-xs text-gray-400 truncate max-w-md">{src.externalUrl}</p>
+        {!readOnly && (
+          <div className="space-y-4 border-t border-[#262626] pt-4">
+            <Field label="Ajouter un lien">
+              <div className="flex gap-2">
+                <input className={inputCls} value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setLinkPreview(null); }} placeholder="https://…" />
+                <Btn disabled={busy || linkUrl.trim().length < 8} onClick={analyse}>Analyser</Btn>
+                <Btn variant="primary" disabled={busy || !linkPreview} onClick={addLink}>Ajouter</Btn>
               </div>
-              <div className="flex items-center space-x-2">
-                {src.isPrimaryAudio && <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[10px] px-2 py-0.5 rounded">Audio Principal</span>}
-                {src.isPrimaryVideo && <span className="bg-purple-500/10 text-purple-400 border border-purple-500/30 text-[10px] px-2 py-0.5 rounded">Vidéo Principale</span>}
-              </div>
+            </Field>
+            {linkPreview && <p className="text-xs text-emerald-400">Détecté : {linkPreview.provider} ({linkPreview.type === "VIDEO" ? "vidéo" : "audio"}){linkPreview.meta.title ? ` — ${linkPreview.meta.title}` : ""}</p>}
+
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-gray-300">Ou envoyer un fichier</p>
+              {!showUpload ? (
+                <div className="flex gap-2">
+                  <Btn onClick={() => { setUploadType("AUDIO"); setShowUpload(true); }}>Fichier audio</Btn>
+                  <Btn onClick={() => { setUploadType("VIDEO"); setShowUpload(true); }}>Fichier vidéo</Btn>
+                </div>
+              ) : (
+                <MediaDropzone mediaType={uploadType} episodeId={id} onUploadSuccess={() => { setShowUpload(false); load(); }} />
+              )}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
+      </Card>
 
-        {/* Ajouter une source externe */}
-        <form onSubmit={handleAddMediaSource} className="pt-4 border-t border-[#1E2638] flex items-center space-x-3">
-          <input
-            type="url"
-            required
-            value={newUrl}
-            onChange={(e) => setNewUrl(e.target.value)}
-            placeholder="Coller un autre lien externe (YouTube, Spotify, etc.)"
-            className="flex-1 bg-[#0A0D14] border border-[#1E2638] rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-[#E5A93C]"
-          />
-          <button
-            type="submit"
-            className="bg-[#E5A93C] text-black font-extrabold px-4 py-2.5 rounded-xl text-xs hover:bg-[#F5B82E] transition flex items-center space-x-1"
-          >
-            <Plus className="w-4 h-4" />
-            <span>AJOUTER LIEN</span>
-          </button>
-        </form>
-      </div>
+      <Card className="p-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-bold">Transcription & chapitres</h2>
+          <p className="text-xs text-gray-400">{ep._count.transcripts} transcription(s) • {ep._count.chapters} chapitre(s)</p>
+        </div>
+        <Link href={`/studio/episodes/${id}/transcript`}>
+          <Btn>Gérer la transcription</Btn>
+        </Link>
+      </Card>
+
+      {dialog === "schedule" && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+          <Card className="w-full max-w-sm p-6 space-y-4">
+            <h2 className="text-lg font-bold">Programmer la publication</h2>
+            <input type="datetime-local" className={inputCls} value={when} onChange={(e) => setWhen(e.target.value)} aria-label="Date de publication" />
+            <div className="flex justify-end gap-2">
+              <Btn onClick={() => setDialog(null)}>Annuler</Btn>
+              <Btn
+                variant="primary"
+                disabled={!when || new Date(when) <= new Date() || busy}
+                onClick={async () => {
+                  setDialog(null);
+                  await act(() => studioApi(`/creator/episodes/${id}/schedule`, { method: "POST", body: { publishAt: new Date(when).toISOString() } }), "Action effectuée.");
+                }}
+              >
+                Programmer
+              </Btn>
+            </div>
+          </Card>
+        </div>
+      )}
+      {dialog === "archive" && (
+        <ReasonDialog
+          title="Archiver cet épisode ?"
+          description="Il ne sera plus visible. Vous pourrez le restaurer en brouillon."
+          confirmLabel="Archiver"
+          danger
+          required={false}
+          onConfirm={async () => {
+            await studioApi(`/creator/episodes/${id}/archive`, { method: "POST" });
+            setDialog(null);
+            await load();
+          }}
+          onCancel={() => setDialog(null)}
+        />
+      )}
     </div>
   );
 }

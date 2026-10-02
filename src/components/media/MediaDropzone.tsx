@@ -1,4 +1,5 @@
 "use client";
+import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState } from "react";
@@ -28,7 +29,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({ mediaType, episode
     setProgress(0);
     setErrorMsg("");
 
-    const token = localStorage.getItem("bko_access_token");
+    const token = getAccessToken();
     if (!token) {
       setErrorMsg("Veuillez vous connecter pour uploader un fichier.");
       setStatus("ERROR");
@@ -37,7 +38,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({ mediaType, episode
 
     try {
       // 1. Demande de session d'upload au backend Express
-      const sessionRes = await fetch("${API_BASE_URL}/creator/uploads", {
+      const sessionRes = await fetch(`${API_BASE_URL}/creator/uploads`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
