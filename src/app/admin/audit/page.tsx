@@ -1,61 +1,17 @@
-"use client";
+﻿"use client";
+import React from "react";
+import { Hammer } from "lucide-react";
 
-import React, { useCallback, useEffect, useState } from "react";
-import { adminApi, timeAgo, AUDIT_LABELS } from "@/lib/adminApi";
-import { Btn, Card, Empty, ErrorBanner, Loading, PageHeader } from "@/components/admin/ui";
-
-type Log = {
-  id: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-  ipAddress?: string | null;
-  createdAt: string;
-  actor?: { fullName: string; email: string } | null;
-};
-
-export default function AuditPage() {
-  const [logs, setLogs] = useState<Log[] | null>(null);
-  const [error, setError] = useState("");
-
-  const load = useCallback(async () => {
-    setError("");
-    try {
-      setLogs(await adminApi<Log[]>("/admin/audit"));
-    } catch (e: any) {
-      setError(e.message);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
+export default function Page() {
   return (
-    <>
-      <PageHeader title="Journal d'audit" subtitle="Les 50 dernières actions d'administration." actions={<Btn onClick={load}>Actualiser</Btn>} />
-      {error && <ErrorBanner message={error} onRetry={load} />}
-      {!logs && !error && <Loading />}
-      {logs && (
-        <Card className="divide-y divide-[#262626]">
-          {logs.length === 0 ? (
-            <Empty>Aucune action enregistrée.</Empty>
-          ) : (
-            logs.map((l) => (
-              <div key={l.id} className="p-4 flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-bold">{AUDIT_LABELS[l.action] ?? l.action}</p>
-                  <p className="text-xs text-gray-400">
-                    Par {l.actor?.fullName ?? "Système"} • {l.entityType} <span className="font-mono">{l.entityId.slice(0, 10)}</span>
-                    {l.ipAddress ? ` • ${l.ipAddress}` : ""}
-                  </p>
-                </div>
-                <span className="text-[11px] text-gray-500">{timeAgo(l.createdAt)}</span>
-              </div>
-            ))
-          )}
-        </Card>
-      )}
-    </>
+    <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+      <div className="w-16 h-16 rounded-2xl bg-[#1C1C1C] border border-[#2A2A2A] flex items-center justify-center mb-6">
+        <Hammer className="w-8 h-8 text-[#FFBF00]" />
+      </div>
+      <h1 className="text-2xl font-bold text-white mb-2">Page en construction</h1>
+      <p className="text-[#888888] max-w-md">
+        Cette interface de gestion (audit) est en cours de développement pour adopter le nouveau design épuré.
+      </p>
+    </div>
   );
 }

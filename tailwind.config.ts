@@ -24,8 +24,8 @@ const config: Config = {
         "bamako-muted": "#757575",
       },
       fontFamily: {
-        headline: ["Syne", "sans-serif"],
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        headline: ["Poppins", "sans-serif"],
+        sans: ["Poppins", "sans-serif"],
       },
     },
   },

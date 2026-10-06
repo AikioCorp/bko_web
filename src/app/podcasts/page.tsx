@@ -92,7 +92,7 @@ export default function PodcastsCatalogPage() {
   });
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-fade-in text-white select-none">
+    <div className="p-4 md:p-8 w-full space-y-8 animate-fade-in text-white select-none">
       {/* Header */}
       <div className="space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1C180E] border border-[#FFBF00]/30 text-[#FFBF00] text-xs font-bold uppercase tracking-wider">

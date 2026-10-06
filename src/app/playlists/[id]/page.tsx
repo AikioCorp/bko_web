@@ -86,7 +86,7 @@ export default function PlaylistDetailPage() {
   const items: any[] = playlist.items ?? [];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full px-4 py-8 space-y-8">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-4">
         <button onClick={() => router.push("/library")} className="inline-flex items-center text-xs text-gray-400 hover:text-[#E5A93C]">
           <ArrowLeft className="w-4 h-4 mr-1" /> Ma bibliothèque

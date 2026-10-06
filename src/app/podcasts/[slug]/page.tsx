@@ -51,7 +51,7 @@ export default function PodcastPage() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authLoading = useAuthStore((s) => s.isLoading);
-  const { currentEpisode, isPlaying, playEpisode, togglePlay } = usePlayerStore();
+  const { currentEpisode, isPlaying, playEpisode, togglePlay, addToQueue } = usePlayerStore();
 
   const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "notfound" | "error">("loading");
@@ -124,7 +124,7 @@ export default function PodcastPage() {
     playEpisode(toPlayerEpisode(ep, podcast), ep.defaultMode, startAt);
   };
 
-  if (status === "loading") return <div className="max-w-5xl mx-auto px-4 py-20 text-center text-sm text-gray-500">Chargement…</div>;
+  if (status === "loading") return <div className="w-full px-4 py-20 text-center text-sm text-gray-500">Chargement…</div>;
   if (status === "notfound")
     return (
       <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-3">
@@ -142,7 +142,7 @@ export default function PodcastPage() {
     );
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full px-4 py-8 space-y-8">
       <header className="flex flex-col sm:flex-row gap-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={podcast.cover} alt="" className="w-44 h-44 sm:w-52 sm:h-52 rounded-2xl object-cover bg-[#1C1C1C] shrink-0 mx-auto sm:mx-0" />

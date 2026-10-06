@@ -1,15 +1,35 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { BkoLogo } from "./ui/BkoLogo";
-import { Home, Compass, Bookmark, Radio, Smartphone, ShieldCheck } from "lucide-react";
+import { Home, Compass, Bookmark, Radio, Smartphone, ShieldCheck, Sparkles, Download, ArrowRight, Mic } from "lucide-react";
 import { useConsoleAccess } from "@/hooks/useConsoleAccess";
+import { AppDownloadModal } from "./modals/AppDownloadModal";
+
+import { useAuthStore } from "@/store/authStore";
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
-  const { hasConsole, landing } = useConsoleAccess();
+  const { hasConsole } = useConsoleAccess();
+  const { user, isAuthenticated } = useAuthStore();
+
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
+  const isAdmin = isMounted && isAuthenticated && Boolean(
+    user?.roles?.some((r) => ["ADMIN", "SUPER_ADMIN"].includes(r.toUpperCase()))
+  );
+  
+  const isCreator = isMounted && isAuthenticated && Boolean(
+    user?.roles?.includes("CREATOR") ||
+    user?.roles?.includes("ADMIN") ||
+    user?.permissions?.includes("publish:episodes")
+  );
+
+  const showConsole = hasConsole || isAdmin;
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const navItems = [
     {
@@ -31,21 +51,35 @@ export const Sidebar: React.FC = () => {
       exact: false,
     },
     {
-      label: "Espace Créateurs / Studio",
-      href: "/studio",
-      icon: Radio,
+      label: "Notre Studio (Tarifs)",
+      href: "/tarifs",
+      icon: Mic,
       exact: false,
     },
+    // Creator space or Become a Creator
+    ...(isCreator
+      ? [{ label: "Espace Créateurs / Studio", href: "/studio", icon: Radio, exact: false }]
+      : [{ label: "Devenir Créateur", href: "/become-creator", icon: Sparkles, exact: false }]
+    ),
     // Visible uniquement pour les comptes ayant accès à la console d'administration.
-    ...(hasConsole ? [{ label: "Console d'administration", href: landing, icon: ShieldCheck, exact: false }] : []),
+    ...(showConsole ? [{ label: "Console d'administration", href: "/admin/dashboard", icon: ShieldCheck, exact: false }] : []),
   ];
 
   return (
-    <aside className="w-64 bg-[#0F0F0F] border-r border-[#1F1F1F] flex flex-col justify-between shrink-0 h-full p-4 select-none">
+    <aside className="w-64 bg-[#0F0F0F] border-r border-[#1F1F1F] flex flex-col justify-between shrink-0 h-full p-4 overflow-y-auto scrollbar-none select-none">
       {/* Top Header & Brand */}
       <div className="space-y-6">
         <div className="px-2 pt-1 pb-2">
-          <BkoLogo size="md" />
+          <Link href="/">
+            <Image 
+              src="/brand/logo.webp" 
+              alt="Bamako Podcast" 
+              width={160} 
+              height={50} 
+              className="w-auto h-11 object-contain"
+              priority
+            />
+          </Link>
         </div>
 
         {/* Primary Navigation Pills */}
@@ -60,9 +94,9 @@ export const Sidebar: React.FC = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
                   isActive
-                    ? "bg-[#1E1E1E] text-[#FFBF00] shadow-sm"
+                    ? "bg-[#1E1E1E] text-[#FFBF00] font-semibold shadow-sm"
                     : "text-[#B8B8B8] hover:text-white hover:bg-[#161616]"
                 }`}
               >
@@ -79,17 +113,29 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Bottom App Mobile Download Callout */}
-      <div className="pt-4 border-t border-[#1C1C1C]">
-        <div className="bg-[#141414] border border-[#222222] rounded-xl p-3 space-y-1.5">
-          <div className="flex items-center gap-2 text-[#FFBF00]">
-            <Smartphone className="w-4 h-4" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">Application Mobile</span>
+      <div className="pt-4 border-t border-[#1C1C1C] pb-24 md:pb-28">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="w-full text-left bg-[#141414] hover:bg-[#1A1A1A] border border-[#222222] hover:border-[#FFBF00]/40 rounded-xl p-3 space-y-2 transition-all group cursor-pointer"
+        >
+          <div className="flex items-center justify-between text-[#FFBF00]">
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4" />
+              <span className="text-[11px] font-bold uppercase tracking-wider">App Mobile</span>
+            </div>
+            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
           <p className="text-[11px] text-[#888888] leading-tight">
-            Mode économie de données exclusif disponible sur l'app Android & iOS.
+            Écoutez vos podcasts partout, hors-ligne et sans coupure.
           </p>
-        </div>
+          <span className="inline-flex items-center gap-1 text-[11px] text-[#FFBF00] font-bold">
+            <Download className="w-3 h-3" />
+            <span>Télécharger l'App</span>
+          </span>
+        </button>
       </div>
+
+      <AppDownloadModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </aside>
   );
 };

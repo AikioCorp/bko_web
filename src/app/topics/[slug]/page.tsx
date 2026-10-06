@@ -26,7 +26,7 @@ export default function TopicDetailPage() {
   if (!topic) return <div className="p-8 text-center text-gray-400">Sujet non trouvé.</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full px-4 py-8 space-y-8">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-3">
         <div className="inline-flex items-center space-x-2 bg-[#E5A93C]/10 text-[#E5A93C] px-3 py-1 rounded-full text-xs font-semibold">
           <Tag className="w-3.5 h-3.5" />

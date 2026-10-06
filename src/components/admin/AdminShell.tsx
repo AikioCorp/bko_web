@@ -1,184 +1,210 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import {
-  Activity,
-  Mic2,
-  ShieldAlert,
-  Users,
-  HardDrive,
-  Settings,
-  FileCheck2,
-  Globe2,
-  LogOut,
-  Menu,
-  X,
-  ArrowLeft,
-  KeyRound,
-  ScrollText,
+import { usePathname } from "next/navigation";
+import { gsap } from "gsap";
+import { 
+  LayoutDashboard, Podcast, Mic2, Users, UserCog, 
+  Library, Tags, ShieldAlert, BadgeCheck, FileDown, 
+  BarChart3, Settings, Database, Activity, Shield, 
+  ChevronLeft, ChevronRight, LogOut, ArrowLeft
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
-import { adminApi } from "@/lib/adminApi";
-import { NotificationBell } from "@/components/NotificationBell";
-import { AccessProvider, AdminAccess } from "@/components/admin/access";
+import { UserDropdown } from "../UserDropdown";
+import { useRouter } from "next/navigation";
 
-// Chaque entrée n'apparaît que si la personne détient la permission "view" correspondante.
-const NAV = [
-  { href: "/admin/dashboard", label: "Supervision & Métriques", icon: Activity, perm: "dashboard.view" },
-  { href: "/admin/catalog", label: "Podcasts & Séries", icon: Mic2, perm: "catalog.view" },
-  { href: "/admin/moderation", label: "Modération & Signalements", icon: ShieldAlert, perm: "moderation.view" },
-  { href: "/admin/claims", label: "Revendications", icon: FileCheck2, perm: "claims.view" },
-  { href: "/admin/users", label: "Créateurs & Utilisateurs", icon: Users, perm: "users.view" },
-  { href: "/admin/roles", label: "Rôles & Permissions", icon: KeyRound, perm: "roles.view" },
-  { href: "/admin/markets", label: "Marchés", icon: Globe2, perm: "markets.view" },
-  { href: "/admin/storage", label: "Stockage & Tâches", icon: HardDrive, perm: "storage.view" },
-  { href: "/admin/audit", label: "Journal d'audit", icon: ScrollText, perm: "audit.view" },
-  { href: "/admin/settings", label: "Configuration", icon: Settings, perm: "settings.view" },
-];
-
-// La console s'affiche en plein écran par-dessus le shell public (Sidebar/Header du site).
 export function AdminShell({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const { user, logout } = useAuthStore();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  
+  const isSuperAdmin = user?.roles?.some(r => r.toUpperCase() === "SUPER_ADMIN") || false;
 
-  const [access, setAccess] = useState<AdminAccess | null>(null);
-  const [accessError, setAccessError] = useState(false);
-
-  // Les droits viennent du serveur (jamais déduits du token) : un retrait s'applique aussitôt.
   useEffect(() => {
-    if (!isAuthenticated) return;
-    adminApi<AdminAccess>("/admin/access")
-      .then(setAccess)
-      .catch(() => setAccessError(true));
-  }, [isAuthenticated, pathname]);
+    if (sidebarRef.current) {
+      gsap.to(sidebarRef.current, {
+        width: isSidebarOpen ? 260 : 64,
+        duration: 0.3,
+        ease: "power2.out"
+      });
+    }
+  }, [isSidebarOpen]);
 
-  const can = (perm: string) => !!access?.permissions.includes(perm);
-  const hasConsole = !!access && access.permissions.length > 0;
-  const current = NAV.find((n) => pathname?.startsWith(n.href));
-  const pageDenied = !!access && !!current && !can(current.perm);
+  const navGroups = [
+    {
+      label: "Gestion",
+      items: [
+        { name: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard },
+        { name: "Podcasts", href: "/admin/podcasts", icon: Podcast },
+        { name: "Épisodes", href: "/admin/episodes", icon: Mic2 },
+        { name: "Créateurs", href: "/admin/creators", icon: UserCog },
+        { name: "Utilisateurs", href: "/admin/users", icon: Users },
+      ]
+    },
+    {
+      label: "Éditorial",
+      items: [
+        { name: "Sélections et collections", href: "/admin/editorial", icon: Library },
+        { name: "Catégories et langues", href: "/admin/categories", icon: Tags },
+      ]
+    },
+    {
+      label: "Modération",
+      items: [
+        { name: "Signalements", href: "/admin/reports", icon: ShieldAlert },
+        { name: "Revendications", href: "/admin/claims", icon: BadgeCheck },
+      ]
+    },
+    {
+      label: "Suivi",
+      items: [
+        { name: "Imports et médias", href: "/admin/media", icon: FileDown },
+        { name: "Statistiques", href: "/admin/analytics", icon: BarChart3 },
+      ]
+    }
+  ];
 
-  if (isAuthenticated && !access && !accessError) {
-    return <div className="fixed inset-0 z-50 bg-[#0B0B0B] flex items-center justify-center text-sm text-gray-500">Chargement de vos droits…</div>;
-  }
-
-  if (!isAuthenticated || !hasConsole) {
-    return (
-      <div className="fixed inset-0 z-50 bg-[#0B0B0B] flex items-center justify-center p-6">
-        <div className="max-w-sm text-center space-y-4">
-          <ShieldAlert className="w-10 h-10 text-[#FFBF00] mx-auto" />
-          <h1 className="text-xl font-bold text-white">Accès réservé</h1>
-          <p className="text-sm text-gray-400">
-            {isAuthenticated
-              ? "Votre compte n'a pas les droits d'accès à la console d'administration."
-              : "Connectez-vous avec un compte d'administration pour continuer."}
-          </p>
-          <Link
-            href={isAuthenticated ? "/" : "/login"}
-            className="inline-block bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-4 py-2 rounded-lg"
-          >
-            {isAuthenticated ? "Retour au site" : "Se connecter"}
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const nav = (
-    <nav className="space-y-1" aria-label="Navigation d'administration">
-      {NAV.filter((n) => can(n.perm)).map((n) => {
-        const active = pathname?.startsWith(n.href);
-        const Icon = n.icon;
-        return (
-          <Link
-            key={n.href}
-            href={n.href}
-            onClick={() => setOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              active ? "bg-[#FFBF00] text-[#0B0B0B]" : "text-gray-300 hover:bg-[#1c1c1c]"
-            }`}
-          >
-            <Icon className="w-4 h-4 shrink-0" />
-            {n.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
+  const superAdminGroup = {
+    label: "Super Admin",
+    items: [
+      { name: "Administrateurs et rôles", href: "/admin/roles", icon: Shield },
+      { name: "Paramètres", href: "/admin/settings", icon: Settings },
+      { name: "Journal des actions", href: "/admin/audit", icon: Activity },
+      { name: "État du système", href: "/admin/system", icon: Database },
+    ]
+  };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0B0B0B] text-white flex">
-      {/* Sidebar bureau */}
-      <aside className="hidden lg:flex w-72 shrink-0 flex-col gap-6 p-5 border-r border-[#1c1c1c] overflow-y-auto">
-        <div>
-          <p className="font-extrabold text-lg">Bamako Podcast</p>
-          <p className="text-[10px] font-bold tracking-widest text-[#FFBF00]">ADMINISTRATION / CONSOLE</p>
+    <div className="flex h-screen w-full bg-[#0E0E0E] text-[#EDEDED] font-sans overflow-hidden selection:bg-[#FFBF00] selection:text-[#0B0B0B]">
+      
+      {/* Admin Minimalist Sidebar */}
+      <div 
+        ref={sidebarRef} 
+        className="flex flex-col h-full bg-[#141414] border-r border-[#262626] shrink-0 z-20 relative overflow-hidden"
+      >
+        <div className="flex items-center h-14 px-4 shrink-0 justify-between">
+          {isSidebarOpen && (
+            <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
+              <div className="w-7 h-7 rounded-lg bg-red-600 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold tracking-tight text-white text-sm">Administration</span>
+            </div>
+          )}
+          <button 
+            onClick={() => setSidebarOpen(!isSidebarOpen)}
+            className={`flex items-center justify-center w-8 h-8 rounded-md hover:bg-[#1C1C1C] transition-colors text-[#888888] hover:text-white shrink-0 ${!isSidebarOpen ? "mx-auto" : ""}`}
+          >
+            {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+          </button>
         </div>
-        {nav}
-        <div className="mt-auto space-y-2">
-          <Link href="/" className="flex items-center gap-2 text-xs text-gray-400 hover:text-white px-3">
-            <ArrowLeft className="w-3.5 h-3.5" /> Retour au site
+
+        <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-6 px-3 scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
+          {navGroups.map((group, i) => (
+            <div key={i} className="flex flex-col gap-1">
+              {isSidebarOpen && (
+                <span className="text-[10px] font-semibold text-[#666666] uppercase tracking-wider px-2 mb-1">
+                  {group.label}
+                </span>
+              )}
+              {group.items.map((item) => {
+                const isActive = pathname === item.href || (pathname?.startsWith(item.href) && item.href !== "/admin/dashboard");
+                const Icon = item.icon;
+                
+                return (
+                  <Link 
+                    key={item.name} 
+                    href={item.href}
+                    className={`flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors whitespace-nowrap ${
+                      isActive 
+                        ? "bg-[#262626] text-white" 
+                        : "text-[#A0A0A0] hover:bg-[#1C1C1C] hover:text-white"
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-[#FFBF00]" : ""}`} />
+                    {isSidebarOpen && <span className="text-sm font-medium">{item.name}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+
+          {/* Super Admin Section */}
+          {isSuperAdmin && (
+            <div className="flex flex-col gap-1 mt-2 pt-4 border-t border-[#262626]">
+              {isSidebarOpen && (
+                <span className="text-[10px] font-semibold text-red-500 uppercase tracking-wider px-2 mb-1">
+                  {superAdminGroup.label}
+                </span>
+              )}
+              {superAdminGroup.items.map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
+                
+                return (
+                  <Link 
+                    key={item.name} 
+                    href={item.href}
+                    className={`flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors whitespace-nowrap ${
+                      isActive 
+                        ? "bg-[#262626] text-white" 
+                        : "text-[#A0A0A0] hover:bg-[#1C1C1C] hover:text-white"
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-red-500" : ""}`} />
+                    {isSidebarOpen && <span className="text-sm font-medium">{item.name}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="p-3 border-t border-[#262626] shrink-0 space-y-2">
+          <Link 
+            href="/"
+            className={`flex items-center gap-3 w-full h-9 px-2 rounded-md hover:bg-[#1C1C1C] transition-colors text-[#888888] hover:text-white ${isSidebarOpen ? "" : "justify-center"}`}
+          >
+            <ArrowLeft className="w-5 h-5 shrink-0" />
+            {isSidebarOpen && <span className="text-sm font-medium">Retour au site</span>}
           </Link>
-          <button
+          <button 
             onClick={async () => {
               await logout();
-              router.push("/login");
+              router.push("/login?tab=login");
             }}
-            className="w-full flex items-center justify-center gap-2 bg-[#1c1c1c] hover:bg-[#262626] text-xs font-bold rounded-xl py-2.5"
+            className={`flex items-center gap-3 w-full h-9 px-2 rounded-md hover:bg-[#1C1C1C] transition-colors text-red-500 hover:text-red-400 ${isSidebarOpen ? "" : "justify-center"}`}
           >
-            <LogOut className="w-3.5 h-3.5" /> Déconnexion sécurisée
+            <LogOut className="w-5 h-5 shrink-0" />
+            {isSidebarOpen && <span className="text-sm font-medium">Déconnexion</span>}
           </button>
         </div>
-      </aside>
+      </div>
 
-      {/* Menu mobile */}
-      {open && (
-        <div className="lg:hidden fixed inset-0 z-[55] bg-black/70" onClick={() => setOpen(false)}>
-          <aside className="w-72 h-full bg-[#0B0B0B] p-5 space-y-6 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <p className="font-extrabold">Administration</p>
-              <button onClick={() => setOpen(false)} aria-label="Fermer le menu">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            {nav}
-          </aside>
-        </div>
-      )}
-
-      <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-16 shrink-0 flex items-center justify-between gap-4 px-4 sm:px-8 border-b border-[#1c1c1c]">
-          <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Ouvrir le menu">
-            <Menu className="w-6 h-6" />
-          </button>
-          <div className="hidden lg:block text-xs text-gray-500">Console d'administration</div>
-          <div className="flex items-center gap-3 ml-auto">
-            <NotificationBell />
-            <div className="text-right leading-tight">
-              <p className="text-sm font-bold">{user?.fullName}</p>
-              <p className="text-[10px] uppercase tracking-wide text-gray-400">{access?.isSuperAdmin ? "Super Admin" : access?.roles[0]}</p>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-[#FFBF00] text-[#0B0B0B] font-extrabold flex items-center justify-center">
-              {user?.fullName?.charAt(0).toUpperCase()}
-            </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#0E0E0E] relative">
+        <header className="h-14 shrink-0 flex items-center px-6 border-b border-[#262626] bg-[#0E0E0E]/90 backdrop-blur-md z-10 sticky top-0 justify-between">
+          <div className="flex items-center gap-2 text-sm text-[#A0A0A0]">
+            <span>Admin</span>
+            <span>/</span>
+            <span className="text-white font-medium capitalize">
+              {pathname?.split('/').pop() || "Dashboard"}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <UserDropdown />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8">
-          <div className="max-w-7xl mx-auto space-y-8">
-            {pageDenied ? (
-              <div className="py-24 text-center space-y-3">
-                <ShieldAlert className="w-10 h-10 text-[#FFBF00] mx-auto" />
-                <h1 className="text-xl font-bold">Accès non autorisé</h1>
-                <p className="text-sm text-gray-400">Votre rôle ne donne pas accès à cette page.</p>
-              </div>
-            ) : (
-              <AccessProvider value={access!}>{children}</AccessProvider>
-            )}
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-10 no-scrollbar relative">
+          <div className="w-full">
+            {children}
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

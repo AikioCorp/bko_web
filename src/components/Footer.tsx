@@ -26,6 +26,7 @@ export const Footer: React.FC = () => {
               <li><Link href="/podcasts" className="hover:text-[#FFBF00] transition-colors">Podcasts</Link></li>
               <li><Link href="/categories" className="hover:text-[#FFBF00] transition-colors">Catégories</Link></li>
               <li><Link href="/collections" className="hover:text-[#FFBF00] transition-colors">Collections Éditoriales</Link></li>
+              <li><Link href="/#telecharger-app" className="text-[#FFBF00] hover:underline transition-colors font-semibold">Application Mobile 📱</Link></li>
             </ul>
           </div>
 

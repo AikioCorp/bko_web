@@ -20,7 +20,7 @@ export default async function CollectionsIndexPage() {
   const collections: any[] = await getCollections();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full px-4 py-8 space-y-8">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-2">
         <span className="bg-[#E5A93C]/10 text-[#E5A93C] text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#E5A93C]/30 uppercase">
           SÉLECTIONS ÉDITORIALES

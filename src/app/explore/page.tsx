@@ -13,7 +13,7 @@ import {
   Share2,
   Bookmark,
   ListPlus,
-  Wifi,
+  Smartphone,
   ChevronDown,
   Layers,
   Sparkles,
@@ -22,6 +22,7 @@ import {
   Radio,
 } from "lucide-react";
 import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
+import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 
 function ExploreContent() {
   const { playEpisode } = usePlayerStore();
@@ -30,6 +31,7 @@ function ExploreContent() {
   const [searchQuery, setSearchQuery] = useState("Musique et culture à Bamako");
   const [activeTab, setActiveTab] = useState<"tous" | "podcasts" | "episodes">("tous");
   const [showEmptyState, setShowEmptyState] = useState(false);
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState([
     "Les voix de Bamako",
     "Amadou & Mariam Interview",
@@ -205,7 +207,7 @@ function ExploreContent() {
   });
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-fade-in text-white select-none">
+    <div className="p-4 md:p-8 w-full space-y-8 animate-fade-in text-white select-none">
       {/* 1. Header Status Pill (Image 3) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#141414] border border-[#242424] text-[#B8B8B8] w-fit">
@@ -215,15 +217,13 @@ function ExploreContent() {
           <span>2 840 Épisodes répertoriés</span>
         </div>
 
-        <div className="inline-flex items-center gap-3 px-3.5 py-1.5 rounded-full bg-[#141414] border border-[#242424] text-xs w-fit">
-          <div className="flex items-center gap-1.5 text-[#FFBF00]">
-            <Wifi className="w-3.5 h-3.5" />
-            <span className="font-semibold">Connexion Bamako 4G</span>
-          </div>
-          <button className="text-[11px] text-[#B8B8B8] hover:text-white underline">
-            Basculer Réseau
-          </button>
-        </div>
+        <button
+          onClick={() => setIsAppModalOpen(true)}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1C180E] border border-[#FFBF00]/40 text-[#FFBF00] hover:bg-[#FFBF00] hover:text-[#0B0B0B] text-xs font-bold transition-all w-fit shadow-sm"
+        >
+          <Smartphone className="w-3.5 h-3.5" />
+          <span>Écouter sur mobile • Télécharger l'App</span>
+        </button>
       </div>
 
       {/* 2. Large Search Input (Image 3) */}
@@ -621,6 +621,8 @@ function ExploreContent() {
           Proposer une émission
         </button>
       </div>
+
+      <AppDownloadModal isOpen={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} />
     </div>
   );
 }

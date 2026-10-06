@@ -26,7 +26,7 @@ export default function PublicCreatorProfilePage() {
   if (!creator) return <div className="p-12 text-center text-gray-400">Créateur non trouvé.</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full px-4 py-8 space-y-8">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-4">
         <div className="flex items-center space-x-6">
           <div className="w-24 h-24 bg-[#E5A93C] rounded-full flex items-center justify-center font-black text-black text-4xl shadow-xl">

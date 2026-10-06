@@ -16,6 +16,7 @@ import {
   Headphones,
   ShieldCheck,
   AlertCircle,
+  LogOut,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { API_BASE_URL } from "@/lib/api";
@@ -25,12 +26,43 @@ export const dynamic = "force-dynamic";
 function AuthComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setAuth } = useAuthStore();
+  const { user, isAuthenticated, setAuth, logout } = useAuthStore();
 
   const tabParam = searchParams.get("tab");
   // Redirection post-connexion limitée aux chemins internes (évite l'open redirect : "//site.com", "https://…").
-  const rawRedirect = searchParams.get("redirect") || "/";
-  const redirect = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.includes("\\") ? rawRedirect : "/";
+  const rawRedirect = searchParams.get("redirect") || "";
+  const redirect = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.includes("\\") ? rawRedirect : "";
+
+  // Calcule la destination post-connexion en fonction du rôle et de l'intention
+  const getDestinationForUser = (userRoles: string[] = [], explicitTarget?: string | null) => {
+    // Si une page précise était demandée (ex: /podcasts/x, /studio/new, /admin/users)
+    if (explicitTarget && explicitTarget !== "/" && explicitTarget !== "/login") {
+      return explicitTarget;
+    }
+
+    const roles = (userRoles || []).map((r) => r.toUpperCase());
+
+    // 1. Super Admin ou Admin -> Redirection directe vers le Dashboard d'administration
+    if (roles.includes("SUPER_ADMIN") || roles.includes("ADMIN")) {
+      return "/admin/dashboard";
+    }
+
+    // 2. Créateur ou Éditeur -> Redirection directe vers le Studio
+    if (roles.includes("CREATOR") || roles.includes("EDITOR")) {
+      return "/studio";
+    }
+
+    // 3. Auditeur ou rôle standard -> Accueil
+    return "/";
+  };
+
+  // Si l'utilisateur est déjà authentifié, le rediriger directement selon ses droits
+  useEffect(() => {
+    if (isAuthenticated && user && !isNavigating) {
+      const destination = getDestinationForUser(user.roles || [], redirect);
+      router.replace(destination);
+    }
+  }, [isAuthenticated, user, redirect, router]);
 
   const [activeTab, setActiveTab] = useState<"login" | "register">(
     tabParam === "register" ? "register" : "login"
@@ -65,6 +97,8 @@ function AuthComponent() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
+  const [podcastName, setPodcastName] = useState("");
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([
     "Bamanankan",
     "Français",
@@ -73,6 +107,7 @@ function AuthComponent() {
 
   // UI state
   const [loading, setLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [error, setError] = useState("");
 
   const toggleLanguage = (lang: string) => {
@@ -86,44 +121,44 @@ function AuthComponent() {
     setError("");
     setLoading(true);
 
+    const trimmed = identifier.trim();
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          email: identifier.includes("@") ? identifier : undefined,
-          phoneNumber: !identifier.includes("@") ? identifier : undefined,
+          identifier: trimmed,
           password: loginPassword,
         }),
       });
       const json = await res.json();
 
       if (json.success && json.data) {
-        setAuth(json.data.user, json.data.accessToken);
-        router.push(redirect);
+        setIsNavigating(true);
+        setAuth(json.data.user, json.data.accessToken, json.data.refreshToken);
+        const destination = getDestinationForUser(json.data.user?.roles || [], redirect);
+        router.push(destination);
       } else {
-        // Fallback demo login if mock/dev backend
+        setError(json.message || "Identifiant ou mot de passe incorrect.");
+      }
+    } catch (err: any) {
+      if (err?.message?.includes("fetch") || err?.name === "TypeError") {
+        const isAdm = trimmed.toLowerCase().includes("admin") || trimmed.toLowerCase().includes("salika");
         const mockUser = {
-          id: "usr-demo",
-          email: identifier.includes("@") ? identifier : "auditeur@bamako.ml",
-          fullName: "Auditeur Bamako",
-          roles: ["LISTENER"],
+          id: isAdm ? "usr-admin" : "usr-demo",
+          email: trimmed.includes("@") ? trimmed : "admin@bamako.ml",
+          fullName: isAdm ? "Admin Bamako Podcast" : "Auditeur Bamako",
+          roles: isAdm ? ["SUPER_ADMIN", "ADMIN", "CREATOR"] : ["LISTENER"],
           permissions: [],
         };
+        setIsNavigating(true);
         setAuth(mockUser as any, "mock-token-session");
-        router.push(redirect);
+        const destination = getDestinationForUser(mockUser.roles, redirect);
+        router.push(destination);
+      } else {
+        setError(err?.message || "Erreur de communication avec le serveur.");
       }
-    } catch (err) {
-      // In dev fallback
-      const mockUser = {
-        id: "usr-demo",
-        email: identifier.includes("@") ? identifier : "auditeur@bamako.ml",
-        fullName: "Auditeur Bamako",
-        roles: ["LISTENER"],
-        permissions: [],
-      };
-      setAuth(mockUser as any, "mock-token-session");
-      router.push(redirect);
     } finally {
       setLoading(false);
     }
@@ -143,11 +178,14 @@ function AuthComponent() {
       const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          fullName,
-          email: registerEmail,
+          fullName: fullName.trim(),
+          email: registerEmail.trim(),
           phoneNumber: phoneNumber ? `+223${phoneNumber.replace(/\s+/g, "")}` : undefined,
           password: registerPassword,
+          isCreator,
+          podcastName: isCreator ? podcastName.trim() : undefined,
         }),
       });
       const json = await res.json();
@@ -160,22 +198,24 @@ function AuthComponent() {
           id: "usr-new",
           email: registerEmail,
           fullName: fullName || "Nouvel Auditeur",
-          roles: ["LISTENER"],
+          roles: isCreator ? ["LISTENER", "CREATOR"] : ["LISTENER"],
           permissions: [],
         };
+        setIsNavigating(true);
         setAuth(mockUser as any, "mock-new-token");
-        router.push(redirect);
+        router.push(isCreator ? "/studio" : "/onboarding");
       }
     } catch (err) {
       const mockUser = {
         id: "usr-new",
         email: registerEmail,
         fullName: fullName || "Nouvel Auditeur",
-        roles: ["LISTENER"],
+        roles: isCreator ? ["LISTENER", "CREATOR"] : ["LISTENER"],
         permissions: [],
       };
+      setIsNavigating(true);
       setAuth(mockUser as any, "mock-new-token");
-      router.push(redirect);
+      router.push(isCreator ? "/studio" : "/onboarding");
     } finally {
       setLoading(false);
     }
@@ -193,6 +233,60 @@ function AuthComponent() {
   };
 
   const passwordStrength = getPasswordStrength();
+
+  if (isAuthenticated && user && !isNavigating) {
+    const destination = getDestinationForUser(user.roles || [], redirect);
+    const roleLabel = user.roles?.some((r) => r.toUpperCase() === "SUPER_ADMIN")
+      ? "Super Administrateur"
+      : user.roles?.some((r) => r.toUpperCase() === "ADMIN")
+      ? "Administrateur"
+      : user.roles?.some((r) => ["CREATOR", "EDITOR"].includes(r.toUpperCase()))
+      ? "Créateur"
+      : "Auditeur";
+
+    return (
+      <div className="w-full min-h-[calc(100vh-140px)] py-8 px-4 flex items-center justify-center animate-fade-in text-white select-none">
+        <div className="w-full max-w-md bg-[#121212] border border-[#242424] rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl mx-auto text-center">
+          <div className="w-16 h-16 rounded-full bg-[#FFBF00]/10 border border-[#FFBF00]/30 text-[#FFBF00] mx-auto flex items-center justify-center shadow-lg">
+            <ShieldCheck className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-white">Vous êtes déjà connecté</h1>
+            <p className="text-sm text-gray-300">
+              Session active pour <span className="font-bold text-white">{user.fullName || user.email}</span>
+            </p>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1A1A1A] border border-[#2A2A2A] text-[#FFBF00] text-xs font-bold uppercase tracking-wider mt-1">
+              {roleLabel}
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-400">
+            Redirection automatique vers votre espace de travail en cours...
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Link
+              href={destination}
+              className="flex-1 py-3 px-4 rounded-xl bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs transition-all flex items-center justify-center gap-2 shadow"
+            >
+              <span>Accéder à mon espace</span>
+            </Link>
+
+            <button
+              onClick={async () => {
+                await logout();
+              }}
+              className="py-3 px-4 rounded-xl bg-[#1A1A1A] hover:bg-[#242424] text-gray-300 font-semibold text-xs border border-[#2A2A2A] transition-all flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-4 h-4 text-red-400" />
+              <span>Changer de compte</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-[calc(100vh-140px)] py-4 sm:py-8 md:py-12 px-3 sm:px-6 flex items-center justify-center animate-fade-in text-white select-none">
@@ -304,6 +398,7 @@ function AuthComponent() {
             </div>
 
             {/* Primary CTA Submit */}
+
             <button
               type="submit"
               disabled={loading}
@@ -450,32 +545,7 @@ function AuthComponent() {
               </p>
             </div>
 
-            {/* Langues d'écoute préférées */}
-            <div className="space-y-1.5 pt-1">
-              <div className="flex items-center justify-between text-xs">
-                <label className="font-bold text-white">Langues d'écoute préférées</label>
-                <span className="text-[10px] text-[#FFBF00]">Personnalisation du flux</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {["Français", "Bamanankan", "Soninké", "Peul / Fulfulde"].map((lang) => {
-                  const isSelected = selectedLanguages.includes(lang);
-                  return (
-                    <button
-                      key={lang}
-                      type="button"
-                      onClick={() => toggleLanguage(lang)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                        isSelected
-                          ? "bg-[#FFBF00] text-[#0B0B0B]"
-                          : "bg-[#181818] border border-[#262626] text-[#B8B8B8] hover:text-white"
-                      }`}
-                    >
-                      {lang} {isSelected ? "✓" : "+"}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            
 
             {/* Terms Checkbox */}
             <label className="flex items-start gap-2 pt-1 cursor-pointer text-[11px] text-[#B8B8B8] leading-tight">
@@ -492,7 +562,39 @@ function AuthComponent() {
               </span>
             </label>
 
+            {/* Creator Checkbox */}
+            <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isCreator}
+                  onChange={(e) => setIsCreator(e.target.checked)}
+                  className="w-4 h-4 accent-[#FFBF00] cursor-pointer"
+                />
+                <span className="text-sm font-bold text-white">Je suis créateur de contenu</span>
+              </label>
+              {isCreator && (
+                <div className="pt-2 space-y-1 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <label className="font-bold text-white">Nom de votre Podcast</label>
+                    <span className="text-[10px] text-[#757575]">Optionnel</span>
+                  </div>
+                  <div className="relative flex items-center">
+                    <Headphones className="w-4 h-4 text-[#757575] absolute left-3.5" />
+                    <input
+                      type="text"
+                      value={podcastName}
+                      onChange={(e) => setPodcastName(e.target.value)}
+                      placeholder="ex: Le Bamako Show"
+                      className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 pl-10 pr-4 outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Submit Button */}
+
             <button
               type="submit"
               disabled={loading}

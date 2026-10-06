@@ -32,7 +32,7 @@ export default async function OrganizationDetailPage({ params }: { params: { slu
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full px-4 py-8 space-y-8">
       {/* En-tête Organisation */}
       <div className="bg-[#121722] border border-[#1E2638] rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-8">
         {org.logo ? (

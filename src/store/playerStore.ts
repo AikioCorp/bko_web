@@ -44,12 +44,15 @@ interface PlayerState {
   /** Demande de déplacement explicite (barre de progression, chapitres, transcription). */
   seekRequest: { time: number; n: number } | null;
 
+  queue: PlayerEpisode[];
   playEpisode: (episode: PlayerEpisode, mode?: "AUDIO" | "VIDEO", startAt?: number) => void;
+  addToQueue: (episode: PlayerEpisode) => void;
+  removeFromQueue: (index: number) => void;
+  playNext: () => void;
+  
   togglePlay: () => void;
   pause: () => void;
-  /** Déplacement demandé par l'utilisateur : le lecteur l'applique au média. */
   seek: (time: number) => void;
-  /** Progression remontée par le média lui-même (n'entraîne aucun déplacement). */
   setProgress: (time: number, duration?: number) => void;
   setMode: (mode: "AUDIO" | "VIDEO") => void;
   setPlaybackRate: (rate: number) => void;
@@ -80,6 +83,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   showRightPanel: false,
   startAt: 0,
   seekRequest: null,
+  queue: [],
 
   playEpisode: (episode, mode = "AUDIO", startAt = 0) => {
     const selectedSource = pickSource(episode, mode);
@@ -93,6 +97,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       seekRequest: null,
       duration: episode.durationSeconds || selectedSource?.durationSeconds || 0,
     });
+  },
+
+  addToQueue: (episode) => set((state) => ({ queue: [...state.queue, episode] })),
+  
+  removeFromQueue: (index) => set((state) => ({ 
+    queue: state.queue.filter((_, i) => i !== index) 
+  })),
+
+  playNext: () => {
+    const state = get();
+    if (state.queue.length > 0) {
+      const nextEp = state.queue[0];
+      state.removeFromQueue(0);
+      state.playEpisode(nextEp);
+    } else {
+      set({ isPlaying: false, currentTime: 0 });
+    }
   },
 
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),

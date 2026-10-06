@@ -9,7 +9,7 @@ import { useAuthStore } from "../../store/authStore";
 import { ListenTracker } from "@/lib/playTracking";
 
 // ReactPlayer est chargé côté client uniquement (pas de rendu serveur).
-const DynamicReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as any;
+const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as any;
 
 // Seuls ces hôtes peuvent être affichés dans un iframe (défense en profondeur côté lecteur).
 const EMBED_HOSTS = [
@@ -60,6 +60,9 @@ export const PersistentPlayer = () => {
     setPlaybackRate,
     setVolume,
     toggleRightPanel,
+    showRightPanel,
+    queue,
+    removeFromQueue,
   } = usePlayerStore();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -117,8 +120,16 @@ export const PersistentPlayer = () => {
   useEffect(() => {
     const a = audioRef.current;
     if (!a || kind !== "audio") return;
-    if (isPlaying) a.play().catch(() => pause());
-    else a.pause();
+    if (isPlaying) {
+      a.play().catch((e) => {
+        if (e.name !== "AbortError") {
+          console.error("Playback error:", e);
+          pause();
+        }
+      });
+    } else {
+      a.pause();
+    }
   }, [isPlaying, kind, activeSource, pause]);
 
   useEffect(() => {
@@ -133,7 +144,7 @@ export const PersistentPlayer = () => {
     if (!seekRequest || seekRequest.n === handledSeek.current) return;
     handledSeek.current = seekRequest.n;
     if (kind === "audio" && audioRef.current) audioRef.current.currentTime = seekRequest.time;
-    if (kind === "video" && videoRef.current) videoRef.current.seekTo(seekRequest.time, "seconds");
+    if (kind === "video" && videoRef.current) videoRef.current.currentTime = seekRequest.time;
   }, [seekRequest, kind]);
 
   if (!currentEpisode) return null;
@@ -162,7 +173,7 @@ export const PersistentPlayer = () => {
   };
   const onMediaEnded = () => {
     tracker.current?.end(total);
-    pause();
+    usePlayerStore.getState().playNext();
   };
 
   const close = () => {
@@ -190,27 +201,31 @@ export const PersistentPlayer = () => {
         )}
       </div>
 
-      {/* Vidéo (YouTube, Vimeo ou fichier vidéo) */}
+      {/* Vidéo (YouTube, Vimeo ou fichier vidéo) — react-player v3 : API proche de l'élément <video> */}
       {mounted && kind === "video" && (
         <div className="max-w-3xl mx-auto my-3 aspect-video rounded-xl overflow-hidden border border-[#262626] bg-black">
-          <DynamicReactPlayer
-            ref={videoRef}
-            url={safeHttp(activeSource?.externalUrl) ?? ""}
+          <ReactPlayer
+            src={safeHttp(activeSource?.externalUrl) ?? ""}
             playing={isPlaying}
             playbackRate={playbackRate}
             volume={volume}
             width="100%"
             height="100%"
             controls
-            progressInterval={1000}
-            onReady={() => {
-              if (startAt > 0 && handledSeek.current === 0) videoRef.current?.seekTo(startAt, "seconds");
+            onLoadedMetadata={(e: any) => {
+              const v = e.currentTarget;
+              videoRef.current = v;
+              if (startAt > 0 && handledSeek.current === 0 && v) v.currentTime = startAt;
             }}
-            onDuration={(d: number) => setProgress(usePlayerStore.getState().currentTime, d)}
-            onProgress={(st: { playedSeconds: number }) => onMediaProgress(st.playedSeconds, usePlayerStore.getState().duration)}
+            onDurationChange={(e: any) => {
+              const d = e.currentTarget?.duration;
+              if (isFinite(d)) setProgress(usePlayerStore.getState().currentTime, d);
+            }}
+            onTimeUpdate={(e: any) => onMediaProgress(e.currentTarget?.currentTime ?? 0, usePlayerStore.getState().duration)}
             onPlay={() => !usePlayerStore.getState().isPlaying && usePlayerStore.setState({ isPlaying: true })}
             onPause={() => usePlayerStore.getState().isPlaying && pause()}
             onEnded={onMediaEnded}
+            onError={() => pause()}
           />
         </div>
       )}
@@ -270,8 +285,7 @@ export const PersistentPlayer = () => {
             <>
               <button onClick={toggleRightPanel} className="text-[#B8B8B8] hover:text-white p-1" title="File d'attente / Chapitres" aria-label="File d'attente">
                 <ListMusic className="w-4 h-4" />
-              </button>
-              <button
+              </button>              <button
                 onClick={togglePlay}
                 className="w-9 h-9 rounded-full bg-[#FFBF00] text-[#0B0B0B] hover:bg-[#E5AB00] hover:scale-105 active:scale-95 flex items-center justify-center shadow-md transition-all"
                 aria-label={isPlaying ? "Pause" : "Lecture"}
@@ -342,6 +356,57 @@ export const PersistentPlayer = () => {
           </button>
         </div>
       </div>
+
+      {/* Queue Panel */}
+      {showRightPanel && (
+        <div className="absolute bottom-full right-4 mb-2 w-80 max-h-96 bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl shadow-2xl flex flex-col overflow-hidden">
+          <div className="p-3 border-b border-[#2E2E2E] flex items-center justify-between bg-[#141414]">
+            <h3 className="text-sm font-bold text-white">File d'attente</h3>
+            <button onClick={toggleRightPanel} className="text-[#B8B8B8] hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-3 overflow-y-auto flex-1 space-y-3 scrollbar-none">
+            <div>
+              <p className="text-[10px] font-bold text-[#757575] uppercase tracking-wider mb-2">En cours de lecture</p>
+              <div className="flex items-center gap-3 bg-[#262626] p-2 rounded-lg">
+                <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-10 h-10 rounded object-cover" />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-[#FFBF00] truncate">{currentEpisode.title}</p>
+                  <p className="text-[10px] text-[#B8B8B8] truncate">{currentEpisode.podcast.name}</p>
+                </div>
+              </div>
+            </div>
+
+            {queue.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-[#757575] uppercase tracking-wider mb-2 mt-4">À suivre</p>
+                <div className="space-y-2">
+                  {queue.map((ep, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2 hover:bg-[#262626] rounded-lg group">
+                      <img src={ep.cover || ep.podcast.cover} alt="" className="w-10 h-10 rounded object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-white truncate">{ep.title}</p>
+                        <p className="text-[10px] text-[#757575] truncate">{ep.podcast.name}</p>
+                      </div>
+                      <button 
+                        onClick={() => removeFromQueue(i)}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-[#B8B8B8] hover:text-white"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {queue.length === 0 && (
+              <p className="text-xs text-[#757575] text-center py-4">La file d'attente est vide.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

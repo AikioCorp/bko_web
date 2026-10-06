@@ -142,7 +142,7 @@ export default function EpisodeTranscriptEditorPage() {
   if (loading) return <div className="p-12 text-center text-gray-400">Chargement de l'éditeur de transcription...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full px-4 py-8 space-y-8">
       {/* En-tête Éditeur */}
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-2 flex flex-col md:flex-row md:items-center justify-between">
         <div className="space-y-1">

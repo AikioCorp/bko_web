@@ -1,0 +1,908 @@
+﻿"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ChevronLeft,
+  ExternalLink,
+  MoreHorizontal,
+  CheckCircle,
+  AlertCircle,
+  PauseCircle,
+  Play,
+  Save,
+  Link as LinkIcon,
+  RefreshCw,
+  Search,
+  Plus,
+  Clock,
+  ShieldAlert,
+  Users,
+  Copy,
+  Archive,
+  Ban,
+  Trash2,
+  FolderPlus,
+  GitMerge,
+  Loader2,
+  Rss as RssIcon,
+  Power,
+  Headphones,
+  Edit3
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import useSWR from "swr";
+import { adminApi } from "@/lib/api";
+
+const TABS = ["Ã‰pisodes", "Sources RSS", "Ã‰quipe", "Historique", "Informations", "ParamÃ¨tres"];
+
+export default function AdminPodcastDetailsPage() {
+  const { id } = useParams();
+  const router = useRouter();
+  
+  const [activeTab, setActiveTab] = useState("Ã‰pisodes");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [showNewEpisodeModal, setShowNewEpisodeModal] = useState(false);
+  const [newEpisodeTitle, setNewEpisodeTitle] = useState("");
+  const [newEpisodeUrl, setNewEpisodeUrl] = useState("");
+  const [newEpisodeDescription, setNewEpisodeDescription] = useState("");
+  const [isCreatingEpisode, setIsCreatingEpisode] = useState(false);
+  const [isFetchingPreview, setIsFetchingPreview] = useState(false);
+
+  // Data fetching
+  const { data: raw, isLoading, error, mutate } = useSWR(
+    id ? `/admin/podcasts/${id}` : null,
+    (url: string) => adminApi(url).then((res) => {
+      if (!res.success) throw new Error(res.message || "Podcast introuvable");
+      return res.data;
+    })
+  );
+
+  const { data: countries } = useSWR('/countries', (url: string) => adminApi(url).then((res: any) => res.data || []));
+  const { data: categories } = useSWR('/admin/categories', (url: string) => adminApi(url).then((res: any) => res.data || []));
+  const { data: languages } = useSWR('/admin/languages', (url: string) => adminApi(url).then((res: any) => res.data || []));
+  const { data: organizations } = useSWR('/admin/organizations', (url: string) => adminApi(url).then((res: any) => res.data || []));
+  const { data: episodes, mutate: mutateEpisodes } = useSWR(
+    id && activeTab === "Ã‰pisodes" ? `/admin/podcasts/${id}/episodes` : null,
+    (url: string) => adminApi(url).then((res: any) => res.data || [])
+  );
+
+  // Edit state
+  const [editData, setEditData] = useState<any>({});
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+
+  useEffect(() => {
+    if (raw) {
+      setEditData({
+        name: raw.name || "",
+        description: raw.description || "",
+        shortDescription: raw.shortDescription || "",
+        primaryLanguageCode: raw.primaryLanguageCode || "",
+        countryId: raw.countryId || "",
+        website: raw.website || "",
+        status: raw.status || "DRAFT",
+        categoryIds: raw.categories?.map((c: any) => c.categoryId) || [],
+        organizationId: raw.organizationId || "",
+        ownershipStatus: raw.ownershipStatus || "UNCLAIMED",
+        managedByBamakoPodcast: raw.managedByBamakoPodcast ?? true,
+        isOfficial: raw.isOfficial ?? false,
+        redirectUrl: raw.redirectUrl || ""
+      });
+      setHasUnsavedChanges(false);
+    }
+  }, [raw]);
+
+  const handleChange = (field: string, value: string) => {
+    setEditData((prev: any) => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleCategoryToggle = (id: string) => {
+    setEditData((prev: any) => ({
+      ...prev,
+      categoryIds: prev.categoryIds?.includes(id)
+        ? prev.categoryIds.filter((c: string) => c !== id)
+        : [...(prev.categoryIds || []), id]
+    }));
+    setHasUnsavedChanges(true);
+  };
+
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (!id) return;
+    setIsSaving(true);
+    setErrorMsg(null);
+    try {
+      const res = await adminApi(`/admin/podcasts/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(editData),
+      });
+      if (res.success) {
+        setHasUnsavedChanges(false);
+        setIsEditingInfo(false);
+        mutate();
+      } else {
+        setErrorMsg(res.message || "Erreur lors de l'enregistrement");
+      }
+    } catch (e: any) {
+      setErrorMsg("Erreur de connexion");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    setIsDeleting(true);
+    setErrorMsg(null);
+    try {
+      const res = await adminApi(`/admin/podcasts/${id}`, {
+        method: "DELETE",
+      });
+      if (res.success) {
+        router.push("/admin/podcasts");
+      } else {
+        setErrorMsg(res.message || "Erreur lors de la suppression");
+        setIsDeleting(false);
+        setShowDeleteModal(false);
+      }
+    } catch (e: any) {
+      setErrorMsg("Erreur de connexion");
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const handleFetchPreview = async () => {
+    if (!newEpisodeUrl) return;
+    setIsFetchingPreview(true);
+    try {
+      const res = await adminApi("/admin/podcasts/from-url", {
+        method: "POST",
+        body: JSON.stringify({ url: newEpisodeUrl }),
+      });
+      if (res.success && res.data) {
+        if (res.data.suggestedName && !newEpisodeTitle) setNewEpisodeTitle(res.data.suggestedName);
+        if (res.data.suggestedDescription && !newEpisodeDescription) setNewEpisodeDescription(res.data.suggestedDescription);
+      }
+    } catch (e) {
+      // Ignorer
+    } finally {
+      setIsFetchingPreview(false);
+    }
+  };
+
+  const handleCreateEmptyDraft = async () => {
+    try {
+      const res = await adminApi(`/admin/podcasts/${id}/episodes`, {
+        method: "POST",
+        body: JSON.stringify({ title: "Nouvel Ã©pisode" }),
+      });
+      if (res.success && res.data?.id) {
+        router.push(`/admin/episodes/${res.data.slug || res.data.id}`);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCreateEpisode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEpisodeTitle.trim()) return;
+    setIsCreatingEpisode(true);
+    setErrorMsg(null);
+    try {
+      const res = await adminApi(`/admin/podcasts/${id}/episodes`, {
+        method: "POST",
+        body: JSON.stringify({ 
+          title: newEpisodeTitle.trim(),
+          description: newEpisodeDescription.trim() || undefined,
+          url: newEpisodeUrl.trim() || undefined
+        }),
+      });
+      if (res.success) {
+        setShowNewEpisodeModal(false);
+        setNewEpisodeTitle("");
+        setNewEpisodeUrl("");
+        setNewEpisodeDescription("");
+        mutateEpisodes();
+        if (res.data?.id) {
+          router.push(`/admin/episodes/${res.data.slug || res.data.id}`);
+        }
+      } else {
+        setErrorMsg(res.message || "Erreur lors de la crÃ©ation de l'Ã©pisode");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Une erreur est survenue");
+    } finally {
+      setIsCreatingEpisode(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="w-full flex items-center justify-center py-32 text-[#757575]">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !raw) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-32 text-center text-white">
+        <p className="text-lg font-bold mb-2">Podcast introuvable</p>
+        <p className="text-sm text-[#757575] mb-6">{error?.message || "Ce podcast n'existe pas ou a Ã©tÃ© supprimÃ©."}</p>
+        <Link href="/admin/podcasts" className="text-[#FFBF00] text-sm font-semibold hover:underline">
+          Retour aux podcasts
+        </Link>
+      </div>
+    );
+  }
+
+  const podcast = {
+    id: raw.id as string,
+    name: raw.name as string,
+    cover: raw.cover as string,
+    creatorName: raw.organization?.name || "â€”",
+    status: raw.status as string,
+    slug: raw.slug as string,
+    language: raw.primaryLanguage?.name || raw.primaryLanguageCode || "â€”",
+    category: raw.categories?.[0]?.category?.name || "Sans catÃ©gorie",
+    country: raw.country?.name || "â€”",
+    origin: raw.rssFeed ? "Flux RSS" : "Contenu hÃ©bergÃ©",
+    visibility: raw.status === "PUBLISHED" ? "Publique" : "Non publique",
+    publishedAt: raw.createdAt ? new Date(raw.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "â€”",
+    collection: "â€”",
+    episodesCount: raw._count?.episodes ?? 0,
+  };
+
+  const StatusBadge = ({ status }: { status: string }) => {
+    if (status === "PUBLISHED") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-green-500/10 text-green-500 border border-green-500/20">
+          <CheckCircle className="w-3.5 h-3.5" /> PubliÃ©
+        </span>
+      );
+    }
+    if (status === "PENDING") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+          <AlertCircle className="w-3.5 h-3.5" /> Ã€ valider
+        </span>
+      );
+    }
+    if (status === "DRAFT") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#2A2A2A] text-[#B8B8B8] border border-[#3A3A3A]">
+          <Clock className="w-3.5 h-3.5" /> Brouillon
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500/10 text-red-500 border border-red-500/20">
+        <PauseCircle className="w-3.5 h-3.5" /> Suspendu
+      </span>
+    );
+  };
+
+  return (
+    <div className="w-full flex flex-col pb-32 text-white relative">
+      
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}>
+          <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6 w-full max-w-md shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+              <ShieldAlert className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Supprimer dÃ©finitivement ?</h3>
+            <p className="text-sm text-[#B8B8B8] mb-6">
+              ÃŠtes-vous sÃ»r de vouloir supprimer <span className="text-white font-bold">{podcast.name}</span> ? Cette action supprimera tous les Ã©pisodes liÃ©s et est irrÃ©versible.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <Button variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>Annuler</Button>
+              <Button className="bg-red-500 hover:bg-red-600 text-white font-bold" onClick={handleDelete} disabled={isDeleting}>
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                Oui, supprimer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="fixed top-24 right-6 bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-lg flex items-start gap-3 z-50 animate-in slide-in-from-right-4">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">{errorMsg}</p>
+          </div>
+          <button onClick={() => setErrorMsg(null)} className="text-red-500 hover:text-white">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Floating Save Bar for unsaved changes */}
+      {hasUnsavedChanges && (
+        <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-[#0B0B0B] border-t border-[#2A2A2A] p-4 z-50 flex items-center justify-between shadow-2xl animate-in slide-in-from-bottom-4">
+          <span className="text-sm font-medium text-[#B8B8B8]">Modifications non enregistrÃ©es</span>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => {
+              setEditData({
+                name: raw.name || "",
+                description: raw.description || "",
+                shortDescription: raw.shortDescription || "",
+                primaryLanguageCode: raw.primaryLanguageCode || "",
+                countryId: raw.countryId || "",
+                website: raw.website || "",
+                status: raw.status || "DRAFT"
+              });
+              setHasUnsavedChanges(false);
+            }}>Annuler les modifications</Button>
+            <Button className="bg-[#FFBF00] text-[#0B0B0B] hover:bg-[#E5AB00] font-bold" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Enregistrer
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Top Header & Back Link */}
+      <div className="space-y-6 mb-6">
+        <div>
+          <Link href="/admin/podcasts" className="inline-flex items-center text-sm font-semibold text-[#757575] hover:text-[#FFBF00] transition-colors">
+            <ChevronLeft className="w-4 h-4 mr-1" /> Retour aux podcasts
+          </Link>
+        </div>
+
+        {/* Podcast Identity Header */}
+        <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+            <img src={podcast.cover || "/default-cover.png"} alt={podcast.name} className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover border border-[#2A2A2A]" />
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl md:text-2xl font-extrabold text-white">{podcast.name}</h1>
+                {raw.isOfficial && (
+                  <span className="flex items-center gap-1.5 text-blue-400 text-xs font-bold bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20">
+                    <CheckCircle className="w-3.5 h-3.5" /> CertifiÃ©
+                  </span>
+                )}
+                <StatusBadge status={podcast.status} />
+              </div>
+              <p className="text-sm text-[#B8B8B8] mt-1.5 flex items-center flex-wrap gap-2">
+                <span className="text-white font-medium">{podcast.creatorName}</span>
+                <span className="text-[#555]">Â·</span>
+                {podcast.language}
+                <span className="text-[#555]">Â·</span>
+                <span className="inline-flex items-center gap-1"><RssIcon className="w-3.5 h-3.5" /> {podcast.origin}</span>
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {podcast.status === "PUBLISHED" && (
+              <Link href={`/podcasts/${podcast.slug}`}>
+                <Button variant="outline" className="bg-[#171717] hover:bg-[#262626] border-[#2A2A2A] text-white hidden md:flex">
+                  Voir sur le site <ExternalLink className="w-3.5 h-3.5 ml-2 text-[#757575]" />
+                </Button>
+              </Link>
+            )}
+            <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" onClick={handleSave} disabled={isSaving || !hasUnsavedChanges}>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Enregistrer"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-6 border-b border-[#2A2A2A] overflow-x-auto no-scrollbar mb-6">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                isActive 
+                  ? "border-[#FFBF00] text-white" 
+                  : "border-transparent text-[#757575] hover:text-white"
+              }`}
+            >
+              {tab === "Ã‰pisodes" ? `Ã‰pisodes (${podcast.episodesCount})` : tab}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab Content */}
+      <div className="animate-fade-in">
+        
+        {/* ONGLET: INFORMATIONS */}
+        {activeTab === "Informations" && (
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Colonne Principale (2/3) */}
+            <div className="flex-1 space-y-6">
+              <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-base font-bold text-white">Informations de l'Ã©mission</h2>
+                  {!isEditingInfo ? (
+                    <Button variant="outline" className="h-8 text-xs bg-[#0B0B0B] border-[#2A2A2A] text-white hover:bg-[#262626]" onClick={() => setIsEditingInfo(true)}>
+                      <Edit3 className="w-3.5 h-3.5 mr-2" /> Modifier
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" className="h-8 text-xs text-[#757575] hover:text-white hover:bg-transparent" onClick={() => setIsEditingInfo(false)}>
+                      Annuler
+                    </Button>
+                  )}
+                </div>
+                
+                {podcast.origin === "Flux RSS" && (
+                  <div className="mb-6 bg-[#262626]/50 border border-[#2A2A2A] rounded-lg p-3 flex items-start gap-3">
+                    <RssIcon className="w-5 h-5 text-[#FFBF00] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-white font-medium">SynchronisÃ© depuis le flux</p>
+                      <p className="text-xs text-[#B8B8B8] mt-1">Les mÃ©tadonnÃ©es principales proviennent du flux RSS. Modifier un champ manuellement peut Ã©craser la synchronisation.</p>
+                    </div>
+                  </div>
+                )}
+
+                {!isEditingInfo ? (
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-xs font-bold text-[#757575] uppercase mb-1">Nom</p>
+                      <p className="text-sm text-white">{raw.name || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-[#757575] uppercase mb-1">Description courte</p>
+                      <p className="text-sm text-white">{raw.shortDescription || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-[#757575] uppercase mb-1">Description complÃ¨te</p>
+                      <p className="text-sm text-white whitespace-pre-wrap">{raw.description || "-"}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <p className="text-xs font-bold text-[#757575] uppercase mb-1">Langue</p>
+                        <p className="text-sm text-white">{raw.primaryLanguage?.name || raw.primaryLanguageCode || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-[#757575] uppercase mb-1">Pays</p>
+                        <p className="text-sm text-white">{raw.country?.name || raw.countryId || "-"}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-bold text-[#757575] uppercase mb-2">CatÃ©gories</p>
+                      <div className="flex flex-wrap gap-2">
+                        {raw.categories?.length > 0 ? raw.categories.map((c: any) => (
+                          <span key={c.categoryId} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#2A2A2A] text-white">
+                            {c.category?.icon && <span>{c.category.icon}</span>}
+                            {c.category?.name || "CatÃ©gorie"}
+                          </span>
+                        )) : <span className="text-sm text-[#757575]">-</span>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-bold text-[#757575] uppercase mb-1">Site officiel</p>
+                      {raw.website ? (
+                        <a href={raw.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline">{raw.website}</a>
+                      ) : <span className="text-sm text-[#757575]">-</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Nom</label>
+                      <input type="text" value={editData.name || ""} onChange={e => handleChange("name", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description courte</label>
+                      <input type="text" value={editData.shortDescription || ""} onChange={e => handleChange("shortDescription", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#757575]" placeholder="Une phrase rÃ©sumant le podcast..." />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description complÃ¨te</label>
+                      <textarea rows={5} value={editData.description || ""} onChange={e => handleChange("description", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white resize-none" />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Langue</label>
+                        <select value={editData.primaryLanguageCode || ""} onChange={e => handleChange("primaryLanguageCode", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
+                          <option value="">SÃ©lectionner...</option>
+                          {languages?.map((l: any) => (
+                            <option key={l.code} value={l.code}>{l.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Pays</label>
+                        <select value={editData.countryId || ""} onChange={e => handleChange("countryId", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
+                          <option value="">SÃ©lectionner...</option>
+                          {countries?.map((c: any) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#757575] uppercase mb-3">CatÃ©gories</label>
+                      <div className="flex flex-wrap gap-3">
+                        {categories?.map((c: any) => {
+                          const isSelected = editData.categoryIds?.includes(c.id);
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => handleCategoryToggle(c.id)}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                                isSelected
+                                  ? "bg-[#FFBF00]/10 border-[#FFBF00] text-[#FFBF00]"
+                                  : "bg-[#0B0B0B] border-[#2A2A2A] text-white hover:border-[#757575]"
+                              }`}
+                            >
+                              {c.icon && <span>{c.icon}</span>}
+                              {c.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Site officiel</label>
+                      <input type="text" value={editData.website || ""} onChange={e => handleChange("website", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" placeholder="https://..." />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Statut</label>
+                      <select value={editData.status || ""} onChange={e => handleChange("status", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
+                        <option value="DRAFT">Brouillon</option>
+                        <option value="PENDING">En attente (Pending)</option>
+                        <option value="PUBLISHED">PubliÃ©</option>
+                        <option value="SUSPENDED">Suspendu</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Colonne Secondaire (1/3) */}
+            <div className="w-full lg:w-80 space-y-6">
+              <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6 space-y-6">
+                <h2 className="text-base font-bold text-white">Publication</h2>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-bold text-[#757575] uppercase mb-1">Statut</p>
+                    <p className="text-sm font-medium text-white">{podcast.status}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#757575] uppercase mb-1">VisibilitÃ©</p>
+                    <p className="text-sm font-medium text-white">{podcast.visibility}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#757575] uppercase mb-1">CrÃ©Ã© le</p>
+                    <p className="text-sm font-medium text-white">{podcast.publishedAt}</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ONGLET: PARAMÃˆTRES */}
+        {activeTab === "ParamÃ¨tres" && (
+          <div className="max-w-3xl space-y-8">
+            <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
+              <h2 className="text-base font-bold text-white mb-2">ParamÃ¨tres du podcast</h2>
+              <p className="text-sm text-[#757575] mb-6">GÃ©rez les configurations avancÃ©es du podcast.</p>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-[#757575] uppercase mb-2">PropriÃ©taire (Organisation)</label>
+                  <select value={editData.organizationId || ""} onChange={e => handleChange("organizationId", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
+                    <option value="">Aucune organisation assignÃ©e</option>
+                    {organizations?.map((o: any) => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-[#757575] mt-1.5">L'organisation qui gÃ¨re et monÃ©tise ce podcast.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Statut de propriÃ©tÃ©</label>
+                    <select value={editData.ownershipStatus || "UNCLAIMED"} onChange={e => handleChange("ownershipStatus", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
+                      <option value="UNCLAIMED">Non rÃ©clamÃ©</option>
+                      <option value="CLAIM_PENDING">RÃ©clamation en cours</option>
+                      <option value="CLAIMED">RÃ©clamÃ©</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Certification</label>
+                    <div className="flex items-center h-[46px] px-3 bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" checked={editData.isOfficial ?? false} onChange={e => handleChange("isOfficial", e.target.checked as any)} className="w-4 h-4 rounded border-[#2A2A2A] bg-[#171717] text-[#FFBF00] focus:ring-[#FFBF00] focus:ring-offset-[#0B0B0B]" />
+                        <span className="text-sm text-white">CertifiÃ©</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
+              <h2 className="text-base font-bold text-white mb-2">Redirection (301)</h2>
+              <p className="text-sm text-[#757575] mb-6">Redirigez temporairement ou dÃ©finitivement le trafic de ce podcast vers une autre URL.</p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#757575] uppercase mb-2">URL de redirection (Optionnel)</label>
+                  <input type="text" value={editData.redirectUrl || ""} onChange={e => handleChange("redirectUrl", e.target.value)} placeholder="https://..." className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
+                  <p className="text-xs text-[#757575] mt-1.5">Laissez vide si vous ne souhaitez pas rediriger ce podcast.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="bg-[#1A0B0B] border border-[#3A1010] rounded-xl p-6">
+              <h2 className="text-base font-bold text-red-500 mb-2">Zone de danger</h2>
+              <p className="text-xs text-[#B8B8B8] mb-4">La suppression dÃ©finitive retirera ce podcast et tous ses Ã©pisodes de la base de donnÃ©es. Cette action est irrÃ©versible.</p>
+              <Button variant="destructive" className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-colors" onClick={() => setShowDeleteModal(true)}>
+                <Trash2 className="w-4 h-4 mr-2" /> Supprimer dÃ©finitivement
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ONGLET: Ã‰PISODES */}
+        {activeTab === "Ã‰pisodes" && (
+          <div className="space-y-6 relative">
+            
+            {showNewEpisodeModal && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowNewEpisodeModal(false)}>
+                <form className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6 w-full max-w-md shadow-2xl relative" onClick={e => e.stopPropagation()} onSubmit={handleCreateEpisode}>
+                  <h3 className="text-xl font-bold text-white mb-2">Nouvel Ã©pisode</h3>
+                  <p className="text-sm text-[#B8B8B8] mb-6">
+                    Saisissez un lien YouTube ou Spotify pour importer automatiquement les informations.
+                  </p>
+                  
+                  <div className="mb-4">
+                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Lien (optionnel)</label>
+                    <div className="flex items-center gap-2">
+                      <input type="text" value={newEpisodeUrl} onChange={e => setNewEpisodeUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="flex-1 bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
+                      <Button type="button" variant="outline" onClick={handleFetchPreview} disabled={!newEpisodeUrl || isFetchingPreview} className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]">
+                        {isFetchingPreview ? <Loader2 className="w-4 h-4 animate-spin" /> : "Importer"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Titre de l'Ã©pisode *</label>
+                    <input type="text" autoFocus value={newEpisodeTitle} onChange={e => setNewEpisodeTitle(e.target.value)} placeholder="Ã‰pisode 1 : Le commencement..." className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description (optionnelle)</label>
+                    <textarea value={newEpisodeDescription} onChange={e => setNewEpisodeDescription(e.target.value)} placeholder="Quelques mots sur cet Ã©pisode..." className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white h-24 resize-none" />
+                  </div>
+                  <div className="flex items-center justify-end gap-3">
+                    <Button type="button" variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => { setShowNewEpisodeModal(false); setNewEpisodeUrl(""); setNewEpisodeTitle(""); setNewEpisodeDescription(""); }} disabled={isCreatingEpisode}>Annuler</Button>
+                    <Button type="submit" className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" disabled={isCreatingEpisode || !newEpisodeTitle.trim()}>
+                      CrÃ©er l'Ã©pisode
+                      {isCreatingEpisode ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white">Ã‰pisodes du podcast</h2>
+                <p className="text-sm text-[#757575]">GÃ©rez la liste de tous les Ã©pisodes de cette Ã©mission.</p>
+              </div>
+              <Button onClick={() => setShowNewEpisodeModal(true)} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
+                Ajouter un Ã©pisode <Plus className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+
+            <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl overflow-hidden">
+              {!episodes ? (
+                <div className="p-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-[#757575]" /></div>
+              ) : episodes.length === 0 ? (
+                <div className="p-12 flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-[#2A2A2A] rounded-full flex items-center justify-center mb-4">
+                    <Headphones className="w-6 h-6 text-[#757575]" />
+                  </div>
+                  <h3 className="text-white font-bold mb-1">Aucun Ã©pisode</h3>
+                  <p className="text-sm text-[#757575]">Ce podcast ne contient pas encore d'Ã©pisode.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-white">
+                    <thead className="bg-[#0B0B0B] text-xs uppercase text-[#757575] font-semibold border-b border-[#2A2A2A]">
+                      <tr>
+                        <th className="px-6 py-4">Ã‰pisode</th>
+                        <th className="px-6 py-4">Statut</th>
+                        <th className="px-6 py-4">DurÃ©e</th>
+                        <th className="px-6 py-4">PubliÃ© le</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#2A2A2A]">
+                      {episodes.map((ep: any) => (
+                        <tr key={ep.id} className="hover:bg-[#2A2A2A]/30 transition-colors group">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-4">
+                              <img src={ep.cover || podcast.cover} alt={ep.title} className="w-12 h-12 rounded-lg object-cover border border-[#2A2A2A]" />
+                              <div>
+                                <p className="font-bold line-clamp-1">{ep.title}</p>
+                                <p className="text-xs text-[#757575] line-clamp-1">{ep.description}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {ep.status === "PUBLISHED" ? (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">PubliÃ©</span>
+                            ) : ep.status === "DRAFT" ? (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold bg-[#2A2A2A] text-[#B8B8B8] border border-[#3A3A3A]">Brouillon</span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">{ep.status}</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-[#B8B8B8]">
+                            {ep.duration ? `${Math.floor(ep.duration / 60)} min` : "-"}
+                          </td>
+                          <td className="px-6 py-4 text-[#B8B8B8]">
+                            {ep.publishedAt ? new Date(ep.publishedAt).toLocaleDateString('fr-FR') : "-"}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2 transition-opacity">
+                              <Link href={`/admin/episodes/${ep.slug || ep.id}`}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#757575] hover:text-white hover:bg-[#2A2A2A]">
+                                  <Edit3 className="w-4 h-4" />
+                                </Button>
+                              </Link>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ONGLET: SOURCES RSS */}
+        {activeTab === "Sources RSS" && (
+          <div className="space-y-6 max-w-4xl">
+            <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
+              <h2 className="text-base font-bold text-white mb-2">Flux RSS de synchronisation</h2>
+              <p className="text-sm text-[#757575] mb-6">GÃ©rez le lien de synchronisation automatique avec un flux RSS distant.</p>
+              
+              {raw.rssFeed ? (
+                <div className="space-y-4">
+                  <div className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <RssIcon className="w-5 h-5 text-[#FFBF00]" />
+                      <div>
+                        <p className="text-sm font-bold text-white">{raw.rssFeed.url}</p>
+                        <p className="text-xs text-[#757575]">DerniÃ¨re synchronisation : {raw.rssFeed.lastSyncAt ? new Date(raw.rssFeed.lastSyncAt).toLocaleString('fr-FR') : "Jamais"}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="h-8 text-xs bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#262626] text-white">
+                        <RefreshCw className="w-3.5 h-3.5 mr-2" /> Forcer la synchro
+                      </Button>
+                      <Button variant="outline" className="h-8 text-xs bg-[#0B0B0B] border-red-500/20 hover:bg-red-500/10 text-red-500">
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> DÃ©tacher
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8 bg-[#0B0B0B] border border-[#2A2A2A] border-dashed rounded-lg text-center">
+                  <RssIcon className="w-8 h-8 text-[#757575] mb-3" />
+                  <h3 className="text-sm font-bold text-white mb-1">Aucun flux RSS attachÃ©</h3>
+                  <p className="text-xs text-[#757575] mb-4">Ce podcast est gÃ©rÃ© manuellement ou via l'API.</p>
+                  <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-8">
+                    Attacher un flux RSS
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ONGLET: Ã‰QUIPE */}
+        {activeTab === "Ã‰quipe" && (
+          <div className="space-y-6 max-w-4xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white">Ã‰quipe du podcast</h2>
+                <p className="text-sm text-[#757575]">PersonnalitÃ©s (animateurs, producteurs) associÃ©es Ã  ce podcast.</p>
+              </div>
+              <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
+                <Plus className="w-4 h-4 mr-2" /> Ajouter un membre
+              </Button>
+            </div>
+
+            <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl overflow-hidden">
+              {!raw.permanentPersons || raw.permanentPersons.length === 0 ? (
+                <div className="p-12 flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-[#2A2A2A] rounded-full flex items-center justify-center mb-4">
+                    <Users className="w-6 h-6 text-[#757575]" />
+                  </div>
+                  <h3 className="text-white font-bold mb-1">Aucun membre</h3>
+                  <p className="text-sm text-[#757575]">L'Ã©quipe de ce podcast est vide.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#2A2A2A]">
+                  {raw.permanentPersons.map((pp: any) => (
+                    <div key={pp.id} className="p-4 flex items-center justify-between group hover:bg-[#2A2A2A]/30 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <img src={pp.person.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pp.person.name)}&background=2A2A2A&color=fff`} alt={pp.person.name} className="w-10 h-10 rounded-full object-cover border border-[#2A2A2A]" />
+                        <div>
+                          <p className="text-sm font-bold text-white">{pp.person.name}</p>
+                          <p className="text-xs text-[#757575]">{pp.role}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ONGLET: HISTORIQUE */}
+        {activeTab === "Historique" && (
+          <div className="space-y-6 max-w-4xl">
+            <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
+              <h2 className="text-base font-bold text-white mb-6">Historique des modifications</h2>
+              
+              <div className="relative pl-6 border-l border-[#2A2A2A] space-y-8">
+                <div className="relative">
+                  <div className="absolute -left-[31px] bg-[#0B0B0B] p-1 rounded-full">
+                    <div className="w-3 h-3 bg-[#FFBF00] rounded-full" />
+                  </div>
+                  <p className="text-sm font-bold text-white mb-1">DerniÃ¨re mise Ã  jour</p>
+                  <p className="text-xs text-[#757575]">{new Date(raw.updatedAt).toLocaleString('fr-FR')}</p>
+                </div>
+                
+                <div className="relative">
+                  <div className="absolute -left-[31px] bg-[#0B0B0B] p-1 rounded-full">
+                    <div className="w-3 h-3 bg-[#2A2A2A] rounded-full" />
+                  </div>
+                  <p className="text-sm font-bold text-white mb-1">CrÃ©ation du podcast</p>
+                  <p className="text-xs text-[#757575]">{new Date(raw.createdAt).toLocaleString('fr-FR')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}

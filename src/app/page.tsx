@@ -3,7 +3,9 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
+import { API_BASE_URL } from "@/lib/api";
 import {
   Play,
   Bookmark,
@@ -11,19 +13,23 @@ import {
   Clock,
   Download,
   MoreVertical,
+  ListPlus,
   SlidersHorizontal,
   Mic,
   ArrowRight,
   Info,
   Check,
+  Smartphone,
 } from "lucide-react";
 import { usePlayerStore, PlayerEpisode } from "../store/playerStore";
+import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
+import { DownloadAppSection } from "@/components/ui/DownloadAppSection";
 
 function HomeContent() {
   const { playEpisode } = usePlayerStore();
   const searchParams = useSearchParams();
   const [selectedFilter, setSelectedFilter] = useState("Toutes les langues");
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
 
   useEffect(() => {
     const langParam = searchParams.get("lang");
@@ -43,269 +49,41 @@ function HomeContent() {
     "Culture & Arts",
   ];
 
-  // Featured Hero Episode
-  const heroEpisode: PlayerEpisode = {
-    id: "ep-hero-34",
-    slug: "une-nouvelle-generation-de-musiciens-maliens",
-    title: "Une nouvelle génération de musiciens maliens",
-    cover: "/images/cover-musique.jpg",
-    durationSeconds: 2520, // 42 min
-    podcast: {
-      slug: "les-voix-de-bamako",
-      name: "Les voix de Bamako",
-      cover: "/images/cover-musique.jpg",
-    },
-    mediaSources: [
-      {
-        id: "hero-src-1",
-        type: "AUDIO",
-        sourceType: "UPLOAD",
-        playbackMode: "NATIVE",
-        externalUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-        durationSeconds: 2520,
-        isPrimaryAudio: true,
-      },
-    ],
-  };
 
-  // Continuer l'écoute items
-  const resumeEpisodes: (PlayerEpisode & {
-    progressPercent: number;
-    resumeTime: string;
-    langBadge: string;
-  })[] = [
-    {
-      id: "ep-resume-1",
-      slug: "creer-son-activite-a-bamako-en-2025",
-      title: "Créer son activité à Bamako en 2025",
-      cover: "/images/cover-entreprendre.jpg",
-      durationSeconds: 2700, // 45 min
-      progressPercent: 41,
-      resumeTime: "18:40",
-      langBadge: "Français",
-      podcast: {
-        slug: "entreprendre-au-mali",
-        name: "ENTREPRENDRE AU MALI",
-        cover: "/images/cover-entreprendre.jpg",
-      },
-      mediaSources: [
-        {
-          id: "res-1",
-          type: "AUDIO",
-          sourceType: "UPLOAD",
-          playbackMode: "NATIVE",
-          externalUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-          durationSeconds: 2700,
-          isPrimaryAudio: true,
-        },
-      ],
-    },
-    {
-      id: "ep-resume-2",
-      slug: "an-ka-taa-bamako-episode-18",
-      title: "An ka taa Bamako • Épisode 18",
-      cover: "/images/cover-griot.jpg",
-      durationSeconds: 1680, // 28 min
-      progressPercent: 29,
-      resumeTime: "08:15",
-      langBadge: "Bamanankan",
-      podcast: {
-        slug: "bamanankan-kuma",
-        name: "BAMANANKAN KUMA",
-        cover: "/images/cover-griot.jpg",
-      },
-      mediaSources: [
-        {
-          id: "res-2",
-          type: "AUDIO",
-          sourceType: "UPLOAD",
-          playbackMode: "NATIVE",
-          externalUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-          durationSeconds: 1680,
-          isPrimaryAudio: true,
-        },
-      ],
-    },
-  ];
+  const fetcher = (url: string) => fetch(url).then((res) => res.json()).then((json) => json.data);
+  const { data, isLoading } = useSWR(`${API_BASE_URL}/home?country=all`, fetcher);
 
-  // Podcasts recommandés
-  const recommendedPodcasts = [
-    {
-      slug: "les-voix-de-bamako",
-      title: "Les voix de Bamako",
-      author: "Aminata Touré",
-      episodesCount: 34,
-      lang: "FR / BM",
-      badge: "Société",
-      cover: "/images/cover-musique.jpg",
-    },
-    {
-      slug: "entreprendre-au-mali",
-      title: "Entreprendre au Mali",
-      author: "Oumar Diarra",
-      episodesCount: 22,
-      lang: "Français",
-      badge: "Économie",
-      cover: "/images/cover-entreprendre.jpg",
-    },
-    {
-      slug: "culture-vivante",
-      title: "Culture vivante",
-      author: "Kadiatou Sangaré",
-      episodesCount: 18,
-      lang: "Français",
-      badge: "Arts",
-      cover: "/images/cover-kora.jpg",
-    },
-    {
-      slug: "bamanankan-kuma",
-      title: "Bamanankan kuma",
-      author: "Bakary Coulibaly",
-      episodesCount: 40,
-      lang: "Bamanankan",
-      badge: "Bamanankan",
-      cover: "/images/cover-griot.jpg",
-    },
-    {
-      slug: "afrique-demain",
-      title: "Afrique Demain",
-      author: "Dr. Moussa Koné",
-      episodesCount: 15,
-      lang: "Français",
-      badge: "Prospective",
-      cover: "/images/cover-culture.jpg",
-    },
-  ];
+  const heroEpisode = data?.heroEpisode || null;
+  const recommendedPodcasts = data?.trending || [];
+  const latestEpisodes = data?.latestEpisodes || [];
+  const resumeEpisodes: any[] = [];
 
-  // Derniers épisodes parus
-  const latestEpisodes: (PlayerEpisode & {
-    timeAgo: string;
-    langBadge?: string;
-    durationStr: string;
-  })[] = [
-    {
-      id: "latest-1",
-      slug: "la-kora-a-lere-numerique",
-      title: "La kora à l'ère numérique : transmission avec Madou Sidiki",
-      cover: "/images/cover-kora.jpg",
-      timeAgo: "Hier",
-      durationStr: "36 min",
-      durationSeconds: 2160,
-      podcast: {
-        slug: "culture-vivante",
-        name: "Culture vivante",
-        cover: "/images/cover-kora.jpg",
-      },
-      mediaSources: [
-        {
-          id: "lat-1",
-          type: "AUDIO",
-          sourceType: "UPLOAD",
-          playbackMode: "NATIVE",
-          externalUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-          durationSeconds: 2160,
-          isPrimaryAudio: true,
-        },
-      ],
-    },
-    {
-      id: "latest-2",
-      slug: "kalan-ni-donko",
-      title: "Kalan ni dɔnko : Sɛbɛnnikɛla fitininw ka kɔrɔbɔri",
-      cover: "/images/cover-griot.jpg",
-      timeAgo: "Il y a 2 jours",
-      langBadge: "Bamanankan",
-      durationStr: "24 min",
-      durationSeconds: 1440,
-      podcast: {
-        slug: "bamanankan-kuma",
-        name: "Bamanankan kuma",
-        cover: "/images/cover-griot.jpg",
-      },
-      mediaSources: [
-        {
-          id: "lat-2",
-          type: "AUDIO",
-          sourceType: "UPLOAD",
-          playbackMode: "NATIVE",
-          externalUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
-          durationSeconds: 1440,
-          isPrimaryAudio: true,
-        },
-      ],
-    },
-    {
-      id: "latest-3",
-      slug: "solaire-off-grid-fleuve-niger",
-      title: "Solaire, off-grid et agriculture résiliente le long du fleuve Niger",
-      cover: "/images/cover-culture.jpg",
-      timeAgo: "Il y a 4 jours",
-      durationStr: "51 min",
-      durationSeconds: 3060,
-      podcast: {
-        slug: "afrique-demain",
-        name: "Afrique Demain",
-        cover: "/images/cover-culture.jpg",
-      },
-      mediaSources: [
-        {
-          id: "lat-3",
-          type: "AUDIO",
-          sourceType: "UPLOAD",
-          playbackMode: "NATIVE",
-          externalUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
-          durationSeconds: 3060,
-          isPrimaryAudio: true,
-        },
-      ],
-    },
-    {
-      id: "latest-4",
-      slug: "financer-sa-premiere-micro-entreprise",
-      title: "Financer sa première micro-entreprise à Ségou et Sikasso",
-      cover: "/images/cover-entreprendre.jpg",
-      timeAgo: "Il y a 6 jours",
-      durationStr: "21 min",
-      durationSeconds: 1260,
-      podcast: {
-        slug: "entreprendre-au-mali",
-        name: "Entreprendre au Mali",
-        cover: "/images/cover-entreprendre.jpg",
-      },
-      mediaSources: [
-        {
-          id: "lat-4",
-          type: "AUDIO",
-          sourceType: "UPLOAD",
-          playbackMode: "NATIVE",
-          externalUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
-          durationSeconds: 1260,
-          isPrimaryAudio: true,
-        },
-      ],
-    },
-  ];
+  const filteredPodcasts = recommendedPodcasts.map((p: any) => ({
+    ...p,
+    title: p.name,
+    author: "Créateur",
+    badge: p.categories?.[0]?.category?.name || "Podcast",
+    episodesCount: p._count?.episodes || 0,
+    lang: p.primaryLanguage?.name || "FR",
+    cover: p.cover || "/images/placeholder.jpg",
+  }));
+  const filteredEpisodes = latestEpisodes.map((ep: any) => ({
+    ...ep,
+    timeAgo: new Date(ep.publishedAt).toLocaleDateString(),
+    durationStr: Math.floor(ep.durationSeconds / 60) + " min",
+    podcast: ep.podcast || { name: "Podcast inconnu", cover: "/images/placeholder.jpg" }
+  }));
 
-  const handleShare = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
-  };
-
-  const filteredPodcasts = recommendedPodcasts.filter((p) => {
-    if (selectedFilter === "Français" && !p.lang.includes("Français") && !p.lang.includes("FR")) return false;
-    if (selectedFilter === "• Bamanankan" && !p.lang.includes("Bamanankan") && !p.lang.includes("BM")) return false;
-    return true;
-  });
-
-  const filteredEpisodes = latestEpisodes.filter((ep) => {
-    if (selectedFilter === "Français" && ep.langBadge && !ep.langBadge.includes("Français")) return false;
-    if (selectedFilter === "• Bamanankan" && ep.langBadge && !ep.langBadge.includes("Bamanankan")) return false;
-    return true;
-  });
+  if (isLoading) {
+    return (
+      <div className="flex-1 w-full min-h-screen bg-[#0B0B0B] flex items-center justify-center">
+        <div className="text-[#FFBF00] animate-pulse font-bold text-xl">Chargement des données...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-fade-in text-white select-none">
+    <div className="p-4 md:p-8 w-full space-y-8 animate-fade-in text-white select-none">
       {/* 1. Alert Banner (Image 1) */}
       <div className="bg-[#141414] border border-[#242424] rounded-xl px-4 py-2.5 flex items-center justify-between gap-4 text-xs text-[#B8B8B8]">
         <div className="flex items-center gap-2.5">
@@ -316,10 +94,13 @@ function HomeContent() {
             <span className="text-white font-semibold">Écoute libre et fluide</span> — Accessible sans inscription obligatoire • Les voix phares et récits du Mandé en accès illimité.
           </p>
         </div>
-        <div className="hidden sm:flex items-center gap-1.5 shrink-0 text-[11px] font-mono text-[#FFBF00]">
-          <span>BKO SIGNAL 4G</span>
-          <span className="w-2 h-2 rounded-full bg-[#FFBF00] animate-pulse" />
-        </div>
+        <button
+          onClick={() => setIsAppModalOpen(true)}
+          className="hidden sm:inline-flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] text-xs font-extrabold transition-all shadow-sm"
+        >
+          <Smartphone className="w-3.5 h-3.5" />
+          <span>Télécharger l'App</span>
+        </button>
       </div>
 
       {/* 2. Hero Featured Card (Image 1) */}
@@ -358,11 +139,21 @@ function HomeContent() {
             </button>
 
             <button
-              onClick={() => playEpisode(heroEpisode)}
-              className="px-4 py-2.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-white text-xs font-semibold flex items-center gap-2 transition-colors"
+              onClick={handleSave}
+              className={`px-4 py-2.5 rounded-full hover:bg-[#252525] border border-[#2E2E2E] text-xs font-semibold flex items-center gap-2 transition-colors ${
+                isSaved ? "bg-[#252525] text-[#FFBF00]" : "bg-[#1C1C1C] text-white"
+              }`}
             >
-              <Bookmark className="w-3.5 h-3.5 text-[#B8B8B8]" />
-              <span>Ajouter à la bibliothèque</span>
+              <Bookmark className={`w-3.5 h-3.5 ${isSaved ? "fill-current text-[#FFBF00]" : "text-[#B8B8B8]"}`} />
+              <span>{isSaved ? "Ajouté à la bibliothèque" : "Ajouter à la bibliothèque"}</span>
+            </button>
+
+            <button
+              onClick={() => usePlayerStore.getState().addToQueue(heroEpisode)}
+              className="p-2.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-[#B8B8B8] hover:text-white transition-colors"
+              title="Ajouter à la file d'attente"
+            >
+              <ListPlus className="w-4 h-4" />
             </button>
 
             <button
@@ -584,10 +375,11 @@ function HomeContent() {
                   <Download className="w-4 h-4" />
                 </button>
                 <button
+                  onClick={() => usePlayerStore.getState().addToQueue(ep)}
                   className="p-1.5 hover:text-white transition-colors"
-                  title="Plus d'actions"
+                  title="Ajouter à la file d'attente"
                 >
-                  <MoreVertical className="w-4 h-4" />
+                  <ListPlus className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -626,13 +418,32 @@ function HomeContent() {
           </Link>
         </div>
       </div>
+
+      {/* 9. Mobile App Promotion Section */}
+      <DownloadAppSection />
+
+      {/* App Download Modal */}
+      <AppDownloadModal isOpen={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} />
     </div>
   );
 }
 
 export default function HomePage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="flex-1 w-full min-h-screen bg-[#0B0B0B] flex items-center justify-center">
+        <div className="p-12 text-center text-[#757575] font-semibold animate-pulse">
+          Chargement de l'accueil...
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Suspense fallback={<div className="p-12 text-center text-[#757575]">Chargement de la page d'accueil...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-[#757575]">Chargement...</div>}>
       <HomeContent />
     </Suspense>
   );

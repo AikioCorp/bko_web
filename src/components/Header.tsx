@@ -3,12 +3,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, Plus, User, LogIn, UserPlus, LogOut, Radio, Menu, ShieldCheck } from "lucide-react";
+import { Search, Plus, User, LogIn, UserPlus, LogOut, Radio, Menu, ShieldCheck, Bookmark, Smartphone } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { BkoLogo } from "./ui/BkoLogo";
 import { NotificationBell } from "./NotificationBell";
+import { UserDropdown } from "./UserDropdown";
 import { useConsoleAccess } from "@/hooks/useConsoleAccess";
 import { API_BASE_URL } from "@/lib/api";
+import { AppDownloadModal } from "./modals/AppDownloadModal";
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
@@ -32,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
     { code: "bm", name: "Bamanankan" },
   ]);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
   const { hasConsole, landing } = useConsoleAccess();
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -69,13 +72,20 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
       });
   }, []);
 
+  const isSuperAdmin = Boolean(
+    user?.roles?.some((r) => r.toUpperCase() === "SUPER_ADMIN")
+  );
+  const isAdmin = Boolean(
+    isSuperAdmin || user?.roles?.some((r) => r.toUpperCase() === "ADMIN")
+  );
   const isCreator =
     isAuthenticated &&
     Boolean(
-      user?.roles?.includes("CREATOR") ||
-      user?.roles?.includes("ADMIN") ||
+      isAdmin ||
+      user?.roles?.some((r) => ["CREATOR", "EDITOR"].includes(r.toUpperCase())) ||
       user?.permissions?.includes("publish:episodes")
     );
+  const canAccessConsole = hasConsole || isAdmin;
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,11 +120,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
     }, 250);
   };
 
-  const navLinks = [
-    { label: "Accueil", href: "/" },
-    { label: "Explorer", href: "/explore" },
-    { label: "Podcasts", href: "/podcasts" },
-  ];
+
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#0B0B0B]/95 backdrop-blur border-b border-[#1A1A1A] px-4 md:px-8 py-2.5 flex items-center justify-between gap-4 select-none">
@@ -133,23 +139,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           <BkoLogo size="sm" showText={false} />
         </div>
 
-        {/* Nav Links: Accueil, Explorer, Podcasts (from user image) */}
-        <nav className="hidden sm:flex items-center gap-6 text-xs font-semibold">
-          {navLinks.map((link) => {
-            const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`transition-colors ${
-                  isActive ? "text-[#FFBF00] font-bold" : "text-[#B8B8B8] hover:text-white"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+
       </div>
 
       {/* Center: Search Bar with Language Filters inside */}
@@ -188,8 +178,18 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
         </div>
       </form>
 
-      {/* Right Actions: Publier (Creator Only) + Login Icon with Hover Popover */}
+      {/* Right Actions: App Mobile CTA + Publier (Creator Only) + Login Icon with Hover Popover */}
       <div className="flex items-center gap-3 shrink-0">
+        {/* Call-to-Action to download Mobile App */}
+        <button
+          onClick={() => setIsAppModalOpen(true)}
+          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#181818] hover:bg-[#222222] border border-[#2D2D2D] hover:border-[#FFBF00]/40 text-[#D4D4D4] hover:text-white text-xs font-semibold transition-all shadow-sm"
+          title="Installer l'application mobile"
+        >
+          <Smartphone className="w-3.5 h-3.5 text-[#FFBF00]" />
+          <span>App Mobile</span>
+        </button>
+
         {/* "+ Publier" Button: ONLY shown if creator is authenticated */}
         {isCreator && (
           <Link
@@ -201,9 +201,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           </Link>
         )}
 
-        {hasConsole && (
+        {canAccessConsole && (
           <Link
-            href={landing}
+            href="/admin/dashboard"
             className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FFBF00] text-[#0B0B0B] hover:bg-[#E5AB00] text-xs font-bold transition-all shadow-sm"
           >
             <ShieldCheck className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -213,115 +213,10 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
 
         <NotificationBell />
 
-        {/* User Icon Button with Hover Dropdown (no text on button, text shows on hover) */}
-        <div
-          className="relative"
-          onMouseEnter={handleMouseEnterUser}
-          onMouseLeave={handleMouseLeaveUser}
-        >
-          <button
-            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-              isAuthenticated
-                ? "bg-[#FFBF00] text-[#0B0B0B] font-bold text-xs shadow-md"
-                : "bg-[#161616] border border-[#2A2A2A] text-[#B8B8B8] hover:text-white hover:border-[#FFBF00]/50"
-            }`}
-            aria-label="Menu utilisateur"
-          >
-            {isAuthenticated && user?.fullName ? (
-              user.fullName.charAt(0).toUpperCase()
-            ) : (
-              <User className="w-4 h-4" />
-            )}
-          </button>
-
-          {/* Floating Dropdown on Hover */}
-          {isUserMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-52 bg-[#141414] border border-[#282828] rounded-2xl p-2 shadow-2xl z-50 animate-fade-in space-y-1">
-              {!isAuthenticated ? (
-                <>
-                  <div className="px-3 py-2 border-b border-[#222222]">
-                    <p className="text-xs font-bold text-white">Bienvenue</p>
-                    <p className="text-[10px] text-[#757575]">
-                      Accédez à vos podcasts et synchronisez vos écoutes.
-                    </p>
-                  </div>
-                  <Link
-                    href="/login?tab=login"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-white hover:bg-[#1E1E1E] transition-colors"
-                  >
-                    <LogIn className="w-3.5 h-3.5 text-[#FFBF00]" />
-                    <span>Connexion</span>
-                  </Link>
-                  <Link
-                    href="/login?tab=register"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold bg-[#FFBF00] text-[#0B0B0B] hover:bg-[#E5AB00] transition-colors"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>S'inscrire</span>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <div className="px-3 py-2 border-b border-[#222222]">
-                    <p className="text-xs font-bold text-white truncate">{user?.fullName || "Utilisateur"}</p>
-                    <p className="text-[10px] text-[#757575] truncate">{user?.email}</p>
-                  </div>
-                  <Link
-                    href="/profile"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-[#B8B8B8] hover:text-white hover:bg-[#1E1E1E] transition-colors"
-                  >
-                    <User className="w-3.5 h-3.5" />
-                    <span>Mon Profil</span>
-                  </Link>
-                  {hasConsole && (
-                    <Link
-                      href={landing}
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-[#FFBF00] hover:bg-[#1E1E1E] transition-colors font-medium"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Console d&apos;administration</span>
-                    </Link>
-                  )}
-                  {isCreator && (
-                    <Link
-                      href="/studio"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-[#FFBF00] hover:bg-[#1E1E1E] transition-colors font-medium"
-                    >
-                      <Radio className="w-3.5 h-3.5" />
-                      <span>Espace Créateurs</span>
-                    </Link>
-                  )}
-                  <Link
-                    href="/library"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-[#B8B8B8] hover:text-white hover:bg-[#1E1E1E] transition-colors"
-                  >
-                    <span>Ma Bibliothèque</span>
-                  </Link>
-                  <div className="pt-1 border-t border-[#222222]">
-                    <button
-                      onClick={() => {
-                        logout();
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-red-400 hover:bg-[#1E1E1E] transition-colors"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Se déconnecter</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+        <UserDropdown />
       </div>
+
+      <AppDownloadModal isOpen={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} />
     </header>
   );
 };

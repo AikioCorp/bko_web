@@ -11,14 +11,16 @@ import {
   Trash2,
   Radio,
   CheckCircle2,
-  Wifi,
+  Smartphone,
   MoreVertical,
 } from "lucide-react";
 import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
+import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 
 export default function LibraryPage() {
   const { playEpisode } = usePlayerStore();
   const [activeTab, setActiveTab] = useState<"history" | "saved" | "following" | "downloads">("history");
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
 
   const historyEpisodes = [
     {
@@ -144,7 +146,7 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-fade-in text-white select-none">
+    <div className="p-4 md:p-8 w-full space-y-8 animate-fade-in text-white select-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -322,21 +324,28 @@ export default function LibraryPage() {
 
       {/* Tab: Downloads */}
       {activeTab === "downloads" && (
-        <div className="bg-[#141414] border border-[#242424] rounded-2xl p-8 text-center space-y-3 max-w-lg mx-auto">
-          <div className="w-12 h-12 rounded-full bg-[#1C1A14] border border-[#FFBF00]/30 text-[#FFBF00] flex items-center justify-center mx-auto">
-            <Wifi className="w-6 h-6" />
+        <div className="bg-[#141414] border border-[#242424] rounded-2xl p-8 text-center space-y-4 max-w-lg mx-auto">
+          <div className="w-12 h-12 rounded-full bg-[#1C180E] border border-[#FFBF00]/40 text-[#FFBF00] flex items-center justify-center mx-auto">
+            <Smartphone className="w-6 h-6" />
           </div>
-          <h3 className="text-sm font-headline font-bold text-white">Mode Hors-ligne Bamako</h3>
-          <p className="text-xs text-[#B8B8B8]">
-            Téléchargez vos épisodes en Wi-Fi pour les écouter sans connexion et sans consommer votre forfait data dans les transports à Bamako.
+          <h3 className="text-base font-headline font-bold text-white">Écoute Hors-ligne sur l'App Mobile</h3>
+          <p className="text-xs text-[#B8B8B8] leading-relaxed">
+            Pour sauvegarder vos podcasts et les écouter sans aucune connexion Internet (dans les transports, en voyage ou sans data), utilisez l'application mobile officielle Bamako Podcast.
           </p>
           <div className="pt-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C1C1C] border border-[#2E2E2E] text-xs text-[#3FB950]">
-              <CheckCircle2 className="w-3.5 h-3.5" /> 1 épisode sauvegardé en cache local (32 Mo)
-            </span>
+            <button
+              onClick={() => setIsAppModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] text-xs font-bold transition-all shadow-md"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>Télécharger l'application mobile</span>
+            </button>
           </div>
         </div>
       )}
+
+      {/* App Download Modal */}
+      <AppDownloadModal isOpen={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} />
     </div>
   );
 }

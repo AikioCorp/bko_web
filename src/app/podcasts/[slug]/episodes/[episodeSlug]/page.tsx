@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Play, Pause, Share2, Bookmark, BookmarkCheck } from "lucide-react";
+import { Play, Pause, Share2, Bookmark, BookmarkCheck, ListMusic } from "lucide-react";
 import { studioApi } from "@/lib/studioApi";
 import { formatClock, formatDate, formatDuration, shareOrCopy, toPlayerEpisode } from "@/lib/playback";
 import { usePlayerStore } from "../../../../../store/playerStore";
@@ -37,7 +37,7 @@ export default function EpisodePage() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authLoading = useAuthStore((s) => s.isLoading);
-  const { currentEpisode, isPlaying, playEpisode, togglePlay, seek } = usePlayerStore();
+  const { currentEpisode, isPlaying, playEpisode, togglePlay, seek, addToQueue } = usePlayerStore();
 
   const [ep, setEp] = useState<Episode | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "notfound" | "error">("loading");
@@ -147,6 +147,11 @@ export default function EpisodePage() {
               {isCurrent && isPlaying ? <Pause className="w-4 h-4 fill-current stroke-none" /> : <Play className="w-4 h-4 fill-current stroke-none" />}
               {isCurrent && isPlaying ? "Pause" : ep.viewer?.progress && !ep.viewer.progress.completed && ep.viewer.progress.positionSeconds > 10 ? "Reprendre" : "Écouter"}
             </button>
+            
+            <button onClick={() => addToQueue(toPlayerEpisode(ep, ep.podcast))} className="text-[#B8B8B8] hover:text-[#FFBF00] p-2" aria-label="Ajouter à la file d'attente">
+              <ListMusic className="w-5 h-5" />
+            </button>
+
             <button onClick={toggleSave} aria-pressed={saved} aria-label={saved ? "Retirer des favoris" : "Enregistrer"} className="text-[#B8B8B8] hover:text-[#FFBF00] p-2">
               {saved ? <BookmarkCheck className="w-5 h-5 text-[#FFBF00]" /> : <Bookmark className="w-5 h-5" />}
             </button>

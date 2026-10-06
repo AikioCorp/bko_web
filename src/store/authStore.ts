@@ -1,6 +1,12 @@
 import { API_BASE_URL } from "@/lib/api";
 import { create } from "zustand";
-import { getAccessToken, setAccessToken, refreshAccessToken } from "@/lib/token";
+import {
+  getAccessToken,
+  setAccessToken,
+  getStoredRefreshToken,
+  clearStoredTokens,
+  refreshAccessToken,
+} from "@/lib/token";
 
 export interface UserProfile {
   id: string;
@@ -21,59 +27,123 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  setAuth: (user: UserProfile, accessToken: string) => void;
+  setAuth: (user: UserProfile, accessToken: string, refreshToken?: string) => void;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
 
+const USER_KEY = "bko_user_profile";
+
+function getCachedUser(): UserProfile | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 let checkPromise: Promise<void> | null = null;
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  isAuthenticated: false,
-  isLoading: true,
+export const useAuthStore = create<AuthState>((set, get) => {
+  const cachedUser = getCachedUser();
+  const initialToken = typeof window !== "undefined" ? getAccessToken() : null;
 
-  setAuth: (user, accessToken) => {
-    setAccessToken(accessToken);
-    set({ user, accessToken, isAuthenticated: true, isLoading: false });
-  },
+  return {
+    user: cachedUser,
+    accessToken: initialToken,
+    isAuthenticated: Boolean(cachedUser && initialToken),
+    isLoading: true,
 
-  logout: async () => {
-    try {
-      await fetch(`${API_BASE_URL}/auth/logout`, { method: "POST", credentials: "include" });
-    } catch (e) {}
-    setAccessToken(null);
-    set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
-  },
+    setAuth: (user, accessToken, refreshToken) => {
+      setAccessToken(accessToken, refreshToken);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+      }
+      set({ user, accessToken, isAuthenticated: true, isLoading: false });
+    },
 
-  // Restaure la session : le token n'existe qu'en mémoire, donc après un rechargement on
-  // le récupère via le cookie httpOnly de refresh. Dédupliqué pour les appels concurrents.
-  checkAuth: () => {
-    if (!checkPromise) {
-      checkPromise = (async () => {
-        try {
-          if (!getAccessToken()) await refreshAccessToken();
-          const token = getAccessToken();
-          if (!token) {
-            set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
-            return;
+    logout: async () => {
+      const storedRefresh = getStoredRefreshToken();
+      try {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: storedRefresh || undefined }),
+        });
+      } catch (e) {}
+      clearStoredTokens();
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(USER_KEY);
+      }
+      set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
+    },
+
+    checkAuth: () => {
+      if (!checkPromise) {
+        checkPromise = (async () => {
+          // Hydratation optimiste immédiate si des données locales existent
+          if (typeof window !== "undefined" && !get().user) {
+            const cached = getCachedUser();
+            const token = getAccessToken();
+            if (cached && token) {
+              set({ user: cached, accessToken: token, isAuthenticated: true, isLoading: false });
+            }
           }
-          const res = await fetch(`${API_BASE_URL}/me`, { credentials: "include" });
-          const json = await res.json();
-          if (json.success) {
-            set({ user: json.data, accessToken: getAccessToken(), isAuthenticated: true, isLoading: false });
-          } else {
-            setAccessToken(null);
-            set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
+
+          try {
+            let token = getAccessToken();
+            if (!token) {
+              token = await refreshAccessToken();
+            }
+            if (!token) {
+              clearStoredTokens();
+              if (typeof window !== "undefined") {
+                localStorage.removeItem(USER_KEY);
+              }
+              set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
+              return;
+            }
+
+            const res = await fetch(`${API_BASE_URL}/me`, { credentials: "include" });
+            const json = await res.json();
+            if (json.success && json.data) {
+              if (typeof window !== "undefined") {
+                localStorage.setItem(USER_KEY, JSON.stringify(json.data));
+              }
+              set({ user: json.data, accessToken: getAccessToken(), isAuthenticated: true, isLoading: false });
+            } else {
+              // Si le token a expiré, on tente un refresh
+              const refreshed = await refreshAccessToken();
+              if (refreshed) {
+                const retryRes = await fetch(`${API_BASE_URL}/me`, { credentials: "include" });
+                const retryJson = await retryRes.json();
+                if (retryJson.success && retryJson.data) {
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem(USER_KEY, JSON.stringify(retryJson.data));
+                  }
+                  set({ user: retryJson.data, accessToken: refreshed, isAuthenticated: true, isLoading: false });
+                  return;
+                }
+              }
+              clearStoredTokens();
+              if (typeof window !== "undefined") {
+                localStorage.removeItem(USER_KEY);
+              }
+              set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
+            }
+          } catch (err) {
+            // En cas d'erreur réseau ponctuelle, préserver la session en cache si existante
+            const hasCached = !!get().user;
+            set({ isLoading: false, isAuthenticated: hasCached });
+          } finally {
+            checkPromise = null;
           }
-        } catch (err) {
-          set({ isLoading: false });
-        } finally {
-          checkPromise = null;
-        }
-      })();
-    }
-    return checkPromise;
-  },
-}));
+        })();
+      }
+      return checkPromise;
+    },
+  };
+});

@@ -67,14 +67,14 @@ export default function StudioPodcastPage() {
     load();
   }, [load]);
 
-  if (error) return <div className="max-w-5xl mx-auto px-4 py-8"><ErrorBanner message={error} onRetry={load} /></div>;
+  if (error) return <div className="w-full px-4 py-8"><ErrorBanner message={error} onRetry={load} /></div>;
   if (!podcast) return <Loading />;
 
   const canWrite = ["OWNER", "ADMIN", "EDITOR"].includes(podcast.userRole);
   const canManage = ["OWNER", "ADMIN"].includes(podcast.userRole);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+    <div className="w-full px-4 py-8 space-y-6">
       <Link href="/studio" className="text-xs text-gray-400 hover:text-white">
         ← Studio
       </Link>
