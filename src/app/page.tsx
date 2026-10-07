@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
@@ -30,22 +30,26 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const [selectedFilter, setSelectedFilter] = useState("Toutes les langues");
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const handleSave = () => setIsSaved(!isSaved);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const handleShare = () => { navigator.clipboard.writeText(window.location.href); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2000); };
 
   useEffect(() => {
     const langParam = searchParams.get("lang");
-    if (langParam === "bm") setSelectedFilter("• Bamanankan");
-    else if (langParam === "fr") setSelectedFilter("Français");
+    if (langParam === "bm") setSelectedFilter("â€¢ Bamanankan");
+    else if (langParam === "fr") setSelectedFilter("FranÃ§ais");
     else if (langParam === "ALL") setSelectedFilter("Toutes les langues");
   }, [searchParams]);
 
   const filters = [
     "Toutes les langues",
-    "Français",
-    "• Bamanankan",
-    "Soninké",
+    "FranÃ§ais",
+    "â€¢ Bamanankan",
+    "SoninkÃ©",
     "Peul (Fulfulde)",
-    "Société & Récits",
-    "Économie & Tech",
+    "SociÃ©tÃ© & RÃ©cits",
+    "Ã‰conomie & Tech",
     "Culture & Arts",
   ];
 
@@ -61,7 +65,7 @@ function HomeContent() {
   const filteredPodcasts = recommendedPodcasts.map((p: any) => ({
     ...p,
     title: p.name,
-    author: "Créateur",
+    author: "CrÃ©ateur",
     badge: p.categories?.[0]?.category?.name || "Podcast",
     episodesCount: p._count?.episodes || 0,
     lang: p.primaryLanguage?.name || "FR",
@@ -77,7 +81,7 @@ function HomeContent() {
   if (isLoading) {
     return (
       <div className="flex-1 w-full min-h-screen bg-[#0B0B0B] flex items-center justify-center">
-        <div className="text-[#FFBF00] animate-pulse font-bold text-xl">Chargement des données...</div>
+        <div className="text-[#FFBF00] animate-pulse font-bold text-xl">Chargement des donnÃ©es...</div>
       </div>
     );
   }
@@ -91,7 +95,7 @@ function HomeContent() {
             <Info className="w-3 h-3" />
           </span>
           <p className="leading-snug">
-            <span className="text-white font-semibold">Écoute libre et fluide</span> — Accessible sans inscription obligatoire • Les voix phares et récits du Mandé en accès illimité.
+            <span className="text-white font-semibold">Ã‰coute libre et fluide</span> â€” Accessible sans inscription obligatoire â€¢ Les voix phares et rÃ©cits du MandÃ© en accÃ¨s illimitÃ©.
           </p>
         </div>
         <button
@@ -99,7 +103,7 @@ function HomeContent() {
           className="hidden sm:inline-flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] text-xs font-extrabold transition-all shadow-sm"
         >
           <Smartphone className="w-3.5 h-3.5" />
-          <span>Télécharger l'App</span>
+          <span>TÃ©lÃ©charger l'App</span>
         </button>
       </div>
 
@@ -109,24 +113,24 @@ function HomeContent() {
         <div className="space-y-4 max-w-xl z-10">
           <div className="flex flex-wrap items-center gap-2">
             <span className="bg-[#FFBF00] text-[#0B0B0B] text-[10px] font-extrabold uppercase px-2 py-0.5 rounded tracking-wide">
-              ÉDITION SPÉCIALE
+              Ã‰DITION SPÃ‰CIALE
             </span>
             <span className="bg-[#1C1C1C] border border-[#2E2E2E] text-[#B8B8B8] text-[11px] font-medium px-2.5 py-0.5 rounded-full">
-              Français & Bamanankan
+              FranÃ§ais & Bamanankan
             </span>
-            <span className="text-[#757575] text-xs">• Parution hebdo</span>
+            <span className="text-[#757575] text-xs">â€¢ Parution hebdo</span>
           </div>
 
           <p className="text-[#FFBF00] text-xs font-bold uppercase tracking-wider">
-            LES VOIX DE BAMAKO • ÉP. 34
+            LES VOIX DE BAMAKO â€¢ Ã‰P. 34
           </p>
 
           <h1 className="text-2xl md:text-4xl font-headline font-extrabold text-white leading-tight">
-            Une nouvelle génération de musiciens maliens
+            Une nouvelle gÃ©nÃ©ration de musiciens maliens
           </h1>
 
           <p className="text-xs md:text-sm text-[#B8B8B8] leading-relaxed">
-            Fatoumata Diawara et des artistes émergents de Badalabougou explorent la réinvention du son mandingue, entre rythmes afro-électro et instruments traditionnels...
+            Fatoumata Diawara et des artistes Ã©mergents de Badalabougou explorent la rÃ©invention du son mandingue, entre rythmes afro-Ã©lectro et instruments traditionnels...
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3">
@@ -135,7 +139,7 @@ function HomeContent() {
               className="px-5 py-2.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] text-xs font-extrabold flex items-center gap-2 transition-all shadow-md active:scale-95"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Écouter maintenant (42 min)</span>
+              <span>Ã‰couter maintenant (42 min)</span>
             </button>
 
             <button
@@ -145,13 +149,13 @@ function HomeContent() {
               }`}
             >
               <Bookmark className={`w-3.5 h-3.5 ${isSaved ? "fill-current text-[#FFBF00]" : "text-[#B8B8B8]"}`} />
-              <span>{isSaved ? "Ajouté à la bibliothèque" : "Ajouter à la bibliothèque"}</span>
+              <span>{isSaved ? "AjoutÃ© Ã  la bibliothÃ¨que" : "Ajouter Ã  la bibliothÃ¨que"}</span>
             </button>
 
             <button
               onClick={() => usePlayerStore.getState().addToQueue(heroEpisode)}
               className="p-2.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-[#B8B8B8] hover:text-white transition-colors"
-              title="Ajouter à la file d'attente"
+              title="Ajouter Ã  la file d'attente"
             >
               <ListPlus className="w-4 h-4" />
             </button>
@@ -159,7 +163,7 @@ function HomeContent() {
             <button
               onClick={handleShare}
               className="p-2.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-[#B8B8B8] hover:text-white transition-colors"
-              title="Partager l'épisode"
+              title="Partager l'Ã©pisode"
             >
               {copiedLink ? <Check className="w-4 h-4 text-[#FFBF00]" /> : <Share2 className="w-4 h-4" />}
             </button>
@@ -170,7 +174,7 @@ function HomeContent() {
         <div className="relative w-full md:w-80 h-52 md:h-64 rounded-xl overflow-hidden shrink-0 border border-[#262626] bg-[#0E0E0E]">
           <Image
             src="/images/cover-musique.jpg"
-            alt="Une nouvelle génération de musiciens maliens"
+            alt="Une nouvelle gÃ©nÃ©ration de musiciens maliens"
             fill
             className="object-cover"
             priority
@@ -182,9 +186,9 @@ function HomeContent() {
       <div className="space-y-3">
         <div className="flex items-center justify-between text-xs">
           <span className="font-bold tracking-wider uppercase text-[#B8B8B8]">
-            FILTRER L'ÉCOUTE
+            FILTRER L'Ã‰COUTE
           </span>
-          <span className="text-[#FFBF00] font-medium">64 séries disponibles</span>
+          <span className="text-[#FFBF00] font-medium">64 sÃ©ries disponibles</span>
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -207,12 +211,12 @@ function HomeContent() {
         </div>
       </div>
 
-      {/* 4. Continuer l'écoute (Image 1 & 2) */}
+      {/* 4. Continuer l'Ã©coute (Image 1 & 2) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-white font-headline font-bold text-lg">
             <Clock className="w-4 h-4 text-[#FFBF00]" />
-            <h2>Continuer l'écoute</h2>
+            <h2>Continuer l'Ã©coute</h2>
           </div>
           <Link
             href="/library"
@@ -252,7 +256,7 @@ function HomeContent() {
 
                 <div className="space-y-1 pt-1">
                   <div className="flex items-center justify-between text-[10px] text-[#757575] font-mono">
-                    <span>Reprendre à {item.resumeTime}</span>
+                    <span>Reprendre Ã  {item.resumeTime}</span>
                     <span>{Math.round(item.durationSeconds / 60)} min</span>
                   </div>
                   <div className="w-full h-1 bg-[#262626] rounded-full overflow-hidden">
@@ -268,15 +272,15 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* 5. Podcasts recommandés (Image 1 & 2) */}
+      {/* 5. Podcasts recommandÃ©s (Image 1 & 2) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg md:text-xl font-headline font-bold text-white">
-              Podcasts recommandés
+              Podcasts recommandÃ©s
             </h2>
             <p className="text-xs text-[#B8B8B8]">
-              Sélection éditoriale des productions phares du Mali et de la diaspora
+              SÃ©lection Ã©ditoriale des productions phares du Mali et de la diaspora
             </p>
           </div>
           <Link
@@ -288,7 +292,7 @@ function HomeContent() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {filteredPodcasts.map((podcast) => (
+          {filteredPodcasts.map((podcast: any) => (
             <Link
               key={podcast.slug}
               href={`/podcasts/${podcast.slug}`}
@@ -307,7 +311,7 @@ function HomeContent() {
                 </h3>
                 <p className="text-[11px] text-[#757575] truncate">{podcast.author}</p>
                 <p className="text-[10px] text-[#B8B8B8] pt-1">
-                  {podcast.episodesCount} épisodes • {podcast.lang}
+                  {podcast.episodesCount} Ã©pisodes â€¢ {podcast.lang}
                 </p>
               </div>
             </Link>
@@ -315,25 +319,25 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* 6. Derniers épisodes parus (Image 1 & 2) */}
+      {/* 6. Derniers Ã©pisodes parus (Image 1 & 2) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg md:text-xl font-headline font-bold text-white">
-              Derniers épisodes parus
+              Derniers Ã©pisodes parus
             </h2>
             <p className="text-xs text-[#B8B8B8]">
-              Fraîchement enregistrés dans nos studios partenaires
+              FraÃ®chement enregistrÃ©s dans nos studios partenaires
             </p>
           </div>
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] border border-[#242424] hover:border-[#333333] text-xs font-medium text-[#B8B8B8] hover:text-white transition-colors">
             <SlidersHorizontal className="w-3.5 h-3.5 text-[#FFBF00]" />
-            <span>Trier par récence</span>
+            <span>Trier par rÃ©cence</span>
           </button>
         </div>
 
         <div className="space-y-2">
-          {filteredEpisodes.map((ep) => (
+          {filteredEpisodes.map((ep: any) => (
             <div
               key={ep.id}
               className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#333333] rounded-xl px-4 py-3 flex items-center justify-between gap-4 transition-colors group"
@@ -342,7 +346,7 @@ function HomeContent() {
                 <button
                   onClick={() => playEpisode(ep)}
                   className="w-8 h-8 rounded-full bg-[#1E1E1E] group-hover:bg-[#FFBF00] text-[#B8B8B8] group-hover:text-[#0B0B0B] flex items-center justify-center shrink-0 transition-colors shadow-sm"
-                  aria-label="Écouter"
+                  aria-label="Ã‰couter"
                 >
                   <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
                 </button>
@@ -355,7 +359,7 @@ function HomeContent() {
                         {ep.langBadge}
                       </span>
                     )}
-                    <span className="text-[#757575]">• {ep.timeAgo}</span>
+                    <span className="text-[#757575]">â€¢ {ep.timeAgo}</span>
                   </div>
                   <h3
                     onClick={() => playEpisode(ep)}
@@ -370,14 +374,14 @@ function HomeContent() {
                 <span className="font-mono text-[#B8B8B8]">{ep.durationStr}</span>
                 <button
                   className="p-1.5 hover:text-white transition-colors"
-                  title="Télécharger l'épisode"
+                  title="TÃ©lÃ©charger l'Ã©pisode"
                 >
                   <Download className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => usePlayerStore.getState().addToQueue(ep)}
                   className="p-1.5 hover:text-white transition-colors"
-                  title="Ajouter à la file d'attente"
+                  title="Ajouter Ã  la file d'attente"
                 >
                   <ListPlus className="w-4 h-4" />
                 </button>
@@ -387,7 +391,7 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* 7. CTA Créateurs Studio (Image 2) */}
+      {/* 7. CTA CrÃ©ateurs Studio (Image 2) */}
       <div className="bg-[#141414] border border-[#242424] rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-[#FFBF00] text-[#0B0B0B] flex items-center justify-center shrink-0 shadow-lg">
@@ -395,10 +399,10 @@ function HomeContent() {
           </div>
           <div>
             <h3 className="text-sm md:text-base font-headline font-bold text-white">
-              Vous racontez des histoires à Bamako ?
+              Vous racontez des histoires Ã  Bamako ?
             </h3>
             <p className="text-xs text-[#B8B8B8] max-w-xl">
-              Rejoignez le collectif des créateurs sonores de Bamako Podcast. Accédez à nos studios, formations au montage et monétisation directe.
+              Rejoignez le collectif des crÃ©ateurs sonores de Bamako Podcast. AccÃ©dez Ã  nos studios, formations au montage et monÃ©tisation directe.
             </p>
           </div>
         </div>

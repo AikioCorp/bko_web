@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "@/components/AuthReady";
 import { adminApi } from "@/lib/api";
 import useSWR from "swr";
 import { ChevronLeft, Save, Upload, Plus, Trash2, Youtube, Headphones, CheckCircle2, Play, Image as ImageIcon, Loader2, Link2, X, RefreshCw } from "lucide-react";
@@ -16,7 +15,6 @@ export default function AdminEditEpisodePage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
-  const { token } = useAuth();
 
   const fetcher = (url: string) => adminApi(url).then(res => res.data);
   const { data: episode, mutate, error } = useSWR(`/admin/episodes/${id}`, fetcher);
@@ -71,7 +69,7 @@ export default function AdminEditEpisodePage() {
     return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#757575]" /></div>;
   }
   if (error) {
-    return <div className="p-12 text-center text-red-500">Erreur lors du chargement de l'épisode.</div>;
+    return <div className="p-12 text-center text-red-500">Erreur lors du chargement de l'Ã©pisode.</div>;
   }
 
   const podcast = episode?.podcast;
@@ -149,7 +147,7 @@ export default function AdminEditEpisodePage() {
       if (res.success && res.data) {
         setYoutubePreview(res.data);
       } else {
-        alert("Vidéo introuvable ou privée.");
+        alert("VidÃ©o introuvable ou privÃ©e.");
       }
     } catch (err) {
       console.error(err);
@@ -177,7 +175,7 @@ export default function AdminEditEpisodePage() {
   };
 
   const handleRemoveYoutube = async () => {
-    if (!confirm("Retirer la vidéo YouTube ?")) return;
+    if (!confirm("Retirer la vidÃ©o YouTube ?")) return;
     try {
       await adminApi(`/admin/episodes/${id}/youtube`, { method: "DELETE" });
       mutate();
@@ -194,7 +192,7 @@ export default function AdminEditEpisodePage() {
         method: "POST",
         body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size })
       });
-      if (!res.success) throw new Error("Impossible de créer la session d'envoi");
+      if (!res.success) throw new Error("Impossible de crÃ©er la session d'envoi");
       
       const { uploadUrl, uploadId } = res.data;
       
@@ -241,14 +239,14 @@ export default function AdminEditEpisodePage() {
         <span>/</span>
         <Link href={`/admin/podcasts/${podcast?.slug || podcast?.id}`} className="hover:text-white transition-colors">{podcast?.title || "Podcast"}</Link>
         <span>/</span>
-        <span className="text-white">Édition de l'épisode</span>
+        <span className="text-white">Ã‰dition de l'Ã©pisode</span>
       </div>
 
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1">{title || "Nouvel épisode"}</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">{title || "Nouvel Ã©pisode"}</h1>
           <p className="text-sm text-[#757575]">
-            État : {episode.status === "PUBLISHED" ? <span className="text-green-500">Publié</span> : episode.status === "SCHEDULED" ? <span className="text-yellow-500">Programmé</span> : "Brouillon"}
+            Ã‰tat : {episode.status === "PUBLISHED" ? <span className="text-green-500">PubliÃ©</span> : episode.status === "SCHEDULED" ? <span className="text-yellow-500">ProgrammÃ©</span> : "Brouillon"}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -270,9 +268,9 @@ export default function AdminEditEpisodePage() {
         {/* COLONNE GAUCHE : Formulaires */}
         <div className="flex-1 space-y-8">
           
-          {/* 1. Informations de l'épisode */}
+          {/* 1. Informations de l'Ã©pisode */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
-            <h2 className="text-lg font-bold text-white mb-6">1. Informations de l'épisode</h2>
+            <h2 className="text-lg font-bold text-white mb-6">1. Informations de l'Ã©pisode</h2>
             
             <div className="space-y-5">
               <div>
@@ -281,28 +279,28 @@ export default function AdminEditEpisodePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Résumé court</label>
-                <input type="text" value={summary} onChange={e => setSummary(e.target.value)} onBlur={handleSaveInfo} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" placeholder="Utilisé dans les cartes (optionnel)" />
+                <label className="block text-xs font-bold text-[#757575] uppercase mb-2">RÃ©sumÃ© court</label>
+                <input type="text" value={summary} onChange={e => setSummary(e.target.value)} onBlur={handleSaveInfo} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" placeholder="UtilisÃ© dans les cartes (optionnel)" />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)} onBlur={handleSaveInfo} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white h-32 resize-y" placeholder="Présentation complète, liens et intervenants" />
+                <textarea value={description} onChange={e => setDescription(e.target.value)} onBlur={handleSaveInfo} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white h-32 resize-y" placeholder="PrÃ©sentation complÃ¨te, liens et intervenants" />
               </div>
 
               <div className="grid grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Langue principale</label>
                   <select value={language} onChange={e => { setLanguage(e.target.value); handleSaveInfo(); }} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
-                    <option value="fr">Français</option>
+                    <option value="fr">FranÃ§ais</option>
                     <option value="bm">Bamanankan (Bambara)</option>
                     <option value="en">English</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Type d'épisode</label>
+                  <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Type d'Ã©pisode</label>
                   <select value={episodeType} onChange={e => { setEpisodeType(e.target.value); handleSaveInfo(); }} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
-                    <option value="FULL">Épisode complet</option>
+                    <option value="FULL">Ã‰pisode complet</option>
                     <option value="TRAILER">Bande-annonce</option>
                     <option value="BONUS">Bonus</option>
                   </select>
@@ -315,7 +313,7 @@ export default function AdminEditEpisodePage() {
                   <input type="number" value={seasonNumber} onChange={e => setSeasonNumber(e.target.value ? Number(e.target.value) : "")} onBlur={handleSaveInfo} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Numéro (opt.)</label>
+                  <label className="block text-xs font-bold text-[#757575] uppercase mb-2">NumÃ©ro (opt.)</label>
                   <input type="number" value={episodeNumber} onChange={e => setEpisodeNumber(e.target.value ? Number(e.target.value) : "")} onBlur={handleSaveInfo} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
                 </div>
               </div>
@@ -356,12 +354,12 @@ export default function AdminEditEpisodePage() {
                         <CheckCircle2 className="w-5 h-5 text-green-500" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-white">{episode.audioUrl?.split('/').pop() || "Fichier audio prêt"}</p>
-                        <p className="text-xs text-[#757575]">Fichier prêt • {Math.round((episode.durationMs || 0)/60000)} min</p>
+                        <p className="text-sm font-bold text-white">{episode.audioUrl?.split('/').pop() || "Fichier audio prÃªt"}</p>
+                        <p className="text-xs text-[#757575]">Fichier prÃªt â€¢ {Math.round((episode.durationMs || 0)/60000)} min</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]" onClick={() => setPreviewMode("AUDIO")}>Écouter</Button>
+                      <Button variant="outline" size="sm" className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]" onClick={() => setPreviewMode("AUDIO")}>Ã‰couter</Button>
                       <Button variant="outline" size="sm" className="border-[#2A2A2A] text-red-500 hover:bg-[#2A2A2A] hover:text-red-400" onClick={handleRemoveAudio}>Retirer</Button>
                     </div>
                   </div>
@@ -373,7 +371,7 @@ export default function AdminEditEpisodePage() {
                       <input type="file" accept="audio/*" onChange={handleAudioUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" disabled={uploadingAudio} />
                       <Upload className="w-6 h-6 text-[#757575] mx-auto mb-2" />
                       <p className="text-sm text-white font-bold mb-1">
-                        {uploadingAudio ? `Envoi en cours... ${uploadProgress}%` : "Déposer un fichier audio ou parcourir"}
+                        {uploadingAudio ? `Envoi en cours... ${uploadProgress}%` : "DÃ©poser un fichier audio ou parcourir"}
                       </p>
                       <p className="text-xs text-[#757575]">MP3, M4A, WAV (Max 500 MB)</p>
                       
@@ -402,7 +400,7 @@ export default function AdminEditEpisodePage() {
               <div className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <Youtube className="w-5 h-5 text-red-500" />
-                  <h3 className="font-bold text-white">Vidéo YouTube <span className="text-[#757575] font-normal">— facultative</span></h3>
+                  <h3 className="font-bold text-white">VidÃ©o YouTube <span className="text-[#757575] font-normal">â€” facultative</span></h3>
                 </div>
 
                 {hasYoutubeReady && !youtubePreview && (
@@ -428,11 +426,11 @@ export default function AdminEditEpisodePage() {
 
                 {!hasYoutubeReady && !youtubePreview && (
                   <div className="space-y-3">
-                    <label className="block text-xs font-bold text-[#757575] uppercase">Adresse de la vidéo</label>
+                    <label className="block text-xs font-bold text-[#757575] uppercase">Adresse de la vidÃ©o</label>
                     <div className="flex gap-2">
                       <input type="url" value={youtubeUrlInput} onChange={e => setYoutubeUrlInput(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="flex-1 bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
                       <Button onClick={handlePreviewYoutube} disabled={!youtubeUrlInput || checkingYoutube} className="bg-[#2A2A2A] text-white hover:bg-[#333]">
-                        {checkingYoutube ? <Loader2 className="w-4 h-4 animate-spin" /> : "Vérifier la vidéo"}
+                        {checkingYoutube ? <Loader2 className="w-4 h-4 animate-spin" /> : "VÃ©rifier la vidÃ©o"}
                       </Button>
                     </div>
                   </div>
@@ -445,7 +443,7 @@ export default function AdminEditEpisodePage() {
                     <p className="text-xs text-[#757575] mb-4">{youtubePreview.channelTitle}</p>
                     <div className="flex gap-3">
                       <Button variant="outline" onClick={() => setYoutubePreview(null)} className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]">Annuler</Button>
-                      <Button onClick={handleConfirmYoutube} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">Confirmer cette vidéo</Button>
+                      <Button onClick={handleConfirmYoutube} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">Confirmer cette vidÃ©o</Button>
                     </div>
                   </div>
                 )}
@@ -455,11 +453,11 @@ export default function AdminEditEpisodePage() {
           </div>
         </div>
 
-        {/* COLONNE DROITE : Aperçu & Checklist */}
+        {/* COLONNE DROITE : AperÃ§u & Checklist */}
         <div className="w-full lg:w-[380px] space-y-6">
           
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-5 sticky top-6">
-            <h3 className="text-sm font-bold text-[#757575] uppercase mb-4">Aperçu public</h3>
+            <h3 className="text-sm font-bold text-[#757575] uppercase mb-4">AperÃ§u public</h3>
             
             <div className="bg-[#0B0B0B] rounded-xl overflow-hidden border border-[#2A2A2A]">
               {/* Cover area */}
@@ -471,7 +469,7 @@ export default function AdminEditEpisodePage() {
                 {previewMode === "YOUTUBE" && hasYoutubeReady ? (
                   <div className="absolute inset-0 z-10 bg-black">
                      <ReactPlayer
-                        url={`https://www.youtube.com/watch?v=${episode.youtubeId}`}
+                        src={`https://www.youtube.com/watch?v=${episode.youtubeId}`}
                         width="100%"
                         height="100%"
                         controls
@@ -485,8 +483,8 @@ export default function AdminEditEpisodePage() {
               
               <div className="p-4">
                 <p className="text-[#FFBF00] text-xs font-bold mb-1 uppercase tracking-wider">{podcast?.title}</p>
-                <h4 className="text-white font-bold text-lg leading-tight mb-2">{title || "Titre de l'épisode"}</h4>
-                <p className="text-[#757575] text-xs line-clamp-2 mb-4">{summary || description || "Le résumé de l'épisode apparaîtra ici."}</p>
+                <h4 className="text-white font-bold text-lg leading-tight mb-2">{title || "Titre de l'Ã©pisode"}</h4>
+                <p className="text-[#757575] text-xs line-clamp-2 mb-4">{summary || description || "Le rÃ©sumÃ© de l'Ã©pisode apparaÃ®tra ici."}</p>
                 
                 {/* Audio Player if active */}
                 {previewMode === "AUDIO" && hasAudioReady && episode.audioUrl && (
@@ -504,7 +502,7 @@ export default function AdminEditEpisodePage() {
                       className={`flex-1 ${previewMode === "AUDIO" ? "bg-white text-black hover:bg-gray-200" : "border-[#2A2A2A] text-white hover:bg-[#1A1A1A]"}`}
                       onClick={() => setPreviewMode("AUDIO")}
                     >
-                      <Headphones className="w-4 h-4 mr-2" /> Écouter
+                      <Headphones className="w-4 h-4 mr-2" /> Ã‰couter
                     </Button>
                   )}
                   {hasYoutubeReady && (
@@ -523,19 +521,19 @@ export default function AdminEditEpisodePage() {
 
             {/* Checklist */}
             <div className="mt-6 border-t border-[#2A2A2A] pt-6">
-              <h3 className="text-sm font-bold text-white mb-4">Prêt pour publication ?</h3>
+              <h3 className="text-sm font-bold text-white mb-4">PrÃªt pour publication ?</h3>
               <ul className="space-y-3">
                 <li className="flex items-center gap-3 text-sm">
                   {hasTitle ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <div className="w-4 h-4 rounded-full border-2 border-[#2A2A2A]" />}
-                  <span className={hasTitle ? "text-[#B8B8B8]" : "text-[#757575]"}>Titre renseigné</span>
+                  <span className={hasTitle ? "text-[#B8B8B8]" : "text-[#757575]"}>Titre renseignÃ©</span>
                 </li>
                 <li className="flex items-center gap-3 text-sm">
                   {hasPodcast ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <div className="w-4 h-4 rounded-full border-2 border-[#2A2A2A]" />}
-                  <span className={hasPodcast ? "text-[#B8B8B8]" : "text-[#757575]"}>Podcast sélectionné</span>
+                  <span className={hasPodcast ? "text-[#B8B8B8]" : "text-[#757575]"}>Podcast sÃ©lectionnÃ©</span>
                 </li>
                 <li className="flex items-center gap-3 text-sm">
                   {hasLanguage ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <div className="w-4 h-4 rounded-full border-2 border-[#2A2A2A]" />}
-                  <span className={hasLanguage ? "text-[#B8B8B8]" : "text-[#757575]"}>Langue renseignée</span>
+                  <span className={hasLanguage ? "text-[#B8B8B8]" : "text-[#757575]"}>Langue renseignÃ©e</span>
                 </li>
                 <li className="flex items-center gap-3 text-sm">
                   {hasSource ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <div className="w-4 h-4 rounded-full border-2 border-[#2A2A2A]" />}
