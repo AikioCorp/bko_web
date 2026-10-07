@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Podcast, Mic2, Users, UserCog, 
   Library, Tags, ShieldAlert, BadgeCheck, FileDown, 
   BarChart3, Settings, Database, Activity, Shield, 
-  ChevronLeft, ChevronRight, LogOut, ArrowLeft
+  ChevronLeft, ChevronRight, LogOut, ArrowLeft, CreditCard
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { UserDropdown } from "../UserDropdown";
@@ -42,6 +42,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         { name: "Épisodes", href: "/admin/episodes", icon: Mic2 },
         { name: "Créateurs", href: "/admin/creators", icon: UserCog },
         { name: "Utilisateurs", href: "/admin/users", icon: Users },
+        { name: "Tarifs Studio", href: "/admin/tarifs", icon: CreditCard },
       ]
     },
     {

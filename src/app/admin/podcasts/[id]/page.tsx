@@ -35,13 +35,13 @@ import { Button } from "@/components/ui/button";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
 
-const TABS = ["Ã‰pisodes", "Sources RSS", "Ã‰quipe", "Historique", "Informations", "ParamÃ¨tres"];
+const TABS = ["Épisodes", "Sources RSS", "Équipe", "Historique", "Informations", "Paramètres"];
 
 export default function AdminPodcastDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState("Ã‰pisodes");
+  const [activeTab, setActiveTab] = useState("Épisodes");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -68,7 +68,7 @@ export default function AdminPodcastDetailsPage() {
   const { data: languages } = useSWR('/admin/languages', (url: string) => adminApi(url).then((res: any) => res.data || []));
   const { data: organizations } = useSWR('/admin/organizations', (url: string) => adminApi(url).then((res: any) => res.data || []));
   const { data: episodes, mutate: mutateEpisodes } = useSWR(
-    id && activeTab === "Ã‰pisodes" ? `/admin/podcasts/${id}/episodes` : null,
+    id && activeTab === "Épisodes" ? `/admin/podcasts/${id}/episodes` : null,
     (url: string) => adminApi(url).then((res: any) => res.data || [])
   );
 
@@ -182,7 +182,7 @@ export default function AdminPodcastDetailsPage() {
     try {
       const res = await adminApi(`/admin/podcasts/${id}/episodes`, {
         method: "POST",
-        body: JSON.stringify({ title: "Nouvel Ã©pisode" }),
+        body: JSON.stringify({ title: "Nouvel épisode" }),
       });
       if (res.success && res.data?.id) {
         router.push(`/admin/episodes/${res.data.slug || res.data.id}`);
@@ -216,7 +216,7 @@ export default function AdminPodcastDetailsPage() {
           router.push(`/admin/episodes/${res.data.slug || res.data.id}`);
         }
       } else {
-        setErrorMsg(res.message || "Erreur lors de la crÃ©ation de l'Ã©pisode");
+        setErrorMsg(res.message || "Erreur lors de la création de l'épisode");
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Une erreur est survenue");
@@ -237,7 +237,7 @@ export default function AdminPodcastDetailsPage() {
     return (
       <div className="w-full flex flex-col items-center justify-center py-32 text-center text-white">
         <p className="text-lg font-bold mb-2">Podcast introuvable</p>
-        <p className="text-sm text-[#757575] mb-6">{error?.message || "Ce podcast n'existe pas ou a Ã©tÃ© supprimÃ©."}</p>
+        <p className="text-sm text-[#757575] mb-6">{error?.message || "Ce podcast n'existe pas ou a été supprimé."}</p>
         <Link href="/admin/podcasts" className="text-[#FFBF00] text-sm font-semibold hover:underline">
           Retour aux podcasts
         </Link>
@@ -249,16 +249,16 @@ export default function AdminPodcastDetailsPage() {
     id: raw.id as string,
     name: raw.name as string,
     cover: raw.cover as string,
-    creatorName: raw.organization?.name || "â€”",
+    creatorName: raw.organization?.name || "—",
     status: raw.status as string,
     slug: raw.slug as string,
-    language: raw.primaryLanguage?.name || raw.primaryLanguageCode || "â€”",
-    category: raw.categories?.[0]?.category?.name || "Sans catÃ©gorie",
-    country: raw.country?.name || "â€”",
-    origin: raw.rssFeed ? "Flux RSS" : "Contenu hÃ©bergÃ©",
+    language: raw.primaryLanguage?.name || raw.primaryLanguageCode || "—",
+    category: raw.categories?.[0]?.category?.name || "Sans catégorie",
+    country: raw.country?.name || "—",
+    origin: raw.rssFeed ? "Flux RSS" : "Contenu hébergé",
     visibility: raw.status === "PUBLISHED" ? "Publique" : "Non publique",
-    publishedAt: raw.createdAt ? new Date(raw.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "â€”",
-    collection: "â€”",
+    publishedAt: raw.createdAt ? new Date(raw.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "—",
+    collection: "—",
     episodesCount: raw._count?.episodes ?? 0,
   };
 
@@ -266,14 +266,14 @@ export default function AdminPodcastDetailsPage() {
     if (status === "PUBLISHED") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-green-500/10 text-green-500 border border-green-500/20">
-          <CheckCircle className="w-3.5 h-3.5" /> PubliÃ©
+          <CheckCircle className="w-3.5 h-3.5" /> Publié
         </span>
       );
     }
     if (status === "PENDING") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-          <AlertCircle className="w-3.5 h-3.5" /> Ã€ valider
+          <AlertCircle className="w-3.5 h-3.5" /> À valider
         </span>
       );
     }
@@ -300,9 +300,9 @@ export default function AdminPodcastDetailsPage() {
             <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
               <ShieldAlert className="w-6 h-6 text-red-500" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Supprimer dÃ©finitivement ?</h3>
+            <h3 className="text-xl font-bold text-white mb-2">Supprimer définitivement ?</h3>
             <p className="text-sm text-[#B8B8B8] mb-6">
-              ÃŠtes-vous sÃ»r de vouloir supprimer <span className="text-white font-bold">{podcast.name}</span> ? Cette action supprimera tous les Ã©pisodes liÃ©s et est irrÃ©versible.
+              ÃŠtes-vous sûr de vouloir supprimer <span className="text-white font-bold">{podcast.name}</span> ? Cette action supprimera tous les épisodes liés et est irréversible.
             </p>
             <div className="flex items-center justify-end gap-3">
               <Button variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>Annuler</Button>
@@ -330,7 +330,7 @@ export default function AdminPodcastDetailsPage() {
       {/* Floating Save Bar for unsaved changes */}
       {hasUnsavedChanges && (
         <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-[#0B0B0B] border-t border-[#2A2A2A] p-4 z-50 flex items-center justify-between shadow-2xl animate-in slide-in-from-bottom-4">
-          <span className="text-sm font-medium text-[#B8B8B8]">Modifications non enregistrÃ©es</span>
+          <span className="text-sm font-medium text-[#B8B8B8]">Modifications non enregistrées</span>
           <div className="flex items-center gap-3">
             <Button variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => {
               setEditData({
@@ -369,7 +369,7 @@ export default function AdminPodcastDetailsPage() {
                 <h1 className="text-xl md:text-2xl font-extrabold text-white">{podcast.name}</h1>
                 {raw.isOfficial && (
                   <span className="flex items-center gap-1.5 text-blue-400 text-xs font-bold bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20">
-                    <CheckCircle className="w-3.5 h-3.5" /> CertifiÃ©
+                    <CheckCircle className="w-3.5 h-3.5" /> Certifié
                   </span>
                 )}
                 <StatusBadge status={podcast.status} />
@@ -413,7 +413,7 @@ export default function AdminPodcastDetailsPage() {
                   : "border-transparent text-[#757575] hover:text-white"
               }`}
             >
-              {tab === "Ã‰pisodes" ? `Ã‰pisodes (${podcast.episodesCount})` : tab}
+              {tab === "Épisodes" ? `Épisodes (${podcast.episodesCount})` : tab}
             </button>
           );
         })}
@@ -429,7 +429,7 @@ export default function AdminPodcastDetailsPage() {
             <div className="flex-1 space-y-6">
               <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-base font-bold text-white">Informations de l'Ã©mission</h2>
+                  <h2 className="text-base font-bold text-white">Informations de l'émission</h2>
                   {!isEditingInfo ? (
                     <Button variant="outline" className="h-8 text-xs bg-[#0B0B0B] border-[#2A2A2A] text-white hover:bg-[#262626]" onClick={() => setIsEditingInfo(true)}>
                       <Edit3 className="w-3.5 h-3.5 mr-2" /> Modifier
@@ -445,8 +445,8 @@ export default function AdminPodcastDetailsPage() {
                   <div className="mb-6 bg-[#262626]/50 border border-[#2A2A2A] rounded-lg p-3 flex items-start gap-3">
                     <RssIcon className="w-5 h-5 text-[#FFBF00] shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm text-white font-medium">SynchronisÃ© depuis le flux</p>
-                      <p className="text-xs text-[#B8B8B8] mt-1">Les mÃ©tadonnÃ©es principales proviennent du flux RSS. Modifier un champ manuellement peut Ã©craser la synchronisation.</p>
+                      <p className="text-sm text-white font-medium">Synchronisé depuis le flux</p>
+                      <p className="text-xs text-[#B8B8B8] mt-1">Les métadonnées principales proviennent du flux RSS. Modifier un champ manuellement peut écraser la synchronisation.</p>
                     </div>
                   </div>
                 )}
@@ -462,7 +462,7 @@ export default function AdminPodcastDetailsPage() {
                       <p className="text-sm text-white">{raw.shortDescription || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-[#757575] uppercase mb-1">Description complÃ¨te</p>
+                      <p className="text-xs font-bold text-[#757575] uppercase mb-1">Description complète</p>
                       <p className="text-sm text-white whitespace-pre-wrap">{raw.description || "-"}</p>
                     </div>
                     
@@ -478,12 +478,12 @@ export default function AdminPodcastDetailsPage() {
                     </div>
 
                     <div>
-                      <p className="text-xs font-bold text-[#757575] uppercase mb-2">CatÃ©gories</p>
+                      <p className="text-xs font-bold text-[#757575] uppercase mb-2">Catégories</p>
                       <div className="flex flex-wrap gap-2">
                         {raw.categories?.length > 0 ? raw.categories.map((c: any) => (
                           <span key={c.categoryId} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#2A2A2A] text-white">
                             {c.category?.icon && <span>{c.category.icon}</span>}
-                            {c.category?.name || "CatÃ©gorie"}
+                            {c.category?.name || "Catégorie"}
                           </span>
                         )) : <span className="text-sm text-[#757575]">-</span>}
                       </div>
@@ -504,10 +504,10 @@ export default function AdminPodcastDetailsPage() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description courte</label>
-                      <input type="text" value={editData.shortDescription || ""} onChange={e => handleChange("shortDescription", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#757575]" placeholder="Une phrase rÃ©sumant le podcast..." />
+                      <input type="text" value={editData.shortDescription || ""} onChange={e => handleChange("shortDescription", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#757575]" placeholder="Une phrase résumant le podcast..." />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description complÃ¨te</label>
+                      <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description complète</label>
                       <textarea rows={5} value={editData.description || ""} onChange={e => handleChange("description", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white resize-none" />
                     </div>
                     
@@ -515,7 +515,7 @@ export default function AdminPodcastDetailsPage() {
                       <div>
                         <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Langue</label>
                         <select value={editData.primaryLanguageCode || ""} onChange={e => handleChange("primaryLanguageCode", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
-                          <option value="">SÃ©lectionner...</option>
+                          <option value="">Sélectionner...</option>
                           {languages?.map((l: any) => (
                             <option key={l.code} value={l.code}>{l.name}</option>
                           ))}
@@ -524,7 +524,7 @@ export default function AdminPodcastDetailsPage() {
                       <div>
                         <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Pays</label>
                         <select value={editData.countryId || ""} onChange={e => handleChange("countryId", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
-                          <option value="">SÃ©lectionner...</option>
+                          <option value="">Sélectionner...</option>
                           {countries?.map((c: any) => (
                             <option key={c.id} value={c.id}>{c.name}</option>
                           ))}
@@ -533,7 +533,7 @@ export default function AdminPodcastDetailsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-[#757575] uppercase mb-3">CatÃ©gories</label>
+                      <label className="block text-xs font-bold text-[#757575] uppercase mb-3">Catégories</label>
                       <div className="flex flex-wrap gap-3">
                         {categories?.map((c: any) => {
                           const isSelected = editData.categoryIds?.includes(c.id);
@@ -566,7 +566,7 @@ export default function AdminPodcastDetailsPage() {
                       <select value={editData.status || ""} onChange={e => handleChange("status", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
                         <option value="DRAFT">Brouillon</option>
                         <option value="PENDING">En attente (Pending)</option>
-                        <option value="PUBLISHED">PubliÃ©</option>
+                        <option value="PUBLISHED">Publié</option>
                         <option value="SUSPENDED">Suspendu</option>
                       </select>
                     </div>
@@ -585,11 +585,11 @@ export default function AdminPodcastDetailsPage() {
                     <p className="text-sm font-medium text-white">{podcast.status}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#757575] uppercase mb-1">VisibilitÃ©</p>
+                    <p className="text-xs font-bold text-[#757575] uppercase mb-1">Visibilité</p>
                     <p className="text-sm font-medium text-white">{podcast.visibility}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#757575] uppercase mb-1">CrÃ©Ã© le</p>
+                    <p className="text-xs font-bold text-[#757575] uppercase mb-1">Créé le</p>
                     <p className="text-sm font-medium text-white">{podcast.publishedAt}</p>
                   </div>
                 </div>
@@ -599,32 +599,32 @@ export default function AdminPodcastDetailsPage() {
           </div>
         )}
 
-        {/* ONGLET: PARAMÃˆTRES */}
-        {activeTab === "ParamÃ¨tres" && (
+        {/* ONGLET: PARAMÈTRES */}
+        {activeTab === "Paramètres" && (
           <div className="max-w-3xl space-y-8">
             <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
-              <h2 className="text-base font-bold text-white mb-2">ParamÃ¨tres du podcast</h2>
-              <p className="text-sm text-[#757575] mb-6">GÃ©rez les configurations avancÃ©es du podcast.</p>
+              <h2 className="text-base font-bold text-white mb-2">Paramètres du podcast</h2>
+              <p className="text-sm text-[#757575] mb-6">Gérez les configurations avancées du podcast.</p>
               
               <div className="space-y-6">
                 <div>
-                  <label className="block text-xs font-bold text-[#757575] uppercase mb-2">PropriÃ©taire (Organisation)</label>
+                  <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Propriétaire (Organisation)</label>
                   <select value={editData.organizationId || ""} onChange={e => handleChange("organizationId", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
-                    <option value="">Aucune organisation assignÃ©e</option>
+                    <option value="">Aucune organisation assignée</option>
                     {organizations?.map((o: any) => (
                       <option key={o.id} value={o.id}>{o.name}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-[#757575] mt-1.5">L'organisation qui gÃ¨re et monÃ©tise ce podcast.</p>
+                  <p className="text-xs text-[#757575] mt-1.5">L'organisation qui gère et monétise ce podcast.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Statut de propriÃ©tÃ©</label>
+                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Statut de propriété</label>
                     <select value={editData.ownershipStatus || "UNCLAIMED"} onChange={e => handleChange("ownershipStatus", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none">
-                      <option value="UNCLAIMED">Non rÃ©clamÃ©</option>
-                      <option value="CLAIM_PENDING">RÃ©clamation en cours</option>
-                      <option value="CLAIMED">RÃ©clamÃ©</option>
+                      <option value="UNCLAIMED">Non réclamé</option>
+                      <option value="CLAIM_PENDING">Réclamation en cours</option>
+                      <option value="CLAIMED">Réclamé</option>
                     </select>
                   </div>
                   <div>
@@ -632,7 +632,7 @@ export default function AdminPodcastDetailsPage() {
                     <div className="flex items-center h-[46px] px-3 bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg">
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" checked={editData.isOfficial ?? false} onChange={e => handleChange("isOfficial", e.target.checked as any)} className="w-4 h-4 rounded border-[#2A2A2A] bg-[#171717] text-[#FFBF00] focus:ring-[#FFBF00] focus:ring-offset-[#0B0B0B]" />
-                        <span className="text-sm text-white">CertifiÃ©</span>
+                        <span className="text-sm text-white">Certifié</span>
                       </label>
                     </div>
                   </div>
@@ -642,7 +642,7 @@ export default function AdminPodcastDetailsPage() {
 
             <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
               <h2 className="text-base font-bold text-white mb-2">Redirection (301)</h2>
-              <p className="text-sm text-[#757575] mb-6">Redirigez temporairement ou dÃ©finitivement le trafic de ce podcast vers une autre URL.</p>
+              <p className="text-sm text-[#757575] mb-6">Redirigez temporairement ou définitivement le trafic de ce podcast vers une autre URL.</p>
               
               <div className="space-y-4">
                 <div>
@@ -656,22 +656,22 @@ export default function AdminPodcastDetailsPage() {
             {/* Danger Zone */}
             <div className="bg-[#1A0B0B] border border-[#3A1010] rounded-xl p-6">
               <h2 className="text-base font-bold text-red-500 mb-2">Zone de danger</h2>
-              <p className="text-xs text-[#B8B8B8] mb-4">La suppression dÃ©finitive retirera ce podcast et tous ses Ã©pisodes de la base de donnÃ©es. Cette action est irrÃ©versible.</p>
+              <p className="text-xs text-[#B8B8B8] mb-4">La suppression définitive retirera ce podcast et tous ses épisodes de la base de données. Cette action est irréversible.</p>
               <Button variant="destructive" className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-colors" onClick={() => setShowDeleteModal(true)}>
-                <Trash2 className="w-4 h-4 mr-2" /> Supprimer dÃ©finitivement
+                <Trash2 className="w-4 h-4 mr-2" /> Supprimer définitivement
               </Button>
             </div>
           </div>
         )}
 
-        {/* ONGLET: Ã‰PISODES */}
-        {activeTab === "Ã‰pisodes" && (
+        {/* ONGLET: ÉPISODES */}
+        {activeTab === "Épisodes" && (
           <div className="space-y-6 relative">
             
             {showNewEpisodeModal && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowNewEpisodeModal(false)}>
                 <form className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6 w-full max-w-md shadow-2xl relative" onClick={e => e.stopPropagation()} onSubmit={handleCreateEpisode}>
-                  <h3 className="text-xl font-bold text-white mb-2">Nouvel Ã©pisode</h3>
+                  <h3 className="text-xl font-bold text-white mb-2">Nouvel épisode</h3>
                   <p className="text-sm text-[#B8B8B8] mb-6">
                     Saisissez un lien YouTube ou Spotify pour importer automatiquement les informations.
                   </p>
@@ -687,18 +687,18 @@ export default function AdminPodcastDetailsPage() {
                   </div>
 
                   <div className="mb-4">
-                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Titre de l'Ã©pisode *</label>
-                    <input type="text" autoFocus value={newEpisodeTitle} onChange={e => setNewEpisodeTitle(e.target.value)} placeholder="Ã‰pisode 1 : Le commencement..." className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
+                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Titre de l'épisode *</label>
+                    <input type="text" autoFocus value={newEpisodeTitle} onChange={e => setNewEpisodeTitle(e.target.value)} placeholder="Épisode 1 : Le commencement..." className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
                   </div>
 
                   <div className="mb-6">
                     <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description (optionnelle)</label>
-                    <textarea value={newEpisodeDescription} onChange={e => setNewEpisodeDescription(e.target.value)} placeholder="Quelques mots sur cet Ã©pisode..." className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white h-24 resize-none" />
+                    <textarea value={newEpisodeDescription} onChange={e => setNewEpisodeDescription(e.target.value)} placeholder="Quelques mots sur cet épisode..." className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white h-24 resize-none" />
                   </div>
                   <div className="flex items-center justify-end gap-3">
                     <Button type="button" variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => { setShowNewEpisodeModal(false); setNewEpisodeUrl(""); setNewEpisodeTitle(""); setNewEpisodeDescription(""); }} disabled={isCreatingEpisode}>Annuler</Button>
                     <Button type="submit" className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" disabled={isCreatingEpisode || !newEpisodeTitle.trim()}>
-                      CrÃ©er l'Ã©pisode
+                      Créer l'épisode
                       {isCreatingEpisode ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
                     </Button>
                   </div>
@@ -708,11 +708,11 @@ export default function AdminPodcastDetailsPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-white">Ã‰pisodes du podcast</h2>
-                <p className="text-sm text-[#757575]">GÃ©rez la liste de tous les Ã©pisodes de cette Ã©mission.</p>
+                <h2 className="text-lg font-bold text-white">Épisodes du podcast</h2>
+                <p className="text-sm text-[#757575]">Gérez la liste de tous les épisodes de cette émission.</p>
               </div>
               <Button onClick={() => setShowNewEpisodeModal(true)} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
-                Ajouter un Ã©pisode <Plus className="w-4 h-4 ml-2" />
+                Ajouter un épisode <Plus className="w-4 h-4 ml-2" />
               </Button>
             </div>
 
@@ -724,18 +724,18 @@ export default function AdminPodcastDetailsPage() {
                   <div className="w-12 h-12 bg-[#2A2A2A] rounded-full flex items-center justify-center mb-4">
                     <Headphones className="w-6 h-6 text-[#757575]" />
                   </div>
-                  <h3 className="text-white font-bold mb-1">Aucun Ã©pisode</h3>
-                  <p className="text-sm text-[#757575]">Ce podcast ne contient pas encore d'Ã©pisode.</p>
+                  <h3 className="text-white font-bold mb-1">Aucun épisode</h3>
+                  <p className="text-sm text-[#757575]">Ce podcast ne contient pas encore d'épisode.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm text-white">
                     <thead className="bg-[#0B0B0B] text-xs uppercase text-[#757575] font-semibold border-b border-[#2A2A2A]">
                       <tr>
-                        <th className="px-6 py-4">Ã‰pisode</th>
+                        <th className="px-6 py-4">Épisode</th>
                         <th className="px-6 py-4">Statut</th>
-                        <th className="px-6 py-4">DurÃ©e</th>
-                        <th className="px-6 py-4">PubliÃ© le</th>
+                        <th className="px-6 py-4">Durée</th>
+                        <th className="px-6 py-4">Publié le</th>
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -753,7 +753,7 @@ export default function AdminPodcastDetailsPage() {
                           </td>
                           <td className="px-6 py-4">
                             {ep.status === "PUBLISHED" ? (
-                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">PubliÃ©</span>
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Publié</span>
                             ) : ep.status === "DRAFT" ? (
                               <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold bg-[#2A2A2A] text-[#B8B8B8] border border-[#3A3A3A]">Brouillon</span>
                             ) : (
@@ -793,7 +793,7 @@ export default function AdminPodcastDetailsPage() {
           <div className="space-y-6 max-w-4xl">
             <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
               <h2 className="text-base font-bold text-white mb-2">Flux RSS de synchronisation</h2>
-              <p className="text-sm text-[#757575] mb-6">GÃ©rez le lien de synchronisation automatique avec un flux RSS distant.</p>
+              <p className="text-sm text-[#757575] mb-6">Gérez le lien de synchronisation automatique avec un flux RSS distant.</p>
               
               {raw.rssFeed ? (
                 <div className="space-y-4">
@@ -802,7 +802,7 @@ export default function AdminPodcastDetailsPage() {
                       <RssIcon className="w-5 h-5 text-[#FFBF00]" />
                       <div>
                         <p className="text-sm font-bold text-white">{raw.rssFeed.url}</p>
-                        <p className="text-xs text-[#757575]">DerniÃ¨re synchronisation : {raw.rssFeed.lastSyncAt ? new Date(raw.rssFeed.lastSyncAt).toLocaleString('fr-FR') : "Jamais"}</p>
+                        <p className="text-xs text-[#757575]">Dernière synchronisation : {raw.rssFeed.lastSyncAt ? new Date(raw.rssFeed.lastSyncAt).toLocaleString('fr-FR') : "Jamais"}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -810,7 +810,7 @@ export default function AdminPodcastDetailsPage() {
                         <RefreshCw className="w-3.5 h-3.5 mr-2" /> Forcer la synchro
                       </Button>
                       <Button variant="outline" className="h-8 text-xs bg-[#0B0B0B] border-red-500/20 hover:bg-red-500/10 text-red-500">
-                        <Trash2 className="w-3.5 h-3.5 mr-2" /> DÃ©tacher
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Détacher
                       </Button>
                     </div>
                   </div>
@@ -818,8 +818,8 @@ export default function AdminPodcastDetailsPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center p-8 bg-[#0B0B0B] border border-[#2A2A2A] border-dashed rounded-lg text-center">
                   <RssIcon className="w-8 h-8 text-[#757575] mb-3" />
-                  <h3 className="text-sm font-bold text-white mb-1">Aucun flux RSS attachÃ©</h3>
-                  <p className="text-xs text-[#757575] mb-4">Ce podcast est gÃ©rÃ© manuellement ou via l'API.</p>
+                  <h3 className="text-sm font-bold text-white mb-1">Aucun flux RSS attaché</h3>
+                  <p className="text-xs text-[#757575] mb-4">Ce podcast est géré manuellement ou via l'API.</p>
                   <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-8">
                     Attacher un flux RSS
                   </Button>
@@ -829,13 +829,13 @@ export default function AdminPodcastDetailsPage() {
           </div>
         )}
 
-        {/* ONGLET: Ã‰QUIPE */}
-        {activeTab === "Ã‰quipe" && (
+        {/* ONGLET: ÉQUIPE */}
+        {activeTab === "Équipe" && (
           <div className="space-y-6 max-w-4xl">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-white">Ã‰quipe du podcast</h2>
-                <p className="text-sm text-[#757575]">PersonnalitÃ©s (animateurs, producteurs) associÃ©es Ã  ce podcast.</p>
+                <h2 className="text-lg font-bold text-white">Équipe du podcast</h2>
+                <p className="text-sm text-[#757575]">Personnalités (animateurs, producteurs) associées à ce podcast.</p>
               </div>
               <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
                 <Plus className="w-4 h-4 mr-2" /> Ajouter un membre
@@ -849,7 +849,7 @@ export default function AdminPodcastDetailsPage() {
                     <Users className="w-6 h-6 text-[#757575]" />
                   </div>
                   <h3 className="text-white font-bold mb-1">Aucun membre</h3>
-                  <p className="text-sm text-[#757575]">L'Ã©quipe de ce podcast est vide.</p>
+                  <p className="text-sm text-[#757575]">L'équipe de ce podcast est vide.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-[#2A2A2A]">
@@ -886,7 +886,7 @@ export default function AdminPodcastDetailsPage() {
                   <div className="absolute -left-[31px] bg-[#0B0B0B] p-1 rounded-full">
                     <div className="w-3 h-3 bg-[#FFBF00] rounded-full" />
                   </div>
-                  <p className="text-sm font-bold text-white mb-1">DerniÃ¨re mise Ã  jour</p>
+                  <p className="text-sm font-bold text-white mb-1">Dernière mise à jour</p>
                   <p className="text-xs text-[#757575]">{new Date(raw.updatedAt).toLocaleString('fr-FR')}</p>
                 </div>
                 
@@ -894,7 +894,7 @@ export default function AdminPodcastDetailsPage() {
                   <div className="absolute -left-[31px] bg-[#0B0B0B] p-1 rounded-full">
                     <div className="w-3 h-3 bg-[#2A2A2A] rounded-full" />
                   </div>
-                  <p className="text-sm font-bold text-white mb-1">CrÃ©ation du podcast</p>
+                  <p className="text-sm font-bold text-white mb-1">Création du podcast</p>
                   <p className="text-xs text-[#757575]">{new Date(raw.createdAt).toLocaleString('fr-FR')}</p>
                 </div>
               </div>

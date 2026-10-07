@@ -114,7 +114,7 @@ export default function EditorialEditPage() {
             <ChevronLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white leading-tight">Ã‰diter la section</h1>
+            <h1 className="text-2xl font-bold text-white leading-tight">Éditer la section</h1>
             <p className="text-sm text-[#888888]">{section.slug}</p>
           </div>
         </div>
@@ -132,7 +132,7 @@ export default function EditorialEditPage() {
         {/* Left Column: Form */}
         <div className="space-y-6">
           <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6 space-y-6">
-            <h2 className="font-semibold text-white">ParamÃ¨tres</h2>
+            <h2 className="font-semibold text-white">Paramètres</h2>
             
             <div>
               <label className="block text-sm font-medium text-[#888888] mb-1">Titre</label>
@@ -161,10 +161,10 @@ export default function EditorialEditPage() {
                 onChange={e => setFormData({ ...formData, type: e.target.value })}
                 className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl px-4 py-2 text-white outline-none focus:border-[#444444]"
               >
-                <option value="HERO">Hero (BanniÃ¨re d'en-tÃªte)</option>
+                <option value="HERO">Hero (Bannière d'en-tête)</option>
                 <option value="PODCAST_ROW">Ligne de Podcasts</option>
-                <option value="EPISODE_ROW">Ligne d'Ã‰pisodes</option>
-                <option value="PERSON_ROW">Ligne de PersonnalitÃ©s</option>
+                <option value="EPISODE_ROW">Ligne d'Épisodes</option>
+                <option value="PERSON_ROW">Ligne de Personnalités</option>
                 <option value="COLLECTION_ROW">Ligne de Collections</option>
               </select>
             </div>
@@ -197,8 +197,8 @@ export default function EditorialEditPage() {
           <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="font-semibold text-white">Ã‰lÃ©ments de la section</h2>
-                <p className="text-xs text-[#888888]">{section.items?.length || 0} Ã©lÃ©ment(s)</p>
+                <h2 className="font-semibold text-white">Éléments de la section</h2>
+                <p className="text-xs text-[#888888]">{section.items?.length || 0} élément(s)</p>
               </div>
               <button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
@@ -218,7 +218,7 @@ export default function EditorialEditPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher un podcast Ã  ajouter..."
+                    placeholder="Rechercher un podcast à ajouter..."
                     className="w-full bg-[#141414] border border-[#2A2A2A] rounded-lg pl-9 pr-4 py-2 text-sm text-white outline-none focus:border-[#444444]"
                   />
                 </div>
@@ -245,7 +245,7 @@ export default function EditorialEditPage() {
                     ))}
                   </ul>
                 ) : searchQuery ? (
-                  <div className="text-center py-4 text-sm text-[#888888]">Aucun rÃ©sultat.</div>
+                  <div className="text-center py-4 text-sm text-[#888888]">Aucun résultat.</div>
                 ) : null}
               </div>
             )}
@@ -270,7 +270,7 @@ export default function EditorialEditPage() {
                         )}
                         <div>
                           <div className="font-medium text-sm text-white">{(target?.title || target?.name) || "Inconnu"}</div>
-                          <div className="text-xs text-[#888888]">{item.podcast ? "Podcast" : item.episode ? "Ã‰pisode" : "Collection"}</div>
+                          <div className="text-xs text-[#888888]">{item.podcast ? "Podcast" : item.episode ? "Épisode" : "Collection"}</div>
                         </div>
                       </div>
                       <button

@@ -48,8 +48,8 @@ const mockPodcasts: MockPodcast[] = [
     name: "Les voix de Bamako",
     cover: "https://picsum.photos/seed/bko/48/48",
     creatorName: "Aminata",
-    language: "FranÃ§ais",
-    category: "SociÃ©tÃ©",
+    language: "Français",
+    category: "Société",
     status: "PUBLISHED",
     episodesCount: 24,
   },
@@ -59,7 +59,7 @@ const mockPodcasts: MockPodcast[] = [
     cover: "https://picsum.photos/seed/mali/48/48",
     creatorName: "Studio BKO",
     language: "Bamanankan",
-    category: "Ã‰conomie",
+    category: "Économie",
     status: "PENDING",
     episodesCount: 3,
   },
@@ -68,7 +68,7 @@ const mockPodcasts: MockPodcast[] = [
     name: "Afro Tech",
     cover: "https://picsum.photos/seed/tech/48/48",
     creatorName: "Sekou",
-    language: "FranÃ§ais",
+    language: "Français",
     category: "Technologie",
     status: "SUSPENDED",
     episodesCount: 12,
@@ -87,8 +87,8 @@ const mockPodcasts: MockPodcast[] = [
 
 const TABS = [
   { id: "ALL", label: "Tous", count: 64 },
-  { id: "PENDING", label: "Ã€ valider", count: 6 },
-  { id: "PUBLISHED", label: "PubliÃ©s", count: 52 },
+  { id: "PENDING", label: "À valider", count: 6 },
+  { id: "PUBLISHED", label: "Publiés", count: 52 },
   { id: "SUSPENDED", label: "Suspendus", count: 2 },
 ];
 
@@ -129,8 +129,8 @@ export default function AdminPodcastsPage() {
   const counts = data?.counts || { ALL: 0, PENDING: 0, PUBLISHED: 0, SUSPENDED: 0 };
   const TABS = [
     { id: "ALL", label: "Tous", count: counts.ALL || displayedPodcasts.length },
-    { id: "PENDING", label: "Ã€ valider", count: counts.PENDING || 0 },
-    { id: "PUBLISHED", label: "PubliÃ©s", count: counts.PUBLISHED || 0 },
+    { id: "PENDING", label: "À valider", count: counts.PENDING || 0 },
+    { id: "PUBLISHED", label: "Publiés", count: counts.PUBLISHED || 0 },
     { id: "SUSPENDED", label: "Suspendus", count: counts.SUSPENDED || 0 },
   ];
 
@@ -159,7 +159,7 @@ export default function AdminPodcastsPage() {
     if (isBulkLoading) return;
 
     if (payload.action === 'DELETE') {
-      if (!window.confirm(`ÃŠtes-vous sÃ»r de vouloir supprimer ces ${selectedIds.size} podcast(s) ? Cette action est irrÃ©versible.`)) return;
+      if (!window.confirm(`ÃŠtes-vous sûr de vouloir supprimer ces ${selectedIds.size} podcast(s) ? Cette action est irréversible.`)) return;
       setIsBulkLoading(true);
       if (data) {
         const updatedItems = data.items.filter((p: any) => !selectedIds.has(p.id));
@@ -184,7 +184,7 @@ export default function AdminPodcastsPage() {
 
     setIsBulkLoading(true);
     
-    // Mise Ã  jour optimiste immÃ©diate (UI instantanÃ©e)
+    // Mise à jour optimiste immédiate (UI instantanée)
     if (data) {
       const updatedItems = data.items.map((p: any) => 
         selectedIds.has(p.id) ? { ...p, ...payload } : p
@@ -204,7 +204,7 @@ export default function AdminPodcastsPage() {
       await mutate();
       setSelectedIds(new Set());
     } catch (e) {
-      alert("Une erreur est survenue lors de l'action groupÃ©e.");
+      alert("Une erreur est survenue lors de l'action groupée.");
       mutate(); // Annuler l'optimisme
     } finally {
       setIsBulkLoading(false);
@@ -214,7 +214,7 @@ export default function AdminPodcastsPage() {
   const handleToggleOfficial = async (id: string, currentStatus: boolean, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Mise Ã  jour optimiste immÃ©diate (UI instantanÃ©e)
+    // Mise à jour optimiste immédiate (UI instantanée)
     if (data) {
       const updatedItems = data.items.map((p: any) => 
         p.id === id ? { ...p, isOfficial: !currentStatus } : p
@@ -242,14 +242,14 @@ export default function AdminPodcastsPage() {
     if (status === "PUBLISHED") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-500 border border-green-500/20">
-          <CheckCircle className="w-3.5 h-3.5" /> PubliÃ©
+          <CheckCircle className="w-3.5 h-3.5" /> Publié
         </span>
       );
     }
     if (status === "PENDING") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-          <AlertCircle className="w-3.5 h-3.5" /> Ã€ valider
+          <AlertCircle className="w-3.5 h-3.5" /> À valider
         </span>
       );
     }
@@ -276,7 +276,7 @@ export default function AdminPodcastsPage() {
             <Mic className="w-8 h-8 text-[#FFBF00]" />
             Podcasts
           </h1>
-          <p className="text-[#888888] mt-2">GÃ©rez les Ã©missions de la plateforme, depuis leur ajout jusqu'Ã  leur archivage.</p>
+          <p className="text-[#888888] mt-2">Gérez les émissions de la plateforme, depuis leur ajout jusqu'à leur archivage.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="bg-[#171717] hover:bg-[#262626] border-[#2A2A2A] text-white" onClick={() => router.push("/admin/podcasts/import-rss")}>
@@ -314,7 +314,7 @@ export default function AdminPodcastsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#757575]" />
           <input 
             type="text" 
-            placeholder="Rechercher un podcast ou un crÃ©ateur..." 
+            placeholder="Rechercher un podcast ou un créateur..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#171717] border border-[#2A2A2A] rounded-lg pl-10 pr-4 py-2 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#757575]"
@@ -341,7 +341,7 @@ export default function AdminPodcastsPage() {
               onChange={(e) => setCatFilter(e.target.value)}
               className="bg-[#171717] hover:bg-[#262626] border border-[#2A2A2A] text-white text-xs h-9 pl-3 pr-8 rounded-md outline-none appearance-none cursor-pointer focus:border-[#FFBF00]"
             >
-              <option value="">Toutes les catÃ©gories</option>
+              <option value="">Toutes les catégories</option>
               {categories?.map((c: any) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -370,7 +370,7 @@ export default function AdminPodcastsPage() {
               onClick={() => { setLangFilter(""); setCatFilter(""); setOriginFilter(""); }}
               className="text-[#757575] hover:text-white h-9 text-xs"
             >
-              RÃ©initialiser
+              Réinitialiser
             </Button>
           )}
         </div>
@@ -381,7 +381,7 @@ export default function AdminPodcastsPage() {
         <div className="bg-[#171717] border border-[#2A2A2A] shadow-lg text-white px-4 py-2 rounded-lg flex flex-col md:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 mb-4">
           <div className="flex items-center gap-3">
             <div className="bg-[#FFBF00]/10 text-[#FFBF00] font-bold text-xs px-2.5 py-1 rounded-md">
-              {selectedIds.size} sÃ©lectionnÃ©(s)
+              {selectedIds.size} sélectionné(s)
             </div>
           </div>
           
@@ -399,7 +399,7 @@ export default function AdminPodcastsPage() {
               Certifier
             </Button>
             <Button size="sm" onClick={() => handleBulkAction({ isOfficial: false })} className="h-8 bg-[#2A2A2A] hover:bg-[#333333] text-white text-xs font-medium border border-[#333333]">
-              DÃ©certifier
+              Décertifier
             </Button>
 
             <div className="w-px h-4 bg-[#2A2A2A] mx-1"></div>
@@ -434,10 +434,10 @@ export default function AdminPodcastsPage() {
                   />
                 </th>
                 <th className="p-4">Podcast</th>
-                <th className="p-4">CrÃ©ateur</th>
+                <th className="p-4">Créateur</th>
                 <th className="p-4">Statut</th>
-                <th className="p-4 text-center">CertifiÃ©</th>
-                <th className="p-4 text-center">Ã‰pisodes</th>
+                <th className="p-4 text-center">Certifié</th>
+                <th className="p-4 text-center">Épisodes</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -445,7 +445,7 @@ export default function AdminPodcastsPage() {
               {displayedPodcasts.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-12 text-center text-[#757575]">
-                    {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" /> : "Aucun podcast trouvÃ©."}
+                    {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" /> : "Aucun podcast trouvé."}
                   </td>
                 </tr>
               ) : (
@@ -474,7 +474,7 @@ export default function AdminPodcastsPage() {
                               <p className="font-bold text-white text-sm group-hover:text-[#FFBF00] transition-colors">{p.name}</p>
                             </div>
                             <p className="text-xs text-[#757575] flex items-center gap-1 mt-0.5">
-                              {p.primaryLanguageCode || p.languageCode || "N/A"} <span className="opacity-50">Â·</span> {p.categories?.[0]?.category?.name || p.category?.name || "Sans catÃ©gorie"}
+                              {p.primaryLanguageCode || p.languageCode || "N/A"} <span className="opacity-50">Â·</span> {p.categories?.[0]?.category?.name || p.category?.name || "Sans catégorie"}
                             </p>
                           </div>
                         </div>
@@ -541,14 +541,14 @@ export default function AdminPodcastsPage() {
               <div className="flex items-center justify-between pl-7">
                 <StatusBadge status={p.status} />
                 <Button size="sm" variant="ghost" className="h-7 text-xs px-2 bg-[#2A2A2A]/50 text-white hover:bg-[#2A2A2A]" onClick={(e) => { e.stopPropagation(); handleRowClick(p.id, p.slug); }}>
-                  GÃ©rer
+                  Gérer
                 </Button>
               </div>
             </div>
 
           ))}
           {displayedPodcasts.length === 0 && (
-            <div className="p-8 text-center text-[#757575] text-sm">Aucun podcast trouvÃ©.</div>
+            <div className="p-8 text-center text-[#757575] text-sm">Aucun podcast trouvé.</div>
           )}
         </div>
 
@@ -571,7 +571,7 @@ export default function AdminPodcastsPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            <span>{displayedPodcasts.length > 0 ? (page - 1) * limit + 1 : 0}â€“{Math.min(page * limit, totalItems)} sur {totalItems}</span>
+            <span>{displayedPodcasts.length > 0 ? (page - 1) * limit + 1 : 0}–{Math.min(page * limit, totalItems)} sur {totalItems}</span>
             <div className="flex gap-1">
               <Button 
                 size="sm" 
@@ -580,7 +580,7 @@ export default function AdminPodcastsPage() {
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 className="h-7 px-2 text-[#757575] hover:text-white disabled:opacity-50"
               >
-                <ChevronLeft className="w-4 h-4 mr-1" /> PrÃ©cÃ©dent
+                <ChevronLeft className="w-4 h-4 mr-1" /> Précédent
               </Button>
               <Button 
                 size="sm" 
