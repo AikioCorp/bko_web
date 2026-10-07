@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -39,7 +39,7 @@ export default function EditorialEditPage() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      await adminApi.patch(`/admin/editorial/sections/${section.id}`, formData);
+      await adminApi(`/admin/editorial/sections/${section.id}`, { method: "PATCH", body: JSON.stringify(formData) });
       await mutate(section, false);
       // simulate optimistic UX, the real mutate with true can happen in background
       mutate(); 
@@ -59,7 +59,7 @@ export default function EditorialEditPage() {
     try {
       setIsSearching(true);
       // Assuming a generic search endpoint exists, or we search catalog
-      const res = await adminApi.get(`/admin/catalog?search=${encodeURIComponent(q)}&limit=10`);
+      const res = await adminApi(`/admin/catalog?search=${encodeURIComponent(q)}&limit=10`);
       setSearchResults(res.data.podcasts || []);
     } catch (err) {
       console.error(err);
@@ -77,8 +77,9 @@ export default function EditorialEditPage() {
 
   const handleAddItem = async (podcast: any) => {
     try {
-      await adminApi.post(`/admin/editorial/sections/${section.id}/items`, {
-        podcastId: podcast.id,
+      await adminApi(`/admin/editorial/sections/${section.id}/items`, {
+        method: "POST",
+        body: JSON.stringify({ podcastId: podcast.id })
       });
       await mutate();
       setIsSearchOpen(false);
@@ -94,7 +95,7 @@ export default function EditorialEditPage() {
     try {
       // Optimistic update
       mutate({ ...section, items: section.items.filter((i: any) => i.id !== itemId) }, false);
-      await adminApi.delete(`/admin/editorial/sections/items/${itemId}`);
+      await adminApi(`/admin/editorial/sections/items/${itemId}`, { method: "DELETE" });
       mutate();
     } catch (err) {
       console.error(err);

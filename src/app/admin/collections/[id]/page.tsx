@@ -39,7 +39,7 @@ export default function CollectionEditPage() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      await adminApi.patch(`/admin/collections/${collection.id}`, formData);
+      await adminApi(`/admin/collections/${collection.id}`, { method: "PATCH", body: JSON.stringify(formData) });
       await mutate(collection, false);
       mutate();
     } catch (err) {
@@ -57,7 +57,7 @@ export default function CollectionEditPage() {
     }
     try {
       setIsSearching(true);
-      const res = await adminApi.get(`/admin/catalog?search=${encodeURIComponent(q)}&limit=10`);
+      const res = await adminApi(`/admin/catalog?search=${encodeURIComponent(q)}&limit=10`);
       // We allow adding podcasts or episodes to collections
       const results = [...(res.data.podcasts || []), ...(res.data.episodes || [])];
       setSearchResults(results.slice(0, 10));
@@ -85,7 +85,7 @@ export default function CollectionEditPage() {
         payload.podcastId = item.id;
       }
 
-      await adminApi.post(`/admin/collections/${collection.id}/items`, payload);
+      await adminApi(`/admin/collections/${collection.id}/items`, { method: "POST", body: JSON.stringify(payload) });
       await mutate();
       setIsSearchOpen(false);
       setSearchQuery("");
@@ -99,7 +99,7 @@ export default function CollectionEditPage() {
   const handleRemoveItem = async (itemId: string) => {
     try {
       mutate({ ...collection, items: collection.items.filter((i: any) => i.id !== itemId) }, false);
-      await adminApi.delete(`/admin/collections/items/${itemId}`);
+      await adminApi(`/admin/collections/items/${itemId}`, { method: "DELETE" });
       mutate();
     } catch (err) {
       console.error(err);

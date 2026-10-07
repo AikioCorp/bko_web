@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -20,13 +20,13 @@ export default function CollectionsListPage() {
     if (!newTitle.trim()) return;
     try {
       setIsSubmitting(true);
-      const res = await adminApi.post("/admin/collections", { title: newTitle });
+      const res = await adminApi("/admin/collections", { method: "POST", body: JSON.stringify({ title: newTitle }) });
       await mutate();
       setIsCreating(false);
       router.push(`/admin/collections/${res.data.id}`);
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de la création");
+      alert("Erreur lors de la crÃ©ation");
     } finally {
       setIsSubmitting(false);
     }
@@ -40,7 +40,7 @@ export default function CollectionsListPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Collections</h1>
-          <p className="text-[#888888]">Créez des regroupements thématiques de contenus.</p>
+          <p className="text-[#888888]">CrÃ©ez des regroupements thÃ©matiques de contenus.</p>
         </div>
         <button
           onClick={() => setIsCreating(true)}
@@ -53,7 +53,7 @@ export default function CollectionsListPage() {
 
       {isCreating && (
         <form onSubmit={handleCreate} className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6 mb-8 max-w-md">
-          <h2 className="text-lg font-semibold text-white mb-4">Créer une collection</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">CrÃ©er une collection</h2>
           <div className="flex flex-col gap-4">
             <div>
               <label className="block text-sm font-medium text-[#888888] mb-1">Titre de la collection</label>
@@ -80,7 +80,7 @@ export default function CollectionsListPage() {
                 disabled={isSubmitting || !newTitle.trim()}
                 className="px-4 py-2 rounded-xl text-sm font-medium bg-white text-black hover:bg-gray-100 disabled:opacity-50 transition-colors"
               >
-                {isSubmitting ? "Création..." : "Créer"}
+                {isSubmitting ? "CrÃ©ation..." : "CrÃ©er"}
               </button>
             </div>
           </div>
@@ -91,7 +91,7 @@ export default function CollectionsListPage() {
         <div className="text-center py-12 border border-[#2A2A2A] border-dashed rounded-2xl bg-[#0B0B0B]">
           <LayoutGrid className="w-12 h-12 text-[#333333] mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">Aucune collection</h3>
-          <p className="text-[#888888]">Créez votre première collection pour regrouper vos meilleurs podcasts.</p>
+          <p className="text-[#888888]">CrÃ©ez votre premiÃ¨re collection pour regrouper vos meilleurs podcasts.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -112,7 +112,7 @@ export default function CollectionsListPage() {
                 <h3 className="font-semibold text-white group-hover:text-[#FFBF00] transition-colors line-clamp-1">{collection.title}</h3>
                 <p className="text-xs text-[#888888] mt-1 line-clamp-2">{collection.description || "Aucune description"}</p>
                 <div className="mt-2 text-xs font-medium text-[#888888]">
-                  {collection._count.items} {collection._count.items > 1 ? "éléments" : "élément"}
+                  {collection._count.items} {collection._count.items > 1 ? "Ã©lÃ©ments" : "Ã©lÃ©ment"}
                 </div>
               </div>
             </Link>

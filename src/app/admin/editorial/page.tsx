@@ -25,7 +25,7 @@ export default function EditorialListPage() {
     if (!newTitle.trim()) return;
     try {
       setIsSubmitting(true);
-      const res = await adminApi.post("/admin/editorial/sections", { title: newTitle, type: newType });
+      const res = await adminApi("/admin/editorial/sections", { method: "POST", body: JSON.stringify({ title: newTitle, type: newType }) });
       await mutate();
       setIsCreating(false);
       router.push(`/admin/editorial/${res.data.id}`);
