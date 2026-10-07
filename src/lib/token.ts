@@ -65,10 +65,12 @@ export function refreshAccessToken(): Promise<string | null> {
         }
         
         // Refresh failed, session is dead
+        const hadSession = !!storedRefresh || !!memoryAccessToken;
         clearStoredTokens();
         
-        // Force redirect to login to break any infinite retry loops from SWR or React Query
-        if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+        // Redirige vers le login UNIQUEMENT si une session existait et a expiré.
+        // Un visiteur invité doit pouvoir parcourir le site sans être renvoyé au login.
+        if (hadSession && typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
           window.location.href = "/login";
         }
         
