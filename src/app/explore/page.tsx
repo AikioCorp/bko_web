@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
 import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
+import SuggestModal from "@/components/ui/SuggestModal";
 
 function ExploreContent() {
   const { playEpisode } = usePlayerStore();
@@ -32,6 +33,7 @@ function ExploreContent() {
   const [activeTab, setActiveTab] = useState<"tous" | "podcasts" | "episodes">("tous");
   const [showEmptyState, setShowEmptyState] = useState(false);
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
+  const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState([
     "Les voix de Bamako",
     "Amadou & Mariam Interview",
@@ -617,12 +619,13 @@ function ExploreContent() {
           </div>
         </div>
 
-        <button className="px-5 py-2.5 rounded-full bg-[#1E1E1E] hover:bg-[#282828] border border-[#333333] hover:border-[#FFBF00] text-white text-xs font-semibold transition-colors shrink-0">
+        <button onClick={() => setIsSuggestModalOpen(true)} className="px-5 py-2.5 rounded-full bg-[#1E1E1E] hover:bg-[#282828] border border-[#333333] hover:border-[#FFBF00] text-white text-xs font-semibold transition-colors shrink-0">
           Proposer une émission
         </button>
       </div>
 
       <AppDownloadModal isOpen={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} />
+        <SuggestModal isOpen={isSuggestModalOpen} onClose={() => setIsSuggestModalOpen(false)} />
     </div>
   );
 }

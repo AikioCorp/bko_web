@@ -28,6 +28,8 @@ const fetcher = (url: string) => fetchApi(url).then(res => {
 export default function NewEpisodePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatusText, setUploadStatusText] = useState("");
   const [success, setSuccess] = useState(false);
   
   // Form State
@@ -40,7 +42,7 @@ export default function NewEpisodePage() {
 
   // Fetch creator's podcasts
   const { data: podcastsData, isLoading: isLoadingPodcasts } = useSWR("/creator/podcasts", fetcher);
-  const podcasts = podcastsData?.items || [];
+  const podcasts = Array.isArray(podcastsData) ? podcastsData : (podcastsData?.items || []);
 
   // Pre-select if there's only one podcast
   React.useEffect(() => {
@@ -51,59 +53,86 @@ export default function NewEpisodePage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selected = e.target.files[0];
+      if (selected.size > 250 * 1024 * 1024) {
+        alert("Le fichier audio dépasse la taille maximale autorisée de 250 Mo.");
+        return;
+      }
+      setFile(selected);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!podcastId || !title || !file) {
-      alert("Veuillez sélectionner un podcast, un titre et un fichier audio.");
+    if (!podcastId || !title.trim() || !file) {
+      alert("Veuillez sélectionner un podcast, renseigner un titre et choisir un fichier audio.");
+      return;
+    }
+
+    if (file.size > 250 * 1024 * 1024) {
+      alert("Le fichier audio dépasse la limite autorisée de 250 Mo.");
       return;
     }
 
     setIsSubmitting(true);
+    setUploadProgress(0);
+    setUploadStatusText("Création du brouillon de l'épisode...");
     try {
-      // 1. Create episode metadata
+      // 1. Create episode draft
       const metaRes = await fetchApi(`/creator/podcasts/${podcastId}/episodes`, {
         method: "POST",
         body: JSON.stringify({
-          title,
-          description,
+          title: title.trim(),
+          description: description.trim(),
           seasonNumber: seasonNumber ? parseInt(seasonNumber) : undefined,
           episodeNumber: episodeNumber ? parseInt(episodeNumber) : undefined,
           status: "DRAFT"
         })
       });
-
-      if (!metaRes.success) throw new Error(metaRes.message);
       
       const newEpisode = metaRes.data;
 
-      // 2. Upload audio (using FormData directly with fetch to support multipart)
-      // We will assume the backend accepts multipart/form-data for media-sources 
-      // or at least we will simulate the success for the UX until real upload logic is perfected
-      
-      const formData = new FormData();
-      formData.append("file", file);
-
-      // We use raw fetch here because fetchApi sets Content-Type: application/json automatically
-      const { getAccessToken } = await import("@/lib/token");
-      const token = getAccessToken();
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
-      
-      const uploadRes = await fetch(`${API_BASE_URL}/creator/episodes/${newEpisode.id}/media-sources`, {
+      // 2. Prepare native R2 presigned upload session
+      setUploadStatusText("Préparation du téléversement sécurisé...");
+      const sessionRes = await fetchApi("/creator/uploads", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        body: formData
+        body: JSON.stringify({
+          originalFilename: file.name,
+          mimeType: file.type || "audio/mpeg",
+          sizeBytes: file.size,
+          mediaType: "AUDIO",
+          episodeId: newEpisode.id
+        })
       });
 
-      const uploadJson = await uploadRes.json();
-      if (!uploadJson.success) {
-        throw new Error("L'épisode est créé mais l'upload du fichier a échoué.");
-      }
+      const { uploadSessionId, uploadUrl } = sessionRes.data;
+
+      // 3. Upload file directly to S3/R2 storage with progress
+      setUploadStatusText("Téléversement du fichier audio en cours...");
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", uploadUrl, true);
+      xhr.setRequestHeader("Content-Type", file.type || "audio/mpeg");
+      xhr.upload.onprogress = (evt) => {
+        if (evt.lengthComputable) {
+          setUploadProgress(Math.round((evt.loaded / evt.total) * 100));
+        }
+      };
+
+      await new Promise((resolve, reject) => {
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve(true);
+          else reject(new Error("Échec du téléversement vers le stockage"));
+        };
+        xhr.onerror = () => reject(new Error("Erreur de connexion lors du téléversement"));
+        xhr.send(file);
+      });
+
+      // 4. Complete upload session to register MediaAsset and start background processing
+      setUploadStatusText("Finalisation et indexation...");
+      await fetchApi(`/creator/uploads/${uploadSessionId}/complete`, {
+        method: "POST",
+        body: JSON.stringify({})
+      });
 
       setSuccess(true);
       setTimeout(() => {
@@ -114,6 +143,8 @@ export default function NewEpisodePage() {
       console.error(error);
       alert(error.message || "Une erreur est survenue lors de la création.");
       setIsSubmitting(false);
+      setUploadProgress(0);
+      setUploadStatusText("");
     }
   };
 
@@ -124,8 +155,8 @@ export default function NewEpisodePage() {
           <CheckCircle className="w-12 h-12 text-green-500" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold text-white">Épisode uploadé !</h1>
-          <p className="text-[#888]">Votre épisode est en cours de traitement. Vous allez être redirigé...</p>
+          <h1 className="text-3xl font-extrabold text-white">Épisode enregistré !</h1>
+          <p className="text-[#888]">Votre fichier audio a été téléversé avec succès. Redirection vers vos épisodes...</p>
         </div>
       </div>
     );
@@ -235,7 +266,7 @@ export default function NewEpisodePage() {
               Fichier Audio
             </CardTitle>
             <CardDescription className="text-[#888]">
-              Formats supportés: MP3, AAC, WAV, FLAC (Max: 500Mo)
+              Formats supportés: MP3, AAC, WAV (Max: 250 Mo)
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
@@ -245,6 +276,7 @@ export default function NewEpisodePage() {
                 accept="audio/*" 
                 onChange={handleFileChange}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                disabled={isSubmitting}
                 required
               />
               <div className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${file ? 'border-[#FFBF00] bg-[#FFBF00]/5' : 'border-[#333] bg-[#0E0E0E] group-hover:border-[#555] group-hover:bg-[#161616]'}`}>
@@ -258,6 +290,18 @@ export default function NewEpisodePage() {
                       <p className="text-sm text-[#888]">{(file.size / (1024 * 1024)).toFixed(2)} Mo</p>
                     </div>
                     <p className="text-xs text-[#666] mt-2">Cliquez ou glissez pour remplacer</p>
+
+                    {isSubmitting && (
+                      <div className="w-full max-w-md mt-4 space-y-2">
+                        <div className="flex justify-between text-xs text-[#AAA]">
+                          <span>{uploadStatusText}</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="h-2 w-full bg-[#222] rounded-full overflow-hidden">
+                          <div className="h-full bg-[#FFBF00] transition-all duration-200" style={{ width: `${uploadProgress}%` }} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3">
@@ -276,7 +320,7 @@ export default function NewEpisodePage() {
         </Card>
 
         <div className="flex justify-end gap-4 pt-4 border-t border-[#222]">
-          <Button type="button" variant="ghost" className="text-[#888] hover:text-white hover:bg-[#222]" onClick={() => router.back()}>
+          <Button type="button" variant="ghost" className="text-[#888] hover:text-white hover:bg-[#222]" onClick={() => router.back()} disabled={isSubmitting}>
             Annuler
           </Button>
           <Button 
@@ -287,7 +331,7 @@ export default function NewEpisodePage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Upload en cours...
+                Téléversement ({uploadProgress}%)...
               </>
             ) : (
               <>

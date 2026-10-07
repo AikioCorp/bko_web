@@ -80,7 +80,7 @@ export default function StudioOffersPage() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto pb-32">
+    <div className="w-full pb-32">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Tarification Studio</h1>

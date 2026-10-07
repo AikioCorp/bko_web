@@ -35,8 +35,11 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
   ]);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { hasConsole, landing } = useConsoleAccess();
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => setMounted(true), []);
 
   // Sync active language from URL query if present
   useEffect(() => {
@@ -191,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
         </button>
 
         {/* "+ Publier" Button: ONLY shown if creator is authenticated */}
-        {isCreator && (
+        {mounted && isCreator && (
           <Link
             href="/studio"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#1C1A14] border border-[#FFBF00]/40 text-[#FFBF00] hover:bg-[#FFBF00] hover:text-[#0B0B0B] text-xs font-bold transition-all shadow-sm"
@@ -201,7 +204,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           </Link>
         )}
 
-        {canAccessConsole && (
+        {mounted && canAccessConsole && (
           <Link
             href="/admin/dashboard"
             className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FFBF00] text-[#0B0B0B] hover:bg-[#E5AB00] text-xs font-bold transition-all shadow-sm"

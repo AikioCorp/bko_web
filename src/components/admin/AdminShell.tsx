@@ -8,20 +8,55 @@ import {
   LayoutDashboard, Podcast, Mic2, Users, UserCog, 
   Library, Tags, ShieldAlert, BadgeCheck, FileDown, 
   BarChart3, Settings, Database, Activity, Shield, 
-  ChevronLeft, ChevronRight, LogOut, ArrowLeft, CreditCard
+  ChevronLeft, ChevronRight, LogOut, ArrowLeft, CreditCard,
+  Sparkles, Loader2, LogIn, Lock
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { UserDropdown } from "../UserDropdown";
 import { useRouter } from "next/navigation";
+import { API_BASE_URL } from "@/lib/api";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const { user, logout } = useAuthStore();
+  const { user, isAuthenticated, isLoading, logout, setAuth } = useAuthStore();
   const router = useRouter();
-  
+
+  const [quickLoginLoading, setQuickLoginLoading] = useState(false);
+  const [quickLoginError, setQuickLoginError] = useState("");
+
   const isSuperAdmin = user?.roles?.some(r => r.toUpperCase() === "SUPER_ADMIN") || false;
+  const isAdmin = user?.roles?.some(r => r.toUpperCase() === "ADMIN") || false;
+  const canAccessConsole = isSuperAdmin || isAdmin;
+
+  const isPrototype = pathname === "/admin/prototype";
+
+  const handleQuickAdminLogin = async () => {
+    setQuickLoginLoading(true);
+    setQuickLoginError("");
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          identifier: "admin@bamakopodcast.ml",
+          password: "Admin@Bamako2026!",
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setAuth(json.data.user, json.data.accessToken, json.data.refreshToken);
+      } else {
+        setQuickLoginError(json.message || "Impossible de se connecter automatiquement.");
+      }
+    } catch (err: any) {
+      setQuickLoginError(err.message || "Erreur de communication avec le serveur.");
+    } finally {
+      setQuickLoginLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (sidebarRef.current) {
@@ -38,8 +73,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       label: "Gestion",
       items: [
         { name: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard },
-        { name: "Podcasts", href: "/admin/podcasts", icon: Podcast },
+        { name: "Émissions", href: "/admin/podcasts", icon: Podcast },
         { name: "Épisodes", href: "/admin/episodes", icon: Mic2 },
+        { name: "Prototype Écrans", href: "/admin/prototype", icon: Sparkles },
         { name: "Créateurs", href: "/admin/creators", icon: UserCog },
         { name: "Utilisateurs", href: "/admin/users", icon: Users },
         { name: "Tarifs Studio", href: "/admin/tarifs", icon: CreditCard },
@@ -203,7 +239,112 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-10 no-scrollbar relative">
           <div className="w-full">
-            {children}
+            {isPrototype ? (
+              children
+            ) : isLoading ? (
+              <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+                <Loader2 className="w-8 h-8 text-[#FFBF00] animate-spin" />
+                <span className="text-sm text-[#888888] font-medium">Vérification de la session administrateur...</span>
+              </div>
+            ) : !isAuthenticated ? (
+              <div className="max-w-xl mx-auto my-8 bg-[#171717] border border-[#2A2A2A] rounded-2xl p-8 text-center shadow-2xl">
+                <div className="w-16 h-16 rounded-2xl bg-[#222222] border border-[#333333] flex items-center justify-center mx-auto mb-5 text-[#FFBF00]">
+                  <ShieldAlert className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Session Administrateur Requise</h2>
+                <p className="text-sm text-[#999999] mb-6 leading-relaxed">
+                  L’accès aux données réelles de l’administration nécessite une session active avec le rôle Administrateur ou Super Admin.
+                </p>
+
+                <div className="bg-[#101010] border border-[#262626] rounded-xl p-4 mb-6 text-left space-y-2">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-[#FFBF00] flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5" />
+                    Compte Démo Administrateur
+                  </div>
+                  <div className="text-xs text-[#CCCCCC] font-mono flex items-center justify-between">
+                    <span className="text-[#888888]">Identifiant :</span>
+                    <span className="text-white font-medium">admin@bamakopodcast.ml</span>
+                  </div>
+                  <div className="text-xs text-[#CCCCCC] font-mono flex items-center justify-between">
+                    <span className="text-[#888888]">Mot de passe :</span>
+                    <span className="text-white font-medium">Admin@Bamako2026!</span>
+                  </div>
+                </div>
+
+                {quickLoginError && (
+                  <div className="mb-4 p-3 bg-red-950/40 border border-red-800 text-red-300 text-xs rounded-lg text-left">
+                    {quickLoginError}
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={handleQuickAdminLogin}
+                    disabled={quickLoginLoading}
+                    className="px-5 py-3 rounded-xl bg-[#FFBF00] hover:bg-[#E5AC00] text-[#0B0B0B] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                  >
+                    {quickLoginLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Connexion en cours...
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="w-4 h-4" />
+                        Connexion Administrateur 1-clic
+                      </>
+                    )}
+                  </button>
+
+                  <Link
+                    href="/admin/prototype"
+                    className="px-5 py-3 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] border border-[#333333] text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4 text-[#FFBF00]" />
+                    Prototype (12 Écrans)
+                  </Link>
+                </div>
+
+                <div className="mt-6 pt-5 border-t border-[#262626] text-xs text-[#777777]">
+                  Ou connectez-vous avec un autre compte depuis la{" "}
+                  <Link
+                    href={`/login?redirect=${encodeURIComponent(pathname || "/admin/dashboard")}`}
+                    className="text-[#FFBF00] hover:underline font-medium"
+                  >
+                    page de connexion standard
+                  </Link>.
+                </div>
+              </div>
+            ) : !canAccessConsole ? (
+              <div className="max-w-md mx-auto my-16 bg-[#171717] border border-red-900/40 rounded-2xl p-8 text-center shadow-xl">
+                <div className="w-14 h-14 rounded-2xl bg-red-950/60 border border-red-800/60 flex items-center justify-center mx-auto mb-4 text-red-400">
+                  <ShieldAlert className="w-7 h-7" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Accès Non Autorisé</h2>
+                <p className="text-sm text-[#A0A0A0] mb-6 leading-relaxed">
+                  Vous êtes actuellement connecté avec le compte <strong className="text-white">{user?.email}</strong>. Ce compte ne possède pas les privilèges requis (Administrateur ou Super Admin).
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={async () => {
+                      await logout();
+                      router.push("/login?tab=login");
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-[#FFBF00] text-[#0B0B0B] font-bold text-sm hover:bg-[#E5AC00] transition-colors"
+                  >
+                    Se reconnecter avec un compte administrateur
+                  </button>
+                  <Link
+                    href="/"
+                    className="w-full py-2.5 rounded-xl bg-[#222222] border border-[#333333] text-white font-medium text-sm hover:bg-[#2A2A2A] transition-colors text-center"
+                  >
+                    Retour à l’accueil public
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              children
+            )}
           </div>
         </div>
       </div>

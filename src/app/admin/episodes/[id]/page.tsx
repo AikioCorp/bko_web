@@ -46,24 +46,40 @@ export default function AdminEditEpisodePage() {
   // Preview states
   const [previewMode, setPreviewMode] = useState<"AUDIO" | "YOUTUBE" | null>(null);
 
+  // Derived source states
+  const audioSource = episode?.sources?.audio;
+  const audioStatus = episode?.sources?.audioState || episode?.audioStatus || (audioSource ? "READY" : "NONE");
+  const effectiveAudioUrl = audioSource?.url || episode?.audioUrl || "";
+  const audioProcessing = audioStatus === "PROCESSING" || audioStatus === "UPLOADING";
+  const hasAudioReady = audioStatus === "READY" || !!effectiveAudioUrl;
+
+  const youtubeSource = episode?.sources?.youtube;
+  const effectiveYoutubeId = youtubeSource?.videoId || episode?.youtubeId || "";
+  const hasYoutubeReady = !!effectiveYoutubeId;
+  const hasSource = hasAudioReady || hasYoutubeReady;
+
   useEffect(() => {
     if (episode) {
       setTitle(episode.title || "");
       setSummary(episode.summary || "");
       setDescription(episode.description || "");
-      setLanguage(episode.language || episode.podcast?.language || "fr");
-      setSeasonNumber(episode.seasonNumber || "");
-      setEpisodeNumber(episode.episodeNumber || "");
+      setLanguage(episode.languageCode || episode.language || episode.podcast?.primaryLanguageCode || episode.podcast?.language || "fr");
+      setSeasonNumber(episode.seasonNumber ?? episode.season?.number ?? "");
+      setEpisodeNumber(episode.episodeNumber ?? "");
       setEpisodeType(episode.episodeType || "FULL");
       setExplicit(episode.explicit || false);
-      setCoverUrl(episode.coverUrl || episode.podcast?.coverUrl || "");
+      setCoverUrl(episode.cover || episode.coverUrl || episode.podcast?.cover || episode.podcast?.coverUrl || "");
       
+      const ytId = episode.sources?.youtube?.videoId || episode.youtubeId;
+      const aUrl = episode.sources?.audio?.url || episode.audioUrl;
+      const aStatus = episode.sources?.audioState || episode.audioStatus;
+
       if (!previewMode) {
-        if (episode.youtubeId) setPreviewMode("YOUTUBE");
-        else if (episode.audioUrl || episode.audioStatus === "READY") setPreviewMode("AUDIO");
+        if (ytId) setPreviewMode("YOUTUBE");
+        else if (aUrl || aStatus === "READY") setPreviewMode("AUDIO");
       }
     }
-  }, [episode]);
+  }, [episode, previewMode]);
 
   if (!episode && !error) {
     return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#757575]" /></div>;
@@ -81,15 +97,21 @@ export default function AdminEditEpisodePage() {
       await adminApi(`/admin/episodes/${id}`, {
         method: "PATCH",
         body: JSON.stringify({
-          title, summary, description, language,
+          title,
+          summary,
+          description,
+          languageCode: language,
+          cover: coverUrl,
           seasonNumber: seasonNumber === "" ? null : Number(seasonNumber),
           episodeNumber: episodeNumber === "" ? null : Number(episodeNumber),
-          episodeType, explicit, coverUrl
+          episodeType,
+          explicit,
         }),
       });
       mutate();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || "Erreur lors de l'enregistrement");
     } finally {
       setSaving(false);
     }
@@ -99,14 +121,24 @@ export default function AdminEditEpisodePage() {
     setPublishing(true);
     await handleSaveInfo(); // Save info first
     try {
-      await adminApi(`/admin/episodes/${id}/publish`, {
-        method: "POST",
-        body: JSON.stringify({ status, scheduledAt })
-      });
+      if (status === "DRAFT") {
+        await adminApi(`/admin/episodes/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "DRAFT" })
+        });
+      } else {
+        await adminApi(`/admin/episodes/${id}/publish`, {
+          method: "POST",
+          body: JSON.stringify({
+            mode: status === "SCHEDULED" ? "schedule" : "now",
+            publishAt: scheduledAt,
+          })
+        });
+      }
       mutate();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de la publication");
+      alert(err.message || "Erreur lors de la publication");
     } finally {
       setPublishing(false);
     }
@@ -121,9 +153,9 @@ export default function AdminEditEpisodePage() {
       });
       setAudioUrlInput("");
       mutate();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur ou URL invalide");
+      alert(err.message || "Erreur ou URL invalide");
     }
   };
 
@@ -132,7 +164,7 @@ export default function AdminEditEpisodePage() {
     try {
       await adminApi(`/admin/episodes/${id}/audio`, { method: "DELETE" });
       mutate();
-    } catch (err) { console.error(err); }
+    } catch (err: any) { console.error(err); }
   };
 
   const handlePreviewYoutube = async () => {
@@ -149,8 +181,9 @@ export default function AdminEditEpisodePage() {
       } else {
         alert("Vidéo introuvable ou privée.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || "Vidéo introuvable ou privée.");
     } finally {
       setCheckingYoutube(false);
     }
@@ -162,16 +195,17 @@ export default function AdminEditEpisodePage() {
       await adminApi(`/admin/episodes/${id}/youtube`, {
         method: "POST",
         body: JSON.stringify({
-          youtubeId: youtubePreview.id,
-          youtubeTitle: youtubePreview.title,
-          youtubeChannel: youtubePreview.channelTitle,
-          durationMs: youtubePreview.durationMs
+          url: youtubePreview.watchUrl || youtubeUrlInput,
+          durationSeconds: youtubePreview.durationSeconds
         })
       });
       setYoutubePreview(null);
       setYoutubeUrlInput("");
       mutate();
-    } catch (err) { console.error(err); }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Erreur lors de l'association YouTube");
+    }
   };
 
   const handleRemoveYoutube = async () => {
@@ -179,7 +213,7 @@ export default function AdminEditEpisodePage() {
     try {
       await adminApi(`/admin/episodes/${id}/youtube`, { method: "DELETE" });
       mutate();
-    } catch (err) { console.error(err); }
+    } catch (err: any) { console.error(err); }
   };
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,15 +224,15 @@ export default function AdminEditEpisodePage() {
     try {
       const res = await adminApi(`/admin/episodes/${id}/audio/uploads`, {
         method: "POST",
-        body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size })
+        body: JSON.stringify({ filename: file.name, mimeType: file.type || "audio/mpeg", sizeBytes: file.size })
       });
-      if (!res.success) throw new Error("Impossible de créer la session d'envoi");
+      if (!res.success) throw new Error(res.message || "Impossible de créer la session d'envoi");
       
       const { uploadUrl, uploadId } = res.data;
       
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", uploadUrl, true);
-      xhr.setRequestHeader("Content-Type", file.type);
+      xhr.setRequestHeader("Content-Type", file.type || "audio/mpeg");
       xhr.upload.onprogress = (evt) => {
         if (evt.lengthComputable) {
           setUploadProgress(Math.round((evt.loaded / evt.total) * 100));
@@ -206,16 +240,16 @@ export default function AdminEditEpisodePage() {
       };
       
       await new Promise((resolve, reject) => {
-        xhr.onload = () => { if (xhr.status === 200) resolve(true); else reject("S3 upload failed"); };
-        xhr.onerror = () => reject("S3 upload error");
+        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) resolve(true); else reject(new Error("Échec du transfert vers le stockage (S3/R2)")); };
+        xhr.onerror = () => reject(new Error("Erreur réseau lors de l'envoi du fichier"));
         xhr.send(file);
       });
 
       await adminApi(`/admin/episodes/${id}/audio/uploads/${uploadId}/complete`, { method: "POST" });
       mutate();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de l'envoi");
+      alert(err.message || "Erreur lors de l'envoi");
     } finally {
       setUploadingAudio(false);
       setUploadProgress(0);
@@ -223,17 +257,13 @@ export default function AdminEditEpisodePage() {
   };
 
   // Conditions de publication
-  const hasTitle = !!title.trim();
+  const hasTitle = !!title.trim() && title.trim() !== "Nouvel épisode";
   const hasPodcast = !!podcast;
   const hasLanguage = !!language.trim();
-  const hasAudioReady = episode?.audioStatus === "READY" || !!episode?.audioUrl;
-  const hasYoutubeReady = !!episode?.youtubeId;
-  const hasSource = hasAudioReady || hasYoutubeReady;
-  
-  const canPublish = hasTitle && hasPodcast && hasLanguage && hasSource;
+  const canPublish = hasTitle && hasPodcast && hasLanguage && hasSource && !audioProcessing;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="w-full">
       <div className="mb-6 flex items-center gap-4 text-sm text-[#757575]">
         <Link href="/admin/podcasts" className="hover:text-white transition-colors">Podcasts</Link>
         <span>/</span>
@@ -337,7 +367,7 @@ export default function AdminEditEpisodePage() {
                   <h3 className="font-bold text-white">Version audio</h3>
                 </div>
 
-                {episode.audioStatus === "PROCESSING" && (
+                {audioProcessing && (
                   <div className="bg-blue-500/10 border border-blue-500/30 text-blue-400 p-4 rounded-lg flex items-center gap-3">
                     <Loader2 className="w-5 h-5 animate-spin" />
                     <div>
@@ -354,8 +384,8 @@ export default function AdminEditEpisodePage() {
                         <CheckCircle2 className="w-5 h-5 text-green-500" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-white">{episode.audioUrl?.split('/').pop() || "Fichier audio prêt"}</p>
-                        <p className="text-xs text-[#757575]">Fichier prêt • {Math.round((episode.durationMs || 0)/60000)} min</p>
+                        <p className="text-sm font-bold text-white">{effectiveAudioUrl?.split('/').pop() || audioSource?.filename || "Fichier audio prêt"}</p>
+                        <p className="text-xs text-[#757575]">Fichier prêt • {Math.round(audioSource?.durationSeconds ? audioSource.durationSeconds / 60 : ((episode.durationMs || 0) / 60000))} min</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -365,7 +395,7 @@ export default function AdminEditEpisodePage() {
                   </div>
                 )}
 
-                {!hasAudioReady && episode.audioStatus !== "PROCESSING" && (
+                {!hasAudioReady && !audioProcessing && (
                   <div className="space-y-4">
                     <div className="border-2 border-dashed border-[#2A2A2A] rounded-lg p-6 text-center hover:border-[#FFBF00] transition-colors relative cursor-pointer">
                       <input type="file" accept="audio/*" onChange={handleAudioUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" disabled={uploadingAudio} />
@@ -373,7 +403,7 @@ export default function AdminEditEpisodePage() {
                       <p className="text-sm text-white font-bold mb-1">
                         {uploadingAudio ? `Envoi en cours... ${uploadProgress}%` : "Déposer un fichier audio ou parcourir"}
                       </p>
-                      <p className="text-xs text-[#757575]">MP3, M4A, WAV (Max 500 MB)</p>
+                      <p className="text-xs text-[#757575]">MP3, M4A, WAV (Max 250 Mo)</p>
                       
                       {uploadingAudio && (
                         <div className="mt-4 h-1.5 w-full bg-[#2A2A2A] rounded-full overflow-hidden">
@@ -407,14 +437,14 @@ export default function AdminEditEpisodePage() {
                   <div className="bg-[#1A1A1A] border border-[#2A2A2A] p-4 rounded-lg flex flex-col sm:flex-row items-center gap-4 justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-24 h-14 bg-black rounded overflow-hidden relative flex-shrink-0">
-                        <img src={`https://i.ytimg.com/vi/${episode.youtubeId}/mqdefault.jpg`} className="w-full h-full object-cover" />
+                        <img src={`https://i.ytimg.com/vi/${effectiveYoutubeId}/mqdefault.jpg`} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                           <Play className="w-6 h-6 text-white opacity-80" />
                         </div>
                       </div>
                       <div>
                         <p className="text-sm font-bold text-white line-clamp-1">{episode.title}</p>
-                        <p className="text-xs text-[#757575]">ID: {episode.youtubeId}</p>
+                        <p className="text-xs text-[#757575]">ID: {effectiveYoutubeId}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -438,9 +468,9 @@ export default function AdminEditEpisodePage() {
 
                 {youtubePreview && (
                   <div className="bg-[#1A1A1A] border border-[#2A2A2A] p-4 rounded-lg flex flex-col items-center text-center">
-                    <img src={youtubePreview.thumbnailUrl} className="w-48 rounded-lg shadow-lg mb-3" />
+                    <img src={youtubePreview.thumbnailUrl || youtubePreview.thumbnail} className="w-48 rounded-lg shadow-lg mb-3" />
                     <h4 className="text-sm font-bold text-white mb-1">{youtubePreview.title}</h4>
-                    <p className="text-xs text-[#757575] mb-4">{youtubePreview.channelTitle}</p>
+                    <p className="text-xs text-[#757575] mb-4">{youtubePreview.channelTitle || youtubePreview.channel}</p>
                     <div className="flex gap-3">
                       <Button variant="outline" onClick={() => setYoutubePreview(null)} className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]">Annuler</Button>
                       <Button onClick={handleConfirmYoutube} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">Confirmer cette vidéo</Button>
@@ -469,7 +499,7 @@ export default function AdminEditEpisodePage() {
                 {previewMode === "YOUTUBE" && hasYoutubeReady ? (
                   <div className="absolute inset-0 z-10 bg-black">
                      <ReactPlayer
-                        src={`https://www.youtube.com/watch?v=${episode.youtubeId}`}
+                        src={`https://www.youtube.com/watch?v=${effectiveYoutubeId}`}
                         width="100%"
                         height="100%"
                         controls
@@ -487,9 +517,9 @@ export default function AdminEditEpisodePage() {
                 <p className="text-[#757575] text-xs line-clamp-2 mb-4">{summary || description || "Le résumé de l'épisode apparaîtra ici."}</p>
                 
                 {/* Audio Player if active */}
-                {previewMode === "AUDIO" && hasAudioReady && episode.audioUrl && (
+                {previewMode === "AUDIO" && hasAudioReady && effectiveAudioUrl && (
                   <div className="mb-4">
-                    <audio src={episode.audioUrl} controls className="w-full h-10" />
+                    <audio src={effectiveAudioUrl} controls className="w-full h-10" />
                   </div>
                 )}
 
@@ -539,7 +569,7 @@ export default function AdminEditEpisodePage() {
                   {hasSource ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <div className="w-4 h-4 rounded-full border-2 border-[#2A2A2A]" />}
                   <span className={hasSource ? "text-[#B8B8B8]" : "text-[#757575]"}>Une source de lecture disponible</span>
                 </li>
-                {episode.audioStatus === "PROCESSING" && (
+                {audioProcessing && (
                   <li className="flex items-center gap-3 text-sm">
                     <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                     <span className="text-blue-400">Traitement audio en cours</span>

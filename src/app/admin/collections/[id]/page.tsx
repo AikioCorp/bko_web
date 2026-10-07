@@ -110,7 +110,7 @@ export default function CollectionEditPage() {
   if (error || !collection) return <div className="p-8 text-red-500">Introuvable</div>;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto pb-32">
+    <div className="w-full pb-32">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <Link href="/admin/collections" className="p-2 hover:bg-[#1A1A1A] rounded-full transition-colors text-[#888888] hover:text-white">

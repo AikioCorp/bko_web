@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, LogIn, UserPlus, ShieldCheck, Radio, Bookmark, LogOut } from "lucide-react";
@@ -10,6 +10,8 @@ export function UserDropdown() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   let hoverTimeout: NodeJS.Timeout;
 
@@ -35,20 +37,19 @@ export function UserDropdown() {
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all overflow-hidden ${
-          isAuthenticated
+        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all overflow-hidden ${mounted && isAuthenticated
             ? "bg-[#FFBF00] text-[#0B0B0B] font-bold text-xs shadow-md"
             : "bg-[#161616] border border-[#2A2A2A] text-[#B8B8B8] hover:text-white hover:border-[#FFBF00]/50"
         }`}
         aria-label="Menu utilisateur"
       >
-        {isAuthenticated && user?.avatar ? (
+        {mounted && isAuthenticated && user?.avatar ? (
           <img
             src={user.avatar}
             alt={user.fullName || "Utilisateur"}
             className="w-full h-full object-cover"
           />
-        ) : isAuthenticated && user?.fullName ? (
+        ) : mounted && isAuthenticated && user?.fullName ? (
           user.fullName.charAt(0).toUpperCase()
         ) : (
           <User className="w-4 h-4" />
@@ -57,7 +58,7 @@ export function UserDropdown() {
 
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-56 bg-[#141414] border border-[#282828] rounded-2xl p-2 shadow-2xl z-50 animate-fade-in space-y-1">
-          {!isAuthenticated ? (
+          {!mounted || !isAuthenticated ? (
             <>
               <div className="px-3 py-2 border-b border-[#222222]">
                 <p className="text-xs font-bold text-white">Bienvenue</p>

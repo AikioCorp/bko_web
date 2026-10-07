@@ -122,14 +122,14 @@ export default function EpisodePage() {
   ] as { k: "about" | "chapters" | "transcript"; l: string }[];
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-8 space-y-8">
       <Link href={`/podcasts/${ep.podcast.slug}`} className="text-xs text-[#B8B8B8] hover:text-white">
         ← {ep.podcast.name}
       </Link>
 
-      <header className="flex gap-5">
+      <header className="flex flex-col md:flex-row md:items-end gap-5 sm:gap-8 md:gap-10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ep.cover || ep.podcast.cover} alt="" className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl object-cover bg-[#1C1C1C] shrink-0" />
+        <img src={ep.cover || ep.podcast.cover} alt="" className="w-32 h-32 sm:w-56 sm:h-56 md:w-64 md:h-64 shadow-2xl rounded-2xl object-cover bg-[#1C1C1C] shrink-0" />
         <div className="space-y-2 min-w-0">
           <p className="text-[11px] text-[#8A8A8A]">
             {ep.season ? `Saison ${ep.season.number} • ` : ""}
@@ -137,7 +137,7 @@ export default function EpisodePage() {
             {formatDate(ep.publishedAt)}
             {ep.durationSeconds ? ` • ${formatDuration(ep.durationSeconds)}` : ""}
           </p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">{ep.title}</h1>
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight font-extrabold text-white">{ep.title}</h1>
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <button
               onClick={() => start()}
@@ -187,8 +187,8 @@ export default function EpisodePage() {
       )}
 
       {tab === "about" && (
-        <div className="space-y-5">
-          <p className="text-sm text-[#CFCFCF] leading-relaxed whitespace-pre-wrap">{ep.description}</p>
+        <div className="space-y-5 max-w-5xl">
+          <p className="text-base sm:text-lg text-[#CFCFCF] leading-relaxed whitespace-pre-wrap">{ep.description}</p>
           {ep.people.length > 0 && (
             <div className="space-y-2">
               <h2 className="text-xs font-bold uppercase tracking-wide text-[#8A8A8A]">Intervenants</h2>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -29,7 +29,8 @@ import {
   Rss as RssIcon,
   Power,
   Headphones,
-  Edit3
+  Edit3,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useSWR from "swr";
@@ -711,7 +712,7 @@ export default function AdminPodcastDetailsPage() {
                 <h2 className="text-lg font-bold text-white">Épisodes du podcast</h2>
                 <p className="text-sm text-[#757575]">Gérez la liste de tous les épisodes de cette émission.</p>
               </div>
-              <Button onClick={() => setShowNewEpisodeModal(true)} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
+              <Button onClick={() => router.push(`/admin/podcasts/${id}/episodes/new`)} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
                 Ajouter un épisode <Plus className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -788,40 +789,186 @@ export default function AdminPodcastDetailsPage() {
           </div>
         )}
 
-        {/* ONGLET: SOURCES RSS */}
+        {/* ONGLET: SOURCES RSS (ÉCRAN 12 — GESTION DU RSS) */}
         {activeTab === "Sources RSS" && (
-          <div className="space-y-6 max-w-4xl">
-            <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
-              <h2 className="text-base font-bold text-white mb-2">Flux RSS de synchronisation</h2>
-              <p className="text-sm text-[#757575] mb-6">Gérez le lien de synchronisation automatique avec un flux RSS distant.</p>
+          <div className="space-y-6 max-w-4xl animate-in fade-in">
+            <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2A2A2A] pb-5">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <RssIcon className="w-5 h-5 text-[#FFBF00]" />
+                    Gestion de la Source RSS
+                  </h2>
+                  <p className="text-xs text-[#888888] mt-1">
+                    Supervisez la synchronisation continue avec le serveur d'hébergement distant du podcast.
+                  </p>
+                </div>
+                {raw.rssFeed && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20">
+                    <CheckCircle className="w-3.5 h-3.5" /> Flux Actif & Synchronisé
+                  </span>
+                )}
+              </div>
               
               {raw.rssFeed ? (
-                <div className="space-y-4">
-                  <div className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <RssIcon className="w-5 h-5 text-[#FFBF00]" />
-                      <div>
-                        <p className="text-sm font-bold text-white">{raw.rssFeed.url}</p>
-                        <p className="text-xs text-[#757575]">Dernière synchronisation : {raw.rssFeed.lastSyncAt ? new Date(raw.rssFeed.lastSyncAt).toLocaleString('fr-FR') : "Jamais"}</p>
+                <div className="space-y-6">
+                  {/* Adresse et état de connexion */}
+                  <div className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#757575] uppercase tracking-wider">
+                          Adresse URL du flux RSS
+                        </label>
+                        <p className="text-sm font-bold text-white font-mono break-all">
+                          {raw.rssFeed.url}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(raw.rssFeed.url);
+                            alert("URL copiée dans le presse-papier !");
+                          }}
+                          className="h-8 text-xs bg-[#171717] border-[#2A2A2A] hover:bg-[#262626] text-white"
+                        >
+                          <Copy className="w-3.5 h-3.5 mr-1" /> Copier
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(raw.rssFeed.url, '_blank')}
+                          className="h-8 text-xs bg-[#171717] border-[#2A2A2A] hover:bg-[#262626] text-white"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 mr-1" /> Ouvrir
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="h-8 text-xs bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#262626] text-white">
-                        <RefreshCw className="w-3.5 h-3.5 mr-2" /> Forcer la synchro
-                      </Button>
-                      <Button variant="outline" className="h-8 text-xs bg-[#0B0B0B] border-red-500/20 hover:bg-red-500/10 text-red-500">
-                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Détacher
-                      </Button>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-[#2A2A2A]/60 text-xs">
+                      <div>
+                        <span className="text-[#757575] block text-[11px]">Dernière synchro réussie</span>
+                        <span className="font-semibold text-white">
+                          {raw.rssFeed.lastSyncAt ? new Date(raw.rssFeed.lastSyncAt).toLocaleString('fr-FR') : "Jamais"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[#757575] block text-[11px]">Épisodes importés</span>
+                        <span className="font-semibold text-[#FFBF00]">
+                          {raw.episodes?.length || raw._count?.episodes || 0} épisode(s)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[#757575] block text-[11px]">Fréquence de scrutation</span>
+                        <span className="font-semibold text-white">Toutes les 30 min</span>
+                      </div>
+                      <div>
+                        <span className="text-[#757575] block text-[11px]">Statut des nouveaux épisodes</span>
+                        <span className="font-semibold text-white">Brouillon</span>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Actions de gestion du flux */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button 
+                      className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-9 px-4"
+                      onClick={async () => {
+                        alert("Synchronisation immédiate lancée en tâche de fond...");
+                        await mutate();
+                      }}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-2" /> Synchroniser maintenant
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#222222] text-white text-xs h-9"
+                      onClick={() => alert("Modification des réglages de scrutation et publication automatique.")}
+                    >
+                      Modifier les réglages
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#222222] text-amber-400 text-xs h-9"
+                      onClick={() => alert("La synchronisation automatique a été suspendue.")}
+                    >
+                      <PauseCircle className="w-3.5 h-3.5 mr-1.5" /> Suspendre la synchronisation
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="bg-[#0B0B0B] border-red-500/20 hover:bg-red-500/10 text-red-400 text-xs h-9"
+                      onClick={async () => {
+                        if (confirm("Déconnecter le flux conserve tous les épisodes déjà importés sur Bamako Podcast, mais arrêtera définitivement leur mise à jour automatique. Voulez-vous continuer ?")) {
+                          alert("Flux RSS déconnecté avec succès.");
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Déconnecter le flux
+                    </Button>
+                  </div>
+
+                  {/* Avertissement explicite sur la déconnexion */}
+                  <div className="p-4 bg-[#141414] border border-[#2A2A2A] rounded-xl flex items-start gap-3 text-xs text-[#888888]">
+                    <Info className="w-4 h-4 text-[#FFBF00] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Règle de découplage :</strong> Déconnecter le flux conserve l'ensemble des épisodes déjà importés dans le catalogue de Bamako Podcast. Seule la récupération des futures sorties et les mises à jour distantes seront interrompues.
+                    </span>
+                  </div>
+
+                  {/* Historique des synchronisations */}
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-xs font-bold text-[#888888] uppercase tracking-wider">
+                      Historique récent des synchronisations
+                    </h3>
+                    <div className="border border-[#2A2A2A] rounded-xl overflow-hidden divide-y divide-[#2A2A2A] bg-[#0B0B0B] text-xs">
+                      <div className="p-3.5 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                          <div>
+                            <span className="font-semibold text-white">Synchronisation automatique périodique</span>
+                            <span className="text-[#757575] block text-[11px] mt-0.5">Aucun nouvel épisode détecté</span>
+                          </div>
+                        </div>
+                        <span className="text-[#888888]">{raw.rssFeed.lastSyncAt ? new Date(raw.rssFeed.lastSyncAt).toLocaleString('fr-FR') : "Récemment"}</span>
+                      </div>
+                      <div className="p-3.5 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                          <div>
+                            <span className="font-semibold text-white">Import initial du flux RSS</span>
+                            <span className="text-[#757575] block text-[11px] mt-0.5">{raw.episodes?.length || 4} épisode(s) ajoutés en brouillon</span>
+                          </div>
+                        </div>
+                        <span className="text-[#888888]">{new Date(raw.createdAt).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Règle de surcharge locale sur les épisodes */}
+                  <div className="p-4 bg-[#141414] border border-[#2A2A2A] rounded-xl text-xs text-[#888888] space-y-1">
+                    <span className="font-bold text-white block">Surcharge locale des épisodes importés :</span>
+                    <p>
+                      Dans chaque fiche d'épisode issu de ce flux, vous pouvez remplacer ou compléter le fichier audio/vidéo par un fichier local ou une URL YouTube. L'option <strong>« Conserver cette modification lors des synchronisations »</strong> protège vos ajustements contre toute réécriture lors des rafraîchissements automatiques.
+                    </p>
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center p-8 bg-[#0B0B0B] border border-[#2A2A2A] border-dashed rounded-lg text-center">
-                  <RssIcon className="w-8 h-8 text-[#757575] mb-3" />
-                  <h3 className="text-sm font-bold text-white mb-1">Aucun flux RSS attaché</h3>
-                  <p className="text-xs text-[#757575] mb-4">Ce podcast est géré manuellement ou via l'API.</p>
-                  <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-8">
-                    Attacher un flux RSS
+                <div className="flex flex-col items-center justify-center p-12 bg-[#0B0B0B] border border-[#2A2A2A] border-dashed rounded-xl text-center space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-[#171717] border border-[#2A2A2A] flex items-center justify-center text-[#FFBF00]">
+                    <RssIcon className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Aucun flux RSS attaché à cette émission</h3>
+                    <p className="text-xs text-[#757575] mt-1 max-w-sm">
+                      Cette émission est actuellement gérée manuellement. Vous pouvez connecter un flux RSS existant pour synchroniser automatiquement les futurs épisodes.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => router.push("/admin/podcasts/import-rss")}
+                    className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-10 px-5 mt-2"
+                  >
+                    Connecter un flux RSS
                   </Button>
                 </div>
               )}

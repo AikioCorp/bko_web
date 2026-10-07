@@ -2,7 +2,7 @@ import { getAccessToken } from "@/lib/token";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
-export async function fetchApi<T = any>(endpoint: string, options: RequestInit = {}): Promise<{ success: boolean; data?: T; message?: string }> {
+export async function fetchApi<T = any>(endpoint: string, options: RequestInit = {}): Promise<{ success: boolean; data?: T; message?: string; error?: any }> {
   const token = getAccessToken();
 
   const headers: Record<string, string> = {
@@ -16,20 +16,37 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
 
   const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
 
+  let res: Response;
   try {
-    const res = await fetch(url, {
+    res = await fetch(url, {
       credentials: "include",
       ...options,
       headers,
     });
-    const json = await res.json();
-    return json;
   } catch (error: any) {
-    return {
-      success: false,
-      message: error.message || "Erreur de connexion au serveur",
-    };
+    throw new Error(error.message || "Impossible de joindre le serveur.");
   }
+
+  let json: any = null;
+  try {
+    json = await res.json();
+  } catch {
+    if (!res.ok) {
+      throw new Error(`Erreur serveur (${res.status})`);
+    }
+    return { success: true } as any;
+  }
+
+  if (!res.ok || json?.success === false) {
+    const errorMsg = json?.error?.message || json?.message || `Erreur requête (${res.status})`;
+    const err = new Error(errorMsg);
+    (err as any).status = res.status;
+    (err as any).data = json;
+    throw err;
+  }
+
+  return json;
 }
 
 export const adminApi = fetchApi;
+

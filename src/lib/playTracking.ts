@@ -1,9 +1,5 @@
 import { API_BASE_URL } from "@/lib/api";
 
-// Suivi d'écoute : alimente les statistiques des créateurs (POST /episodes/:id/plays)
-// et la reprise de lecture (POST /me/history). Tout est "au mieux" : une erreur réseau
-// ne doit jamais gêner l'écoute.
-
 type PlayEvent = "start" | "qualified" | "complete" | "progress";
 
 const post = (path: string, body: unknown) =>
@@ -15,13 +11,18 @@ const post = (path: string, body: unknown) =>
     body: JSON.stringify(body),
   }).catch(() => {});
 
-export const sendPlayEvent = (episodeId: string, event: PlayEvent, seconds?: number) =>
-  post(`/episodes/${episodeId}/plays`, { event, ...(seconds !== undefined ? { seconds: Math.round(seconds) } : {}) });
+const isMockId = (id: string) => id.startsWith("hist-") || id.startsWith("save-") || id.startsWith("dl-") || id.startsWith("foll-") || id.startsWith("p-") || id.startsWith("ep-");
 
-export const saveHistory = (episodeId: string, positionSeconds: number, durationSeconds?: number) =>
-  post(`/me/history`, { episodeId, positionSeconds: Math.floor(positionSeconds), durationSeconds: durationSeconds ? Math.floor(durationSeconds) : undefined });
+export const sendPlayEvent = (episodeId: string, event: PlayEvent, seconds?: number) => {
+  if (isMockId(episodeId)) return Promise.resolve();
+  return post(`/episodes/${episodeId}/plays`, { event, ...(seconds !== undefined ? { seconds: Math.round(seconds) } : {}) });
+};
 
-/** Compteur d'écoute réelle d'un épisode : ignore les sauts (seek) et les temps de pause. */
+export const saveHistory = (episodeId: string, positionSeconds: number, durationSeconds?: number) => {
+  if (isMockId(episodeId)) return Promise.resolve();
+  return post(`/me/history`, { episodeId, positionSeconds: Math.floor(positionSeconds), durationSeconds: durationSeconds ? Math.floor(durationSeconds) : undefined });
+};
+
 export class ListenTracker {
   private lastT = 0;
   private listened = 0;
@@ -41,11 +42,9 @@ export class ListenTracker {
     }
   }
 
-  /** À appeler à chaque progression du média (timeupdate / onProgress). */
   tick(currentTime: number, duration: number) {
     const delta = currentTime - this.lastT;
     this.lastT = currentTime;
-    // Un delta négatif ou grand est un déplacement, pas de l'écoute.
     if (delta > 0 && delta < 3) this.listened += delta;
 
     if (!this.qualified && this.listened >= 30) {

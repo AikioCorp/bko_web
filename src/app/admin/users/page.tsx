@@ -97,7 +97,7 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Utilisateurs</h1>

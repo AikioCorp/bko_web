@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/authStore";
  * Les droits viennent du serveur ; ce lien n'est qu'un raccourci, l'accès réel est vérifié côté API.
  */
 export function useConsoleAccess() {
+
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const userId = useAuthStore((s) => s.user?.id);
   const [hasConsole, setHasConsole] = useState(false);

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -30,11 +30,11 @@ import { Button } from "@/components/ui/button";
 
 type FormatChoice = "AUDIO" | "VIDEO" | "HYBRID";
 
-export default function NewPodcastWizard() {
+export default function EditPodcast() {
   const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
 
-  // Screen 2 (Choice) vs Screen 3 (Form)
-  const [currentScreen, setCurrentScreen] = useState<"CHOICE" | "FORM">("CHOICE");
   const [selectedFormat, setSelectedFormat] = useState<FormatChoice>("AUDIO");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,39 +59,28 @@ export default function NewPodcastWizard() {
     website: "",
   });
 
-  // Load draft from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("bko_podcast_new_draft");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.formData) {
-          const clean = { ...parsed.formData };
-          if (clean.cover?.startsWith("data:")) clean.cover = "";
-          if (clean.banner?.startsWith("data:")) clean.banner = "";
-          setFormData(clean);
-        }
-        if (parsed.selectedFormat) setSelectedFormat(parsed.selectedFormat);
-        if (parsed.currentScreen) setCurrentScreen(parsed.currentScreen);
-      }
-    } catch {}
-  }, []);
+  const { data: rawPodcast, isLoading: isPodcastLoading } = useSWR(id ? `/admin/podcasts/${id}` : null, (url) => adminApi(url).then(res => res.data));
 
-  // Save draft
   useEffect(() => {
-    try {
-      const clean = {
-        ...formData,
-        cover: formData.cover.startsWith("data:") ? "" : formData.cover,
-        banner: formData.banner.startsWith("data:") ? "" : formData.banner,
-      };
-      localStorage.setItem("bko_podcast_new_draft", JSON.stringify({
-        currentScreen,
-        selectedFormat,
-        formData: clean,
-      }));
-    } catch {}
-  }, [currentScreen, selectedFormat, formData]);
+    if (rawPodcast) {
+      setFormData({
+        name: rawPodcast.name || "",
+        descriptionShort: rawPodcast.shortDescription || "",
+        description: rawPodcast.description || "",
+        cover: rawPodcast.cover || "",
+        banner: rawPodcast.banner || "",
+        primaryLanguageCode: rawPodcast.primaryLanguageCode || "fr",
+        secondaryLanguageCodes: rawPodcast.secondaryLanguageCodes || [],
+        categoryIds: rawPodcast.categories?.map((c: any) => c.categoryId) || [],
+        countryId: rawPodcast.countryId || "ML",
+        city: rawPodcast.city || "",
+        organizationId: rawPodcast.organizationId || "",
+        ownershipStatus: rawPodcast.ownershipStatus || "UNCLAIMED",
+        website: rawPodcast.website || "",
+      });
+      setSelectedFormat((rawPodcast.format || rawPodcast.defaultFormat || "AUDIO") as FormatChoice);
+    }
+  }, [rawPodcast]);
 
   // Referential data
   const { data: catData } = useSWR("/admin/categories", (url) => adminApi(url).then(res => res.data));
@@ -171,8 +160,8 @@ export default function NewPodcastWizard() {
     }
   };
 
-  // Enregistrement (Brouillon ou avec redirection)
-  const handleSave = async (redirectTarget: "DETAILS" | "NEW_EPISODE" | "STAY") => {
+  // Enregistrement
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       setError("Le nom de l'émission est obligatoire.");
       return;
@@ -205,227 +194,60 @@ export default function NewPodcastWizard() {
         ownershipStatus: formData.ownershipStatus,
         website: formData.website.trim() || undefined,
         format: selectedFormat,
-        status: "DRAFT",
       };
 
-      const res = await adminApi("/admin/podcasts", {
-        method: "POST",
+      const res = await adminApi(`/admin/podcasts/${id}`, {
+        method: "PUT",
         body: JSON.stringify(payload)
       });
 
-      if (!res.success) throw new Error(res.message || "Erreur de création de l'émission");
+      if (!res.success) throw new Error(res.message || "Erreur de modification de l'émission");
 
-      localStorage.removeItem("bko_podcast_new_draft");
-      const createdId = res.data.id || res.data.slug;
-
-      if (redirectTarget === "NEW_EPISODE") {
-        router.push(`/admin/podcasts/${createdId}/episodes/new`);
-      } else {
-        router.push(`/admin/podcasts/${createdId}`);
-      }
+      router.push(`/admin/podcasts/${id}`);
     } catch (e: any) {
       setError(e.message || "Une erreur est survenue lors de l'enregistrement.");
       setIsSubmitting(false);
     }
   };
 
-  // ==========================================
-  // ÉCRAN 2 — CHOIX DU PARCOURS DE CRÉATION
-  // ==========================================
-  if (currentScreen === "CHOICE") {
-    return (
-      <div className="w-full max-w-5xl mx-auto py-4 pb-28 text-white space-y-8 animate-in fade-in">
-        
-        {/* Navigation & Header */}
-        <div className="space-y-3">
-          <Link 
-            href="/admin/podcasts" 
-            className="inline-flex items-center text-xs font-semibold text-[#888888] hover:text-[#FFBF00] transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" /> Retour aux émissions
-          </Link>
-          <div className="flex items-center gap-2 text-xs font-bold text-[#FFBF00] uppercase tracking-wider">
-            <span>Étape 1 sur 2</span>
-            <span>•</span>
-            <span>Type d'émission</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
-            Choisir le format de votre émission
-          </h1>
-          <p className="text-sm text-[#888888] max-w-2xl">
-            Sélectionnez la structure principale de votre nouvelle émission. Le format choisi configure l'expérience par défaut de vos auditeurs et prépare la création de votre premier épisode.
-          </p>
-        </div>
-
-        {/* Note pédagogique */}
-        <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-4 flex items-start gap-3.5">
-          <Info className="w-5 h-5 text-[#FFBF00] shrink-0 mt-0.5" />
-          <div className="text-xs text-[#B8B8B8] leading-relaxed">
-            <span className="font-bold text-white">Évolution flexible : </span>
-            Le format choisi décrit l'émission et prépare le parcours du premier épisode. Il reste possible d'ajouter d'autres formats plus tard (par exemple ajouter une vidéo filmée à un épisode d'une émission initialement audio).
-          </div>
-        </div>
-
-        {/* Les 3 Grandes Cartes de Format */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          
-          {/* Carte 1 : Émission audio */}
-          <div 
-            onClick={() => { setSelectedFormat("AUDIO"); setCurrentScreen("FORM"); }}
-            className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
-              selectedFormat === "AUDIO" 
-                ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]" 
-                : "bg-[#171717] border-[#2A2A2A] hover:border-[#444444] hover:bg-[#1C1C1C]"
-            }`}
-          >
-            <div className="space-y-4">
-              <div className="w-14 h-14 rounded-xl bg-[#15232D] text-[#7DD3FC] border border-[#1E3A4C] flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Headphones className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white group-hover:text-[#FFBF00] transition-colors">
-                  Émission audio
-                </h3>
-                <span className="inline-block mt-1 text-[11px] font-semibold text-[#7DD3FC] bg-[#15232D] px-2 py-0.5 rounded border border-[#1E3A4C]">
-                  Podcast vocal classique
-                </span>
-              </div>
-              <p className="text-xs text-[#888888] leading-relaxed">
-                Idéal pour les chroniques parlées, interviews en studio, débats, documentaires sonores et récits. Conçu pour une écoute nomade fluide.
-              </p>
-            </div>
-
-            <div className="pt-6 mt-6 border-t border-[#2A2A2A] flex items-center justify-between text-xs font-bold text-white group-hover:text-[#FFBF00]">
-              <span>Configurer ce format</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-
-          {/* Carte 2 : Émission vidéo */}
-          <div 
-            onClick={() => { setSelectedFormat("VIDEO"); setCurrentScreen("FORM"); }}
-            className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
-              selectedFormat === "VIDEO" 
-                ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]" 
-                : "bg-[#171717] border-[#2A2A2A] hover:border-[#444444] hover:bg-[#1C1C1C]"
-            }`}
-          >
-            <div className="space-y-4">
-              <div className="w-14 h-14 rounded-xl bg-[#1F172E] text-[#D8B4FE] border border-[#3B2D54] flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Video className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white group-hover:text-[#FFBF00] transition-colors">
-                  Émission vidéo
-                </h3>
-                <span className="inline-block mt-1 text-[11px] font-semibold text-[#D8B4FE] bg-[#1F172E] px-2 py-0.5 rounded border border-[#3B2D54]">
-                  Format visuel & talk-show
-                </span>
-              </div>
-              <p className="text-xs text-[#888888] leading-relaxed">
-                Pour les talk-shows filmés, émissions plateau, reportages vidéo et vlogs culturels. Compatible avec les fichiers vidéo directs et les liens YouTube.
-              </p>
-            </div>
-
-            <div className="pt-6 mt-6 border-t border-[#2A2A2A] flex items-center justify-between text-xs font-bold text-white group-hover:text-[#FFBF00]">
-              <span>Configurer ce format</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-
-          {/* Carte 3 : Émission audio et vidéo */}
-          <div 
-            onClick={() => { setSelectedFormat("HYBRID"); setCurrentScreen("FORM"); }}
-            className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
-              selectedFormat === "HYBRID" 
-                ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]" 
-                : "bg-[#171717] border-[#2A2A2A] hover:border-[#444444] hover:bg-[#1C1C1C]"
-            }`}
-          >
-            <div className="space-y-4">
-              <div className="w-14 h-14 rounded-xl bg-[#262012] text-[#FFBF00] border border-[#524115] flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Sparkles className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white group-hover:text-[#FFBF00] transition-colors">
-                  Émission audio & vidéo
-                </h3>
-                <span className="inline-block mt-1 text-[11px] font-semibold text-[#FFBF00] bg-[#262012] px-2 py-0.5 rounded border border-[#524115]">
-                  Double diffusion intégrée
-                </span>
-              </div>
-              <p className="text-xs text-[#888888] leading-relaxed">
-                Le meilleur des deux mondes : chaque épisode peut offrir une version audio pour l'écoute nomade et une version vidéo filmée pour le salon et mobile.
-              </p>
-            </div>
-
-            <div className="pt-6 mt-6 border-t border-[#2A2A2A] flex items-center justify-between text-xs font-bold text-white group-hover:text-[#FFBF00]">
-              <span>Configurer ce format</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </div>
-
-        </div>
-
-        {/* Entrée distincte : Flux RSS */}
-        <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#171717] border border-[#2A2A2A] flex items-center justify-center text-[#FFBF00] shrink-0">
-              <Rss className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="text-base font-bold text-white">J'ai déjà un flux RSS</h4>
-              <p className="text-xs text-[#888888] mt-0.5">
-                Vous hébergez déjà votre émission sur Acast, Anchor/Spotify for Podcasters ou un serveur dédié ? Importez-la en 4 étapes.
-              </p>
-            </div>
-          </div>
-
-          <Button 
-            onClick={() => router.push("/admin/podcasts/import-rss")}
-            variant="outline"
-            className="bg-[#1F1F1F] hover:bg-[#2A2A2A] border-[#333333] text-white shrink-0 text-xs font-semibold h-10 px-5"
-          >
-            Importer via RSS
-          </Button>
-        </div>
-
-      </div>
-    );
-  }
-
-  // ==========================================
-  // ÉCRAN 3 — INFORMATIONS DE L’ÉMISSION
-  // ==========================================
   const formatLabels = {
     AUDIO: "Émission audio",
     VIDEO: "Émission vidéo",
     HYBRID: "Émission audio & vidéo",
   };
 
+  if (isPodcastLoading) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center min-h-[50vh] text-[#FFBF00]">
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <span className="mt-4 text-sm text-[#888888]">Chargement de l'émission...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full flex flex-col pb-32 text-white">
+    <div className="w-full flex flex-col pb-32 text-white animate-in fade-in duration-300">
       
       {/* Fil d'Ariane & Titre */}
       <div className="space-y-4 mb-8">
-        <button 
-          onClick={() => setCurrentScreen("CHOICE")}
+        <Link 
+          href={`/admin/podcasts/${id}`}
           className="inline-flex items-center text-xs font-semibold text-[#888888] hover:text-[#FFBF00] transition-colors"
         >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Modifier le format ({formatLabels[selectedFormat]})
-        </button>
+          <ChevronLeft className="w-4 h-4 mr-1" /> Retour à l'émission
+        </Link>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-[#FFBF00] uppercase tracking-wider mb-1">
-              <span>Étape 2 sur 2</span>
+              <span>Édition</span>
               <span>•</span>
               <span>Informations générales</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-white">
-              Créer une nouvelle émission
+              Modifier l'émission
             </h1>
             <p className="text-sm text-[#888888] mt-1">
-              Renseignez l'identité, les visuels, la classification et le responsable de l'émission.
+              Mettez à jour l'identité, les visuels et la classification de l'émission.
             </p>
           </div>
 
@@ -771,41 +593,25 @@ export default function NewPodcastWizard() {
           </div>
 
           {/* BARRE D'ACTIONS DU FORMULAIRE */}
-          <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-end gap-4">
+            <Link
+              href={`/admin/podcasts/${id}`}
+              className="px-5 py-2.5 rounded-xl border border-[#2A2A2A] text-white text-xs font-semibold hover:bg-[#222222] transition-colors"
+            >
+              Annuler
+            </Link>
             <Button
               type="button"
-              variant="ghost"
               disabled={isSubmitting}
-              onClick={() => handleSave("STAY")}
-              className="text-[#888888] hover:text-white text-xs w-full sm:w-auto"
+              onClick={handleSave}
+              className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-11 px-6"
             >
-              <Save className="w-4 h-4 mr-2" /> Enregistrer le brouillon
+              {isSubmitting ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enregistrement...</>
+              ) : (
+                <><Save className="w-4 h-4 mr-2" /> Enregistrer les modifications</>
+              )}
             </Button>
-
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isSubmitting}
-                onClick={() => handleSave("DETAILS")}
-                className="bg-[#1C1C1C] border-[#2A2A2A] text-white hover:bg-[#262626] text-xs font-semibold h-11 w-full sm:w-auto px-5"
-              >
-                Terminer sans épisode
-              </Button>
-
-              <Button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => handleSave("NEW_EPISODE")}
-                className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-11 w-full sm:w-auto px-6"
-              >
-                {isSubmitting ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Création en cours...</>
-                ) : (
-                  <>Continuer vers le premier épisode <ArrowRight className="w-4 h-4 ml-2" /></>
-                )}
-              </Button>
-            </div>
           </div>
 
         </div>

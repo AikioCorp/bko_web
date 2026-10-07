@@ -72,37 +72,64 @@ export default function NewEpisodePage() {
     }
   };
 
-  // Étape 2 → crée le brouillon (une seule fois) et rattache la source lien.
-  const createDraft = async () => {
-    if (creating.current || episodeId) {
-      setStep(2);
-      return;
-    }
+  const [sourceAttached, setSourceAttached] = useState(false);
+
+  // Étape 2 → crée ou met à jour le brouillon et rattache la source lien si besoin
+  const saveDraftAndProceed = async () => {
+    if (creating.current || busy) return;
     creating.current = true;
     setBusy(true);
     setError("");
     try {
-      const ep = await studioApi<{ id: string }>(`/creator/podcasts/${podcastId}/episodes`, {
-        method: "POST",
-        body: {
-          title: form.title.trim(),
-          description: form.description.trim(),
-          cover: form.cover.trim() || undefined,
-          seasonId: form.seasonId || undefined,
-          episodeNumber: form.episodeNumber ? Number(form.episodeNumber) : undefined,
-          languageCode: form.languageCode,
-        },
-      });
-      setEpisodeId(ep.id);
-      if (mode === "LINK") {
-        await studioApi(`/creator/episodes/${ep.id}/media-sources`, {
+      let currentEpId = episodeId;
+
+      if (!currentEpId) {
+        // 1. Créer le brouillon
+        const ep = await studioApi<{ id: string }>(`/creator/podcasts/${podcastId}/episodes`, {
           method: "POST",
-          body: { rawUrl: url.trim(), mediaTypePreference: preview?.type, isPrimaryAudio: preview?.type !== "VIDEO", isPrimaryVideo: preview?.type === "VIDEO" },
+          body: {
+            title: form.title.trim(),
+            description: form.description.trim(),
+            cover: form.cover.trim() || undefined,
+            seasonId: form.seasonId || undefined,
+            episodeNumber: form.episodeNumber ? Number(form.episodeNumber) : undefined,
+            languageCode: form.languageCode,
+          },
+        });
+        currentEpId = ep.id;
+        setEpisodeId(ep.id);
+      } else {
+        // 2. Mettre à jour les informations en cas de modification
+        await studioApi(`/creator/episodes/${currentEpId}`, {
+          method: "PATCH",
+          body: {
+            title: form.title.trim(),
+            description: form.description.trim(),
+            cover: form.cover.trim() || undefined,
+            seasonId: form.seasonId || null,
+            episodeNumber: form.episodeNumber ? Number(form.episodeNumber) : null,
+            languageCode: form.languageCode,
+          },
         });
       }
+
+      // 3. Rattacher la source lien si mode LINK et pas encore fait
+      if (mode === "LINK" && !sourceAttached) {
+        await studioApi(`/creator/episodes/${currentEpId}/media-sources`, {
+          method: "POST",
+          body: {
+            rawUrl: url.trim(),
+            mediaTypePreference: preview?.type,
+            isPrimaryAudio: preview?.type !== "VIDEO",
+            isPrimaryVideo: preview?.type === "VIDEO",
+          },
+        });
+        setSourceAttached(true);
+      }
+
       setStep(2);
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || "Erreur lors de l'enregistrement");
     } finally {
       creating.current = false;
       setBusy(false);
@@ -275,8 +302,8 @@ export default function NewEpisodePage() {
             <input className={inputCls} value={form.cover} onChange={(e) => setForm({ ...form, cover: e.target.value })} placeholder="https://" />
           </Field>
           <div className="flex justify-between">
-            <Btn onClick={() => setStep(0)} disabled={!!episodeId}>Retour</Btn>
-            <Btn variant="primary" disabled={!step1Ok || busy} onClick={createDraft}>
+            <Btn onClick={() => setStep(0)} disabled={busy}>Retour</Btn>
+            <Btn variant="primary" disabled={!step1Ok || busy} onClick={saveDraftAndProceed}>
               {busy ? "Enregistrement…" : "Enregistrer et continuer"}
             </Btn>
           </div>

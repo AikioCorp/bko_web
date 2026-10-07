@@ -34,7 +34,7 @@ export default function AdminAuditPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto pb-24">
+    <div className="w-full pb-24">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">

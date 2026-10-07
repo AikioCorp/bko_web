@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,6 +11,8 @@ export default function BecomeCreatorPage() {
   const { user, isAuthenticated, setAuth } = useAuthStore();
   const router = useRouter();
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const handleUpgrade = async () => {
     setIsUpgrading(true);
@@ -46,7 +48,7 @@ export default function BecomeCreatorPage() {
         </p>
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          {isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">{isUpgrading ? "Activation..." : "Activer mon espace Studio"}<ArrowRight className="w-4 h-4" /></button> : <Link href="/login?tab=register" className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">Créer mon podcast gratuitement<ArrowRight className="w-4 h-4" /></Link>}
+          {mounted && isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">{isUpgrading ? "Activation..." : "Activer mon espace Studio"}<ArrowRight className="w-4 h-4" /></button> : mounted ? <Link href="/login?tab=register" className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">Créer mon podcast gratuitement<ArrowRight className="w-4 h-4" /></Link> : null}
           <Link href="/tarifs" className="px-8 py-3.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-white font-semibold text-sm transition-all w-full sm:w-auto justify-center">
             Voir notre Studio Physique
           </Link>
@@ -161,7 +163,7 @@ export default function BecomeCreatorPage() {
           <p className="text-[#1A1A1A] font-medium mb-10 max-w-xl mx-auto">
             La création de votre espace podcast prend moins de 2 minutes. Démarrez dès aujourd'hui et construisez votre communauté.
           </p>
-          {isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="inline-flex px-10 py-4 rounded-full bg-[#0B0B0B] text-white hover:bg-[#1A1A1A] hover:scale-105 font-extrabold text-sm transition-all shadow-xl active:scale-95">{isUpgrading ? "Activation..." : "Activer mon Studio maintenant"}</button> : <Link href="/login?tab=register" className="inline-flex px-10 py-4 rounded-full bg-[#0B0B0B] text-white hover:bg-[#1A1A1A] hover:scale-105 font-extrabold text-sm transition-all shadow-xl active:scale-95">Créer mon compte créateur</Link>}
+          {mounted && isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="inline-flex px-10 py-4 rounded-full bg-[#0B0B0B] text-white hover:bg-[#1A1A1A] hover:scale-105 font-extrabold text-sm transition-all shadow-xl active:scale-95">{isUpgrading ? "Activation..." : "Activer mon Studio maintenant"}</button> : mounted ? <Link href="/login?tab=register" className="inline-flex px-10 py-4 rounded-full bg-[#0B0B0B] text-white hover:bg-[#1A1A1A] hover:scale-105 font-extrabold text-sm transition-all shadow-xl active:scale-95">Créer mon compte créateur</Link> : null}
         </div>
       </section>
     </div>

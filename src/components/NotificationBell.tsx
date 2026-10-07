@@ -17,6 +17,8 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notif[] | null>(null);
   const box = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const refreshCount = useCallback(async () => {
     try {
@@ -39,7 +41,7 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
-  if (!isAuthenticated) return null;
+  if (!mounted || !isAuthenticated) return null;
 
   const toggle = async () => {
     const next = !open;

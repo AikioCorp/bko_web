@@ -1,17 +1,17 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Play, Pause, Volume2, VolumeX, ListMusic, RotateCcw, X, ExternalLink } from "lucide-react";
+import { Play, Maximize2, Minimize2, MoreHorizontal, RotateCw, Rabbit, Turtle, Share, Code, Pause, Volume2, VolumeX, ListMusic, RotateCcw, X, ExternalLink } from "lucide-react";
 import { usePlayerStore } from "../../store/playerStore";
 import { useAuthStore } from "../../store/authStore";
 import { ListenTracker } from "@/lib/playTracking";
 
-// ReactPlayer est chargé côté client uniquement (pas de rendu serveur).
+// ReactPlayer est chargÃ© cÃ´tÃ© client uniquement (pas de rendu serveur).
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as any;
 
-// Seuls ces hôtes peuvent être affichés dans un iframe (défense en profondeur côté lecteur).
+// Seuls ces hÃ´tes peuvent Ãªtre affichÃ©s dans un iframe (dÃ©fense en profondeur cÃ´tÃ© lecteur).
 const EMBED_HOSTS = [
   "www.youtube.com",
   "youtube.com",
@@ -71,6 +71,11 @@ export const PersistentPlayer = () => {
   const trackerStarted = useRef(false);
   const handledSeek = useRef(0);
   const [mounted, setMounted] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [hoverCover, setHoverCover] = useState(false);
+
 
   useEffect(() => setMounted(true), []);
 
@@ -84,14 +89,14 @@ export const PersistentPlayer = () => {
     return safeHttp(s.externalUrl) ? "redirect" : "none";
   }, [activeSource]);
 
-  // Nouveau suivi d'écoute à chaque épisode ; flush de l'ancien à la sortie.
+  // Nouveau suivi d'Ã©coute Ã  chaque Ã©pisode ; flush de l'ancien Ã  la sortie.
   useEffect(() => {
     if (!currentEpisode) return;
     const t = new ListenTracker(currentEpisode.id, () => useAuthStore.getState().isAuthenticated);
     tracker.current = t;
     trackerStarted.current = false;
     handledSeek.current = 0;
-    // Lecteurs tiers : on ne peut pas mesurer l'écoute, seul le démarrage est compté.
+    // Lecteurs tiers : on ne peut pas mesurer l'Ã©coute, seul le dÃ©marrage est comptÃ©.
     if (kind === "embed") {
       t.start();
       trackerStarted.current = true;
@@ -103,7 +108,7 @@ export const PersistentPlayer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentEpisode?.id]);
 
-  // Démarrage (première lecture réelle) et pause.
+  // DÃ©marrage (premiÃ¨re lecture rÃ©elle) et pause.
   useEffect(() => {
     const t = tracker.current;
     if (!t) return;
@@ -116,7 +121,7 @@ export const PersistentPlayer = () => {
     }
   }, [isPlaying, kind]);
 
-  // Lecture / pause de l'élément audio (un refus d'autoplay du navigateur remet l'interface en pause).
+  // Lecture / pause de l'Ã©lÃ©ment audio (un refus d'autoplay du navigateur remet l'interface en pause).
   useEffect(() => {
     const a = audioRef.current;
     if (!a || kind !== "audio") return;
@@ -139,7 +144,7 @@ export const PersistentPlayer = () => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume, activeSource]);
 
-  // Déplacements demandés (barre, chapitres, transcription).
+  // DÃ©placements demandÃ©s (barre, chapitres, transcription).
   useEffect(() => {
     if (!seekRequest || seekRequest.n === handledSeek.current) return;
     handledSeek.current = seekRequest.n;
@@ -180,30 +185,30 @@ export const PersistentPlayer = () => {
     usePlayerStore.setState({ currentEpisode: null, activeSource: null, isPlaying: false, currentTime: 0, seekRequest: null });
   };
 
+  
+  const handleTogglePlay = () => {
+    if (!isPlaying) {
+      if (kind === "audio" && audioRef.current) {
+        audioRef.current.play().catch(e => console.error("Playback error:", e));
+      }
+    } else {
+      if (kind === "audio" && audioRef.current) {
+        audioRef.current.pause();
+      }
+    }
+    togglePlay();
+  };
+
   const embedUrl = kind === "embed" ? safeEmbed(activeSource?.embedUrl) : null;
   const externalHref = safeHttp(activeSource?.externalUrl);
 
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#121212] border-t border-[#222222] select-none text-white">
-      {/* Barre de progression */}
-      <div className="relative w-full h-1 bg-[#262626]">
-        <div className="absolute left-0 top-0 bottom-0 bg-[#FFBF00]" style={{ width: `${progressPercent}%` }} />
-        {controllable && total > 0 && (
-          <input
-            type="range"
-            min={0}
-            max={total}
-            value={Math.min(currentTime, total)}
-            onChange={(e) => seek(parseFloat(e.target.value))}
-            aria-label="Position de lecture"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
-        )}
-      </div>
 
-      {/* Vidéo (YouTube, Vimeo ou fichier vidéo) — react-player v3 : API proche de l'élément <video> */}
-      {mounted && kind === "video" && (
-        <div className="max-w-3xl mx-auto my-3 aspect-video rounded-xl overflow-hidden border border-[#262626] bg-black">
+
+  // Apple Podcasts Style Player UI
+  return (
+    <>
+      <div className="hidden">
+        {mounted && kind === "video" && (
           <ReactPlayer
             src={safeHttp(activeSource?.externalUrl) ?? ""}
             playing={isPlaying}
@@ -211,7 +216,6 @@ export const PersistentPlayer = () => {
             volume={volume}
             width="100%"
             height="100%"
-            controls
             onLoadedMetadata={(e: any) => {
               const v = e.currentTarget;
               videoRef.current = v;
@@ -227,186 +231,171 @@ export const PersistentPlayer = () => {
             onEnded={onMediaEnded}
             onError={() => pause()}
           />
-        </div>
-      )}
-
-      {/* Lecteur tiers (Spotify, Apple Podcasts, SoundCloud, Deezer) */}
-      {kind === "embed" && embedUrl && (
-        <div className="max-w-3xl mx-auto my-3">
-          <iframe
-            src={embedUrl}
-            title={currentEpisode.title}
-            width="100%"
-            height={activeSource?.provider === "SPOTIFY" ? 152 : 175}
-            loading="lazy"
-            allow="autoplay; encrypted-media; fullscreen; clipboard-write"
-            referrerPolicy="strict-origin-when-cross-origin"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
-            className="rounded-xl border border-[#262626] bg-black"
-          />
-        </div>
-      )}
-
-      {/* Fichier audio */}
-      {kind === "audio" && (
-        <audio
-          key={activeSource?.id}
-          ref={audioRef}
-          src={safeHttp(activeSource?.externalUrl) ?? undefined}
-          preload="metadata"
-          onLoadedMetadata={(e) => {
-            const a = e.currentTarget;
-            if (startAt > 0 && handledSeek.current === 0 && a.currentTime === 0) a.currentTime = startAt;
-            if (isFinite(a.duration)) setProgress(a.currentTime, a.duration);
-            if (isPlaying) a.play().catch(() => pause());
-          }}
-          onTimeUpdate={(e) => onMediaProgress(e.currentTarget.currentTime, isFinite(e.currentTarget.duration) ? e.currentTarget.duration : total)}
-          onEnded={onMediaEnded}
-          onError={() => pause()}
-        />
-      )}
-
-      <div className="px-4 py-2.5 flex items-center justify-between gap-4">
-        {/* Titre */}
-        <div className="flex items-center gap-3 min-w-0 md:w-1/3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-9 h-9 rounded-lg object-cover bg-[#1C1C1C] shrink-0" />
-          <div className="truncate">
-            <Link href={episodeHref} className="block text-xs font-bold text-white truncate hover:underline">
-              {currentEpisode.title}
-            </Link>
-            <p className="text-[11px] text-[#B8B8B8] truncate">{currentEpisode.podcast.name}</p>
-          </div>
-        </div>
-
-        {/* Commandes */}
-        <div className="flex items-center justify-center gap-4 flex-1">
-          {controllable ? (
-            <>
-              <button onClick={toggleRightPanel} className="text-[#B8B8B8] hover:text-white p-1" title="File d'attente / Chapitres" aria-label="File d'attente">
-                <ListMusic className="w-4 h-4" />
-              </button>              <button
-                onClick={togglePlay}
-                className="w-9 h-9 rounded-full bg-[#FFBF00] text-[#0B0B0B] hover:bg-[#E5AB00] hover:scale-105 active:scale-95 flex items-center justify-center shadow-md transition-all"
-                aria-label={isPlaying ? "Pause" : "Lecture"}
-              >
-                {isPlaying ? <Pause className="w-4 h-4 fill-current stroke-none" /> : <Play className="w-4 h-4 fill-current stroke-none ml-0.5" />}
-              </button>
-              <button onClick={() => seek(0)} className="text-[#B8B8B8] hover:text-white p-1" title="Recommencer" aria-label="Recommencer">
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-              <div className="text-[11px] font-mono text-[#B8B8B8] tabular-nums whitespace-nowrap">
-                <span className="text-white font-medium">{fmt(currentTime)}</span>
-                <span className="mx-1 text-[#555555]">/</span>
-                <span>{fmt(total)}</span>
-              </div>
-            </>
-          ) : kind === "embed" ? (
-            <p className="text-xs text-[#B8B8B8]">Lecture assurée par le lecteur de la plateforme d&apos;origine ci-dessus.</p>
-          ) : kind === "redirect" && externalHref ? (
-            <a
-              href={externalHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#FFBF00] text-[#0B0B0B] text-xs font-bold px-4 py-2 rounded-full"
-              onClick={() => {
-                if (tracker.current && !trackerStarted.current) {
-                  trackerStarted.current = true;
-                  tracker.current.start();
-                }
-              }}
-            >
-              Écouter sur le site d&apos;origine <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          ) : (
-            <p className="text-xs text-red-300">Aucune source de lecture disponible pour cet épisode.</p>
-          )}
-        </div>
-
-        {/* Vitesse, volume, fermeture */}
-        <div className="flex items-center justify-end gap-3 min-w-0 md:w-1/3">
-          {controllable && (
-            <>
-              <button
-                onClick={cycleRate}
-                className="px-2 py-0.5 rounded bg-[#1C1C1C] border border-[#2E2E2E] text-[11px] font-mono text-[#B8B8B8] hover:text-white hover:border-[#FFBF00]/50"
-                title="Vitesse de lecture"
-              >
-                {playbackRate}x
-              </button>
-              <div className="hidden lg:flex items-center gap-2">
-                <button onClick={() => setVolume(volume === 0 ? 0.8 : 0)} className="text-[#B8B8B8] hover:text-white p-1" aria-label={volume === 0 ? "Activer le son" : "Couper le son"}>
-                  {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={volume}
-                  onChange={(e) => setVolume(parseFloat(e.target.value))}
-                  aria-label="Volume"
-                  className="w-16 h-1 bg-[#282828] accent-[#FFBF00] rounded-full cursor-pointer"
-                />
-              </div>
-            </>
-          )}
-          <button onClick={close} className="text-[#B8B8B8] hover:text-white p-1" aria-label="Fermer le lecteur" title="Fermer le lecteur">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        )}
+        {kind === "embed" && embedUrl && (
+          <iframe src={embedUrl} title={currentEpisode.title} width="100%" height={152} allow="autoplay; encrypted-media" />
+        )}
+        {kind === "audio" && (
+          <audio key={activeSource?.id} ref={audioRef} src={safeHttp(activeSource?.externalUrl) ?? undefined} preload="metadata" onLoadedMetadata={(e: any) => { const a = e.currentTarget; if (startAt > 0 && handledSeek.current === 0 && a.currentTime === 0) a.currentTime = startAt; if (isFinite(a.duration)) setProgress(a.currentTime, a.duration); if (isPlaying) a.play().catch(() => pause()); }} onTimeUpdate={(e: any) => onMediaProgress(e.currentTarget.currentTime, isFinite(e.currentTarget.duration) ? e.currentTarget.duration : total)} onEnded={onMediaEnded} onError={() => pause()} />
+        )}
       </div>
 
-      {/* Queue Panel */}
-      {showRightPanel && (
-        <div className="absolute bottom-full right-4 mb-2 w-80 max-h-96 bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl shadow-2xl flex flex-col overflow-hidden">
-          <div className="p-3 border-b border-[#2E2E2E] flex items-center justify-between bg-[#141414]">
-            <h3 className="text-sm font-bold text-white">File d'attente</h3>
-            <button onClick={toggleRightPanel} className="text-[#B8B8B8] hover:text-white">
-              <X className="w-4 h-4" />
+      {isExpanded && (
+        <div className="fixed inset-0 z-[60] bg-[#0B0B0B] flex flex-col animate-in slide-in-from-bottom-8 duration-300">
+          <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-lg mx-auto w-full relative">
+            <button onClick={() => setIsExpanded(false)} className="absolute top-8 left-0 text-white/70 hover:text-white transition-colors p-2">
+              <Minimize2 className="w-6 h-6" />
             </button>
-          </div>
-          <div className="p-3 overflow-y-auto flex-1 space-y-3 scrollbar-none">
-            <div>
-              <p className="text-[10px] font-bold text-[#757575] uppercase tracking-wider mb-2">En cours de lecture</p>
-              <div className="flex items-center gap-3 bg-[#262626] p-2 rounded-lg">
-                <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-10 h-10 rounded object-cover" />
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#FFBF00] truncate">{currentEpisode.title}</p>
-                  <p className="text-[10px] text-[#B8B8B8] truncate">{currentEpisode.podcast.name}</p>
-                </div>
-              </div>
+            <div className="absolute top-8 right-0 flex items-center gap-2">
+              <Volume2 className="w-4 h-4 text-white/70" />
+              <input type="range" min={0} max={1} step={0.05} value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-24 h-1 bg-[#282828] accent-white rounded-full cursor-pointer" />
             </div>
-
-            {queue.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold text-[#757575] uppercase tracking-wider mb-2 mt-4">À suivre</p>
-                <div className="space-y-2">
-                  {queue.map((ep, i) => (
-                    <div key={i} className="flex items-center gap-3 p-2 hover:bg-[#262626] rounded-lg group">
-                      <img src={ep.cover || ep.podcast.cover} alt="" className="w-10 h-10 rounded object-cover" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium text-white truncate">{ep.title}</p>
-                        <p className="text-[10px] text-[#757575] truncate">{ep.podcast.name}</p>
-                      </div>
-                      <button 
-                        onClick={() => removeFromQueue(i)}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-[#B8B8B8] hover:text-white"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+            <div className="w-full aspect-square bg-[#1C1C1E] rounded-3xl shadow-2xl overflow-hidden mt-8 mb-12">
+              <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-full h-full object-cover" />
+            </div>
+            <div className="w-full mb-8 flex items-center justify-between">
+              <div className="min-w-0 flex-1 pr-4">
+                <p className="text-xs text-white/50 mb-1">{currentEpisode.podcast.name} • {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</p>
+                <h2 className="text-2xl font-bold text-white truncate">{currentEpisode.title}</h2>
               </div>
-            )}
-            
-            {queue.length === 0 && (
-              <p className="text-xs text-[#757575] text-center py-4">La file d'attente est vide.</p>
-            )}
+              <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors shrink-0 relative">
+                <MoreHorizontal className="w-4 h-4" />
+                {showOptionsMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 w-48 bg-[#2C2C2E] rounded-xl shadow-2xl border border-white/10 overflow-hidden py-1 z-50">
+                    <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10" onClick={() => { navigator.clipboard.writeText(window.location.href); setShowOptionsMenu(false); }}>Copier le lien <Share className="w-4 h-4" /></button>
+                    <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10 border-t border-white/10" onClick={() => setShowOptionsMenu(false)}>Intégrer - Épisode... <Code className="w-4 h-4" /></button>
+                  </div>
+                )}
+              </button>
+            </div>
+            <div className="w-full mb-10">
+              <input type="range" min={0} max={total} value={Math.min(currentTime, total)} onChange={(e) => seek(parseFloat(e.target.value))} className="w-full h-1.5 bg-white/20 rounded-full cursor-pointer appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full" />
+              <div className="flex justify-between mt-2 text-xs text-white/50 font-mono"><span>{fmt(currentTime)}</span><span>-{fmt(total - currentTime)}</span></div>
+            </div>
+            <div className="w-full flex items-center justify-center gap-8">
+              <button onClick={cycleRate} className="text-lg font-bold text-white w-12 text-center" title="Vitesse">x{playbackRate}</button>
+              <button onClick={() => seek(Math.max(0, currentTime - 15))} className="text-white hover:scale-110 transition-transform relative" aria-label="Reculer de 15s">
+                <RotateCcw className="w-8 h-8" />
+                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold mt-0.5">15</span>
+              </button>
+              <button onClick={() => { if (!isPlaying && kind === 'audio' && audioRef.current) { audioRef.current.play().catch(e => console.log(e)); } togglePlay(); }} className="w-20 h-20 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform" aria-label={isPlaying ? "Pause" : "Lecture"}>
+                {isPlaying ? <Pause className="w-8 h-8 fill-current stroke-none" /> : <Play className="w-8 h-8 fill-current stroke-none ml-1" />}
+              </button>
+              <button onClick={() => seek(Math.min(total, currentTime + 30))} className="text-white hover:scale-110 transition-transform relative" aria-label="Avancer de 30s">
+                <RotateCw className="w-8 h-8" />
+                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold mt-0.5">30</span>
+              </button>
+              <button onClick={toggleRightPanel} className="text-white w-12 flex justify-center" aria-label="File d\'attente">
+                <ListMusic className="w-6 h-6" />
+              </button>
+            </div>
           </div>
         </div>
       )}
-    </div>
+
+      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${isExpanded ? 'opacity-0 pointer-events-none translate-y-10' : 'opacity-100 translate-y-0'}`}>
+        <div className="flex items-center gap-4 bg-[#1A1A1A]/95 backdrop-blur-xl border border-white/10 rounded-full pl-6 pr-4 py-2.5 shadow-2xl text-white min-w-[500px]">
+          <div className="flex items-center gap-5">
+            <div className="relative">
+              <button onClick={() => setShowSpeedMenu(!showSpeedMenu)} className="text-sm font-bold w-6 text-center hover:text-[#FFBF00] transition-colors">x{playbackRate}</button>
+              {showSpeedMenu && (
+                <div className="absolute bottom-full left-0 mb-4 bg-[#2C2C2E] rounded-xl shadow-2xl border border-white/10 py-2 w-36 overflow-hidden">
+                  {[0.8, 1, 1.3, 1.5, 1.8, 2].map(r => (<button key={r} onClick={() => { setPlaybackRate(r); setShowSpeedMenu(false); }} className="w-full text-left px-4 py-2 hover:bg-white/10 text-sm font-medium flex justify-between">x{r} {playbackRate === r && <span className="text-white">✓</span>}</button>))}
+                  <div className="h-px bg-white/10 my-1"></div>
+                  <button onClick={() => { setPlaybackRate(2); setShowSpeedMenu(false); }} className="w-full text-left px-4 py-2 hover:bg-white/10 text-sm flex items-center gap-2"><Rabbit className="w-4 h-4" /> Plus rapide</button>
+                  <button onClick={() => { setPlaybackRate(0.8); setShowSpeedMenu(false); }} className="w-full text-left px-4 py-2 hover:bg-white/10 text-sm flex items-center gap-2"><Turtle className="w-4 h-4" /> Plus lent</button>
+                </div>
+              )}
+            </div>
+            <button onClick={() => seek(Math.max(0, currentTime - 15))} className="hover:text-[#FFBF00] transition-colors relative" aria-label="Reculer de 15s">
+              <RotateCcw className="w-5 h-5" />
+              <span className="absolute inset-0 flex items-center justify-center text-[7px] font-bold mt-0.5">15</span>
+            </button>
+            <button onClick={() => { if (!isPlaying && kind === 'audio' && audioRef.current) { audioRef.current.play().catch(e => console.log(e)); } togglePlay(); }} className="hover:scale-110 transition-transform" aria-label={isPlaying ? "Pause" : "Lecture"}>
+              {isPlaying ? <Pause className="w-6 h-6 fill-current stroke-none" /> : <Play className="w-6 h-6 fill-current stroke-none" />}
+            </button>
+            <button onClick={() => seek(Math.min(total, currentTime + 30))} className="hover:text-[#FFBF00] transition-colors relative" aria-label="Avancer de 30s">
+              <RotateCw className="w-5 h-5" />
+              <span className="absolute inset-0 flex items-center justify-center text-[7px] font-bold mt-0.5">30</span>
+            </button>
+          </div>
+          <div className="flex flex-col flex-1 mx-4 min-w-[200px] max-w-[250px] cursor-pointer group" onMouseEnter={() => setHoverCover(true)} onMouseLeave={() => setHoverCover(false)} onClick={() => setIsExpanded(true)}>
+            <div className="flex items-center gap-3">
+              <div className="relative w-8 h-8 rounded shrink-0 overflow-hidden bg-[#2C2C2E]">
+                <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className={`w-full h-full object-cover transition-opacity ${hoverCover ? 'opacity-30' : 'opacity-100'}`} />
+                {hoverCover && <Maximize2 className="absolute inset-0 m-auto w-4 h-4 text-white" />}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold truncate group-hover:underline">{currentEpisode.title}</p>
+                <p className="text-[10px] text-white/50 truncate">6 octobre</p>
+              </div>
+            </div>
+            <div className="mt-1 h-0.5 bg-white/20 rounded-full w-full relative">
+              <div className="absolute left-0 top-0 bottom-0 bg-white rounded-full" style={{ width: `${progressPercent}%` }}></div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 border-l border-white/10 pl-4 relative">
+            <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="hover:text-[#FFBF00] transition-colors">
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
+            {showOptionsMenu && (
+              <div className="absolute bottom-full right-0 mb-4 w-48 bg-[#2C2C2E] rounded-xl shadow-2xl border border-white/10 overflow-hidden py-1 z-50">
+                <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10" onClick={() => { navigator.clipboard.writeText(window.location.href); setShowOptionsMenu(false); }}>Copier le lien <Share className="w-4 h-4" /></button>
+                <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10 border-t border-white/10" onClick={() => setShowOptionsMenu(false)}>Intégrer - Épisode... <Code className="w-4 h-4" /></button>
+              </div>
+            )}
+            <button className="w-5 h-5 rounded-full border border-white flex items-center justify-center text-[10px] font-bold hover:bg-white hover:text-black transition-colors">i</button>
+            <button onClick={toggleRightPanel} className="hover:text-[#FFBF00] transition-colors relative">
+              <ListMusic className="w-5 h-5" />
+              {queue.length > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#FFBF00] rounded-full"></span>}
+            </button>
+            <button onClick={() => setVolume(volume === 0 ? 0.8 : 0)} className="hover:text-[#FFBF00] transition-colors">
+              {volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+        {showRightPanel && (
+          <div className="absolute bottom-full right-0 mb-4 w-80 max-h-96 bg-[#1A1A1A]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col overflow-hidden z-50">
+            <div className="p-3 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white">File d\'attente</h3>
+              <button onClick={toggleRightPanel} className="text-white/50 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-3 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
+              <div>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">En cours de lecture</p>
+                <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg">
+                  <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-10 h-10 rounded object-cover" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{currentEpisode.title}</p>
+                    <p className="text-[10px] text-white/50 truncate">{currentEpisode.podcast.name}</p>
+                  </div>
+                </div>
+              </div>
+              {queue.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2 mt-4">À suivre</p>
+                  <div className="space-y-2">
+                    {queue.map((ep, i) => (
+                      <div key={i} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg group">
+                        <img src={ep.cover || ep.podcast.cover} alt="" className="w-10 h-10 rounded object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-white truncate">{ep.title}</p>
+                          <p className="text-[10px] text-white/50 truncate">{ep.podcast.name}</p>
+                        </div>
+                        <button onClick={() => removeFromQueue(i)} className="opacity-0 group-hover:opacity-100 p-1 text-white/50 hover:text-white">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 };

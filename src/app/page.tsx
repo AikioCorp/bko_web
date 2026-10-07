@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
@@ -24,6 +24,52 @@ import {
 import { usePlayerStore, PlayerEpisode } from "../store/playerStore";
 import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 import { DownloadAppSection } from "@/components/ui/DownloadAppSection";
+
+function HomeSkeleton() {
+  return (
+    <div className="p-4 md:p-8 w-full space-y-8 animate-pulse select-none bg-[#0B0B0B] min-h-screen">
+      {/* Alert Banner Skeleton */}
+      <div className="bg-[#141414] border border-[#242424] rounded-xl h-12 w-full"></div>
+      
+      {/* Hero Card Skeleton */}
+      <div className="rounded-2xl bg-[#141414] border border-[#242424] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 h-[300px]">
+        <div className="space-y-4 w-full max-w-xl">
+          <div className="h-4 bg-[#2A2A2A] rounded w-24"></div>
+          <div className="h-8 bg-[#2A2A2A] rounded w-3/4"></div>
+          <div className="h-4 bg-[#2A2A2A] rounded w-full"></div>
+          <div className="h-4 bg-[#2A2A2A] rounded w-5/6"></div>
+          <div className="flex gap-3 pt-4">
+            <div className="h-10 bg-[#2A2A2A] rounded-full w-32"></div>
+            <div className="h-10 bg-[#2A2A2A] rounded-full w-32"></div>
+          </div>
+        </div>
+        <div className="w-48 h-48 bg-[#2A2A2A] rounded-xl hidden md:block shrink-0"></div>
+      </div>
+
+      {/* Filter Bar Skeleton */}
+      <div className="flex gap-2 pb-2 overflow-hidden">
+        <div className="h-8 bg-[#141414] border border-[#242424] rounded-full w-24"></div>
+        <div className="h-8 bg-[#141414] border border-[#242424] rounded-full w-20"></div>
+        <div className="h-8 bg-[#141414] border border-[#242424] rounded-full w-32"></div>
+        <div className="h-8 bg-[#141414] border border-[#242424] rounded-full w-24"></div>
+      </div>
+
+      {/* Sections Skeleton */}
+      <div className="space-y-4">
+        <div className="h-6 bg-[#2A2A2A] rounded w-48 mb-4"></div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-5">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <div className="aspect-square bg-[#141414] border border-[#242424] rounded-xl w-full"></div>
+              <div className="h-3 bg-[#2A2A2A] rounded w-3/4 mt-1"></div>
+              <div className="h-3 bg-[#2A2A2A] rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function HomeContent() {
   const { playEpisode } = usePlayerStore();
@@ -79,11 +125,7 @@ function HomeContent() {
   }));
 
   if (isLoading) {
-    return (
-      <div className="flex-1 w-full min-h-screen bg-[#0B0B0B] flex items-center justify-center">
-        <div className="text-[#FFBF00] animate-pulse font-bold text-xl">Chargement des données...</div>
-      </div>
-    );
+    return <HomeSkeleton />;
   }
 
   return (
@@ -437,17 +479,11 @@ export default function HomePage() {
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return (
-      <div className="flex-1 w-full min-h-screen bg-[#0B0B0B] flex items-center justify-center">
-        <div className="p-12 text-center text-[#757575] font-semibold animate-pulse">
-          Chargement de l'accueil...
-        </div>
-      </div>
-    );
+    return <HomeSkeleton />;
   }
 
   return (
-    <Suspense fallback={<div className="p-12 text-center text-[#757575]">Chargement...</div>}>
+    <Suspense fallback={<HomeSkeleton />}>
       <HomeContent />
     </Suspense>
   );

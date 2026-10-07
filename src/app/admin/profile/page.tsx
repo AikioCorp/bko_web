@@ -51,7 +51,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full px-4 py-8 space-y-8">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-6">
         <div className="flex items-center space-x-4 border-b border-[#1E2638] pb-6">
           <div className="w-16 h-16 bg-[#E5A93C] rounded-full flex items-center justify-center font-black text-black text-2xl">
