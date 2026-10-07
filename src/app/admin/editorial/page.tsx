@@ -6,7 +6,7 @@ import { Plus, Edit2, Trash2, GripVertical, AlertCircle, LayoutList } from "luci
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-function classNames(...classes: string[]) {
+function classNames(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(" ");
 }
 

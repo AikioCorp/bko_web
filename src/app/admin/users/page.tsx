@@ -5,7 +5,7 @@ import { adminApi } from "@/lib/api";
 import { Search, ShieldAlert, CheckCircle, XCircle, MoreVertical, Shield, Ban, BadgeCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-function classNames(...classes: string[]) {
+function classNames(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
