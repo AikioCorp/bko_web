@@ -61,7 +61,7 @@ export default function AdminPodcastsPage() {
 
   // Real API Fetch with all filters
   const statusParam = activeTab !== "ALL" ? activeTab : "";
-  const { data, isLoading: loading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     isAuthenticated ? ["/admin/catalog", statusParam, search, page, limit, langFilter, catFilter, formatFilter, originFilter] : null,
     ([url, s, q, p, l, lang, cat, fmt, origin]) => {
       let query = `${url}?status=${s}&search=${q}&page=${p}&limit=${l}`;
@@ -69,9 +69,11 @@ export default function AdminPodcastsPage() {
       if (cat) query += `&categoryId=${cat}`;
       if (fmt) query += `&format=${fmt}`;
       if (origin) query += `&countryId=${origin}`;
-      return adminApi(query).then(res => res.data);
+      return adminApi(query).then(res => res.data || { items: [] });
     }
   );
+
+  const loading = isLoading && !error;
 
   const rawPodcasts = data?.items || [];
   // Client-side fallback filter for format if backend returns mixed
@@ -498,6 +500,12 @@ export default function AdminPodcastsPage() {
                       <div className="flex flex-col items-center justify-center gap-3">
                         <Loader2 className="w-7 h-7 animate-spin text-[#FFBF00]" />
                         <span className="text-sm text-[#888888]">Chargement des émissions...</span>
+                      </div>
+                    ) : error ? (
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <AlertCircle className="w-8 h-8 text-red-500" />
+                        <p className="text-base font-semibold text-white">Erreur de chargement</p>
+                        <p className="text-xs text-[#757575]">{error.message || "Une erreur est survenue lors du chargement des émissions."}</p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center gap-2">

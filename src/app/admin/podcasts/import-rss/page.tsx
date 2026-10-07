@@ -119,11 +119,14 @@ export default function RssImportPage() {
   };
 
   // Étape 4 : Lancer l'import réel
+  const [operationId, setOperationId] = useState<string | null>(null);
+  const [createdPodcastId, setCreatedPodcastId] = useState<string | null>(null);
+
   const handleStartImport = async () => {
     setIsImporting(true);
     setError(null);
     setImportProgress(10);
-    setImportStage("1/4 — Initialisation de l'émission dans le catalogue...");
+    setImportStage("1/4 — Initialisation de l'import dans la file d'attente...");
 
     try {
       // 1. Appel API backend
@@ -132,35 +135,20 @@ export default function RssImportPage() {
         body: JSON.stringify({
           ...formData,
           url: url.trim(),
+          importSettings: {
+            importScope: formData.importScope,
+            newEpisodesTreatment: formData.newEpisodesTreatment,
+            keepManualEdits: formData.keepManualEdits,
+          }
         })
       });
 
-      if (!res.success) throw new Error(res.message || "Échec de l'initialisation de l'import.");
+      if (!res.success) throw new Error(res.error || res.message || "Échec de l'initialisation de l'import.");
 
-      const createdId = res.data?.podcastId || res.data?.id || "imported";
-
-      // Progression par étapes réelles connues
-      setTimeout(() => {
-        setImportProgress(40);
-        setImportStage("2/4 — Analyse des enclosures audio/vidéo...");
-      }, 700);
-
-      setTimeout(() => {
-        setImportProgress(75);
-        setImportStage("3/4 — Création des épisodes en mode brouillon...");
-      }, 1500);
-
-      setTimeout(() => {
-        setImportProgress(100);
-        setImportStage("4/4 — Import terminé avec succès !");
-        setIsImporting(false);
-        setImportResult({
-          successCount: previewData?.preview?.episodesCount || 12,
-          errorCount: 0,
-          errors: [],
-          createdPodcastId: createdId,
-        });
-      }, 2300);
+      const createdId = res.data?.podcastId;
+      setCreatedPodcastId(createdId);
+      setOperationId(res.data?.operationId);
+      setImportStage("2/4 — En attente du traitement en arrière-plan...");
 
     } catch (err: any) {
       setIsImporting(false);
@@ -171,6 +159,48 @@ export default function RssImportPage() {
       });
     }
   };
+
+  // Polling du statut réel de l'import
+  useEffect(() => {
+    let interval: any;
+    if (isImporting && operationId && !importResult) {
+      interval = setInterval(async () => {
+        try {
+          const res = await adminApi(`/admin/rss/imports/${operationId}/status`);
+          if (res.success && res.data) {
+            const { status, errorMessage, metrics } = res.data;
+            if (status === "SYNCING") {
+               setImportStage(`3/4 — Importation en cours... (Découverts : ${metrics?.episodesDiscovered || 0}, Importés : ${metrics?.episodesImported || 0})`);
+               setImportProgress(50);
+            } else if (status === "SUCCESS" || status === "IDLE") {
+               setImportStage(metrics?.episodesFailed > 0 ? "4/4 — Import terminé avec des erreurs" : "4/4 — Import terminé avec succès !");
+               setImportProgress(100);
+               setIsImporting(false);
+               setImportResult({
+                 successCount: metrics?.episodesImported || 0,
+                 errorCount: metrics?.episodesFailed || 0,
+                 errors: errorMessage ? [errorMessage] : [],
+                 createdPodcastId: createdPodcastId || "imported"
+               });
+               clearInterval(interval);
+            } else if (status === "ERROR") {
+               setIsImporting(false);
+               setImportResult({
+                 successCount: metrics?.episodesImported || 0,
+                 errorCount: (metrics?.episodesFailed || 0) + 1,
+                 errors: [errorMessage || "Erreur lors de l'import."],
+                 createdPodcastId: createdPodcastId || "imported"
+               });
+               clearInterval(interval);
+            }
+          }
+        } catch (e) {
+          console.error("Erreur polling", e);
+        }
+      }, 2000);
+    }
+    return () => clearInterval(interval);
+  }, [isImporting, operationId, importResult, createdPodcastId]);
 
   const handleCategoryToggle = (id: string) => {
     setFormData(prev => ({
@@ -501,11 +531,11 @@ export default function RssImportPage() {
               <label className="block text-xs font-bold text-[#888888] uppercase">
                 Périmètre des épisodes à importer
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { id: "ALL", label: "Tous les épisodes", desc: "Importe l'intégralité du catalogue" },
                   { id: "LAST_10", label: "Les 10 derniers", desc: "Pour les émissions très volumineuses" },
-                  { id: "SELECT", label: "Sélection manuelle", desc: "Choisir un par un après import" },
+                  
                 ].map(opt => (
                   <label 
                     key={opt.id} 
@@ -681,7 +711,7 @@ export default function RssImportPage() {
               <div className="p-6 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-start gap-4">
                 <CheckCircle className="w-6 h-6 text-green-400 shrink-0 mt-1" />
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold text-white">Importation terminée avec succès !</h3>
+                  <h3 className="text-base font-bold text-white">{importResult.errorCount > 0 ? "Importation terminée avec des erreurs" : "Importation terminée avec succès !"}</h3>
                   <p className="text-xs text-[#CCCCCC]">
                     {importResult.successCount} épisode(s) ont été importés et rattachés à votre nouvelle émission.
                   </p>
