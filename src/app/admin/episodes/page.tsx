@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import { 
-  Eye, ChevronLeft, ChevronRight, Search
+  Eye, ChevronLeft, ChevronRight, Search, CheckSquare, Square
 } from "lucide-react";
 import { adminApi } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ export default function AdminEpisodesPage() {
       if (res.success) {
         alert(res.message || "Opération terminée.");
         setSelected([]);
-        mutate(`/admin/episodes?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}`);
+        void mutate();
       } else {
         alert(res.error || "Une erreur est survenue.");
       }
