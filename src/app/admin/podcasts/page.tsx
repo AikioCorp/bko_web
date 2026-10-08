@@ -1,6 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => { setDebouncedValue(value); }, delay);
+    return () => { clearTimeout(handler); };
+  }, [value, delay]);
+  return debouncedValue;
+}
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -44,6 +53,7 @@ export default function AdminPodcastsPage() {
 
   const [activeTab, setActiveTab] = useState("ALL");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [langFilter, setLangFilter] = useState("");
   const [catFilter, setCatFilter] = useState("");
   const [formatFilter, setFormatFilter] = useState("");
@@ -62,7 +72,7 @@ export default function AdminPodcastsPage() {
   // Real API Fetch with all filters
   const statusParam = activeTab !== "ALL" ? activeTab : "";
   const { data, error, isLoading, mutate } = useSWR(
-    isAuthenticated ? ["/admin/catalog", statusParam, search, page, limit, langFilter, catFilter, formatFilter, originFilter] : null,
+    isAuthenticated ? ["/admin/catalog", statusParam, debouncedSearch, page, limit, langFilter, catFilter, formatFilter, originFilter] : null,
     ([url, s, q, p, l, lang, cat, fmt, origin]) => {
       let query = `${url}?status=${s}&search=${q}&page=${p}&limit=${l}`;
       if (lang) query += `&languageCode=${lang}`;
@@ -103,7 +113,7 @@ export default function AdminPodcastsPage() {
   // Reset page when tab, search or filters change
   React.useEffect(() => { 
     setPage(1); 
-  }, [activeTab, search, limit, langFilter, catFilter, formatFilter, originFilter]);
+  }, [activeTab, debouncedSearch, limit, langFilter, catFilter, formatFilter, originFilter]);
 
   const toggleSelectAll = () => {
     if (selectedIds.size === displayedPodcasts.length) {

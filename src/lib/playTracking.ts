@@ -1,15 +1,23 @@
 import { API_BASE_URL } from "@/lib/api";
+import { getAccessToken } from "@/lib/token";
 
 type PlayEvent = "start" | "qualified" | "complete" | "progress";
 
-const post = (path: string, body: unknown) =>
-  fetch(`${API_BASE_URL}${path}`, {
+const post = (path: string, body: unknown) => {
+  const token = getAccessToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  
+  return fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
-    credentials: "include",
+    credentials: "omit", // We use Bearer token now
     keepalive: true,
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   }).catch(() => {});
+};
 
 const isMockId = (id: string) => id.startsWith("hist-") || id.startsWith("save-") || id.startsWith("dl-") || id.startsWith("foll-") || id.startsWith("p-") || id.startsWith("ep-");
 

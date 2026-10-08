@@ -34,6 +34,8 @@ export default function AdminEpisodesPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [isPublishing, setIsPublishing] = useState(false);
   const debouncedSearch = useDebounce(search, 500);
   const limit = 20;
 
@@ -41,11 +43,49 @@ export default function AdminEpisodesPage() {
     setPage(1);
   }, [debouncedSearch]);
 
-  const { data: response, error, isLoading } = useSWR<{data: any[], total: number}>(
+  const { data: response, error, isLoading, mutate } = useSWR<{data: any[], total: number}>(
     `/admin/episodes?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}`, 
     fetcher, 
     { keepPreviousData: true, revalidateOnFocus: false }
   );
+
+  
+  const handleBulkPublish = async () => {
+    if (selected.length === 0) return;
+    if (!confirm(`Voulez-vous vraiment publier ces ${selected.length} épisodes ?`)) return;
+    
+    setIsPublishing(true);
+    try {
+      const res = await adminApi("/admin/episodes/bulk-publish", {
+        method: "POST",
+        body: JSON.stringify({ ids: selected }),
+      });
+      if (res.success) {
+        alert(res.message || "Opération terminée.");
+        setSelected([]);
+        mutate(`/admin/episodes?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}`);
+      } else {
+        alert(res.error || "Une erreur est survenue.");
+      }
+    } catch (e: any) {
+      alert(e.message || "Erreur de connexion.");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  
+  const toggleSelectAll = () => {
+    if (selected.length === displayed.length) {
+      setSelected([]);
+    } else {
+      setSelected(displayed.map(ep => ep.id));
+    }
+  };
 
   const displayed = response?.data || [];
   const totalItems = response?.total || 0;
@@ -59,6 +99,15 @@ export default function AdminEpisodesPage() {
           <p className="text-sm text-[#888888] mt-1">Gérez tous les épisodes de la plateforme.</p>
         </div>
         <div className="flex items-center gap-3">
+          {selected.length > 0 && (
+            <Button 
+              onClick={handleBulkPublish} 
+              disabled={isPublishing}
+              className="bg-[#FFBF00] text-black hover:bg-[#E5A800] text-sm h-[38px]"
+            >
+              {isPublishing ? "Publication..." : `Publier (${selected.length})`}
+            </Button>
+          )}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#757575]" />
             <input 
@@ -77,6 +126,11 @@ export default function AdminEpisodesPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[#2A2A2A] bg-[#1A1A1A]">
+                <th className="p-4 w-10 text-center">
+                  <button onClick={toggleSelectAll} className="text-[#757575] hover:text-white focus:outline-none">
+                    {displayed.length > 0 && selected.length === displayed.length ? <CheckSquare className="w-4 h-4 mx-auto" /> : <Square className="w-4 h-4 mx-auto" />}
+                  </button>
+                </th>
                 <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider w-10 text-center">#</th>
                 <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider">Épisode</th>
                 <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider">Podcast</th>

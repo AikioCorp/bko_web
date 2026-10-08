@@ -33,6 +33,8 @@ export default function AdminEditEpisodePage() {
   const [episodeNumber, setEpisodeNumber] = useState<number | "">("");
   const [episodeType, setEpisodeType] = useState("FULL");
   const [explicit, setExplicit] = useState(false);
+  const [topics, setTopics] = useState<string[]>([]);
+  const [newTopic, setNewTopic] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
 
   // Source Audio states
@@ -71,6 +73,7 @@ export default function AdminEditEpisodePage() {
       setEpisodeType(episode.episodeType || "FULL");
       setExplicit(episode.explicit || false);
       setCoverUrl(episode.cover || episode.coverUrl || episode.podcast?.cover || episode.podcast?.coverUrl || "");
+      setTopics(episode.topics?.map((t: any) => t.topic.name) || []);
       
       const ytId = episode.sources?.youtube?.videoId || episode.youtubeId;
       const aUrl = episode.sources?.audio?.url || episode.audioUrl;
@@ -102,7 +105,7 @@ export default function AdminEditEpisodePage() {
     setActionError("");
     const operation = (async () => {
     try {
-      await adminApi(`/admin/episodes/${id}`, {
+      const res = await adminApi(`/admin/episodes/${id}`, {
         method: "PATCH",
         body: JSON.stringify({
           title,
@@ -116,7 +119,7 @@ export default function AdminEditEpisodePage() {
           explicit,
         }),
       });
-      await mutate();
+      if (res.data) mutate(res.data, { revalidate: true }); else mutate();
       return true;
     } catch (err: any) {
       setActionError(err.message || "Erreur lors de l'enregistrement");
@@ -135,13 +138,14 @@ export default function AdminEditEpisodePage() {
     setPublishing(true);
     try {
       if (!await handleSaveInfo()) return;
+      let res;
       if (status === "DRAFT") {
-        await adminApi(`/admin/episodes/${id}`, {
+        res = await adminApi(`/admin/episodes/${id}`, {
           method: "PATCH",
           body: JSON.stringify({ status: "DRAFT" })
         });
       } else {
-        await adminApi(`/admin/episodes/${id}/publish`, {
+        res = await adminApi(`/admin/episodes/${id}/publish`, {
           method: "POST",
           body: JSON.stringify({
             mode: status === "SCHEDULED" ? "schedule" : "now",
@@ -149,7 +153,7 @@ export default function AdminEditEpisodePage() {
           })
         });
       }
-      mutate();
+      if (res.data) mutate(res.data, { revalidate: true }); else mutate();
     } catch (err: any) {
       setActionError(err.message || "Erreur lors de la publication");
     } finally {
@@ -403,7 +407,7 @@ export default function AdminEditEpisodePage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]" onClick={() => setPreviewMode("AUDIO")}>Écouter</Button>
+                      <Button variant="outline" size="sm" className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]" onClick={() => setPreviewMode("AUDIO")}>Aperçu</Button>
                       <Button variant="outline" size="sm" className="border-[#2A2A2A] text-red-500 hover:bg-[#2A2A2A] hover:text-red-400" onClick={handleRemoveAudio}>Retirer</Button>
                     </div>
                   </div>
@@ -546,7 +550,7 @@ export default function AdminEditEpisodePage() {
                       className={`flex-1 ${previewMode === "AUDIO" ? "bg-white text-black hover:bg-gray-200" : "border-[#2A2A2A] text-white hover:bg-[#1A1A1A]"}`}
                       onClick={() => setPreviewMode("AUDIO")}
                     >
-                      <Headphones className="w-4 h-4 mr-2" /> Écouter
+                      <Headphones className="w-4 h-4 mr-2" /> Audio
                     </Button>
                   )}
                   {hasYoutubeReady && (

@@ -43,6 +43,8 @@ const PODCAST_STATUS_LABELS: Record<string, string> = {
 };
 
 export default function AdminPodcastDetailsPage() {
+  const [toast, setToast] = useState("");
+  const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
   const { id } = useParams();
   const router = useRouter();
   
@@ -929,7 +931,7 @@ export default function AdminPodcastDetailsPage() {
                           variant="outline"
                           onClick={() => {
                             navigator.clipboard.writeText(raw.rssFeed.url);
-                            alert("URL copiée dans le presse-papier !");
+                            flash("URL copiée dans le presse-papier !");
                           }}
                           className="h-8 text-xs bg-[#171717] border-[#2A2A2A] hover:bg-[#262626] text-white"
                         >
@@ -975,23 +977,28 @@ export default function AdminPodcastDetailsPage() {
                     <Button 
                       className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-9 px-4"
                       onClick={async () => {
-                        alert("Synchronisation immédiate lancée en tâche de fond...");
-                        await mutate();
-                      }}
+    try {
+      await adminApi(`/admin/podcasts/${podcast.id}/rss/sync`, { method: 'POST' });
+      flash("Synchronisation immédiate lancée en tâche de fond...");
+      await mutate();
+    } catch (err: any) {
+      flash("Erreur: " + err.message);
+    }
+  }}
                     >
                       <RefreshCw className="w-3.5 h-3.5 mr-2" /> Synchroniser maintenant
                     </Button>
                     <Button 
                       variant="outline" 
                       className="bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#222222] text-white text-xs h-9"
-                      onClick={() => alert("Modification des réglages de scrutation et publication automatique.")}
+                      onClick={() => flash("Modification des réglages non disponible.")}
                     >
                       Modifier les réglages
                     </Button>
                     <Button 
                       variant="outline" 
                       className="bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#222222] text-amber-400 text-xs h-9"
-                      onClick={() => alert("La synchronisation automatique a été suspendue.")}
+                      onClick={() => flash("Suspendu.")}
                     >
                       <PauseCircle className="w-3.5 h-3.5 mr-1.5" /> Suspendre la synchronisation
                     </Button>
@@ -1000,7 +1007,7 @@ export default function AdminPodcastDetailsPage() {
                       className="bg-[#0B0B0B] border-red-500/20 hover:bg-red-500/10 text-red-400 text-xs h-9"
                       onClick={async () => {
                         if (confirm("Déconnecter le flux conserve tous les épisodes déjà importés sur Bamako Podcast, mais arrêtera définitivement leur mise à jour automatique. Voulez-vous continuer ?")) {
-                          alert("Flux RSS déconnecté avec succès.");
+                          flash("Flux RSS déconnecté avec succès.");
                         }
                       }}
                     >
@@ -1150,6 +1157,7 @@ export default function AdminPodcastDetailsPage() {
         )}
 
       </div>
-    </div>
+          {toast && (<div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-[#FFBF00] text-black px-4 py-2 rounded-lg font-bold text-sm shadow-xl z-50">{toast}</div>)}
+</div>
   );
 }

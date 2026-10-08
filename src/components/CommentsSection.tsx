@@ -137,11 +137,17 @@ export function CommentsSection({ episodeId, allowComments }: Props) {
       <div className="space-y-6">
         {comments.map((comment) => (
           <div key={comment.id} className="flex gap-4">
-            <img
-              src={comment.user.avatar || "/avatar.svg"}
-              alt={comment.user.fullName}
-              className="w-10 h-10 rounded-full object-cover bg-[#262626] shrink-0"
-            />
+            {comment.user.avatar ? (
+              <img
+                src={comment.user.avatar}
+                alt={comment.user.fullName}
+                className="w-10 h-10 rounded-full object-cover bg-[#262626] shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-[#2A2A2A] text-[#B8B8B8] flex items-center justify-center font-bold text-sm shrink-0 border border-[#333]">
+                {(comment.user.fullName || comment.user.username || "?").split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase()}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <p className="text-sm font-bold text-white">
