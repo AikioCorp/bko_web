@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             const cached = getCachedUser();
             const token = getAccessToken();
             if (cached && token) {
-              set({ user: cached, accessToken: token, isAuthenticated: true, isLoading: false });
+              set({ user: cached, accessToken: token, isAuthenticated: true });
             }
           }
 

@@ -12,7 +12,7 @@ export function toPlayerEpisode(
     cover: ep.cover ?? null,
     durationSeconds: ep.durationSeconds,
     podcast: { slug: podcast.slug, name: podcast.name, cover: podcast.cover },
-    mediaSources: ep.mediaSources.map((m) => ({
+    mediaSources: (Array.isArray(ep.mediaSources) ? ep.mediaSources : []).map((m) => ({
       id: m.id,
       type: m.type,
       sourceType: m.sourceType,

@@ -82,11 +82,12 @@ export function PodcastCard({ p }: { p: PodcastLite }) {
 export function EpisodeCard({ ep, resumeAt = 0, progressPct }: { ep: EpisodeLite; resumeAt?: number; progressPct?: number }) {
   const { currentEpisode, isPlaying, playEpisode, togglePlay } = usePlayerStore();
   const current = currentEpisode?.id === ep.id;
-  const playable = ep.mediaSources.length > 0;
+  const sources = Array.isArray(ep.mediaSources) ? ep.mediaSources : [];
+  const playable = sources.length > 0;
 
   const play = () => {
     if (current) return togglePlay();
-    const mode = ep.defaultMode ?? (ep.mediaSources.some((m) => m.type === "AUDIO") ? "AUDIO" : "VIDEO");
+    const mode = ep.defaultMode ?? (sources.some((m) => m.type === "AUDIO") ? "AUDIO" : "VIDEO");
     playEpisode(toPlayerEpisode(ep, ep.podcast), mode, resumeAt);
   };
 

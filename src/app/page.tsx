@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
 import { API_BASE_URL, fetchApi } from "@/lib/api";
 import {
   Play, Pause,
@@ -74,18 +75,20 @@ function HomeSkeleton() {
 }
 
 function HomeContent() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const personalDataReady = isAuthenticated && !authLoading;
   const { playEpisode, currentEpisode, isPlaying, togglePlay } = usePlayerStore();
   const searchParams = useSearchParams();
   const [selectedFilter, setSelectedFilter] = useState("Tous");
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
   const [toast, setToast] = useState("");
   const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
-    const { data: resumeEpisodesData } = useSWR("/me/continue-listening", async (url) => {
-    try { return (await fetchApi(url)).data || []; } catch { return []; }
+    const { data: resumeEpisodesData } = useSWR(personalDataReady ? ["/me/continue-listening", user?.id] : null, async ([url]) => {
+    try { const data = (await fetchApi(url)).data; return Array.isArray(data) ? data : []; } catch { return []; }
   });
   
-  const { data: savedEpisodesData, mutate: mutateSaved } = useSWR("/me/saved", async (url) => {
-    try { return (await fetchApi(url)).data || []; } catch { return []; }
+  const { data: savedEpisodesData, mutate: mutateSaved } = useSWR(personalDataReady ? ["/me/saved", user?.id] : null, async ([url]) => {
+    try { const data = (await fetchApi(url)).data; return Array.isArray(data) ? data : []; } catch { return []; }
   });
   const [copiedLink, setCopiedLink] = useState(false);
   const handleShare = () => { navigator.clipboard.writeText(window.location.href); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2000); };
@@ -109,17 +112,18 @@ function HomeContent() {
     const heroEpisode = data?.heroEpisode || null;
   const recommendedPodcasts = data?.trending || [];
   const latestEpisodes = (data?.latestEpisodes || []).filter((ep: any) => ep.id !== heroEpisode?.id);
-  const resumeEpisodes = (resumeEpisodesData || []).slice(0, 4);
-  const savedEpisodes = savedEpisodesData || [];
+  const resumeEpisodes = personalDataReady && Array.isArray(resumeEpisodesData) ? resumeEpisodesData.slice(0, 4) : [];
+  const savedEpisodes = personalDataReady && Array.isArray(savedEpisodesData) ? savedEpisodesData : [];
 
   const isSaved = heroEpisode ? savedEpisodes.some((e: any) => e.episodeId === heroEpisode.id) : false;
 
   const toggleSaveList = async (ep: any) => {
-    const currentlySaved = savedEpisodesData.some((e: any) => e.episodeId === ep.id);
+    if (!personalDataReady) { flash("Connectez-vous pour enregistrer un épisode."); return; }
+    const currentlySaved = savedEpisodes.some((e: any) => e.episodeId === ep.id);
     mutateSaved(
       currentlySaved 
-        ? savedEpisodesData.filter((e: any) => e.episodeId !== ep.id)
-        : [...savedEpisodesData, { episodeId: ep.id }],
+        ? savedEpisodes.filter((e: any) => e.episodeId !== ep.id)
+        : [...savedEpisodes, { episodeId: ep.id }],
       false
     );
     try {
@@ -132,6 +136,7 @@ function HomeContent() {
 
   const handleSave = async () => {
     if (!heroEpisode) return;
+    if (!personalDataReady) { flash("Connectez-vous pour enregistrer un épisode."); return; }
     const currentlySaved = isSaved;
     
     // Optimistic UI update
@@ -515,7 +520,7 @@ function HomeContent() {
               <div className="flex items-center gap-4 shrink-0 text-xs text-[#757575]">
                 <span className="font-mono text-[#B8B8B8]">{ep.durationStr}</span>
                 {(() => {
-                  const isEpSaved = savedEpisodesData.some((e: any) => e.episodeId === ep.id);
+                  const isEpSaved = savedEpisodes.some((e: any) => e.episodeId === ep.id);
                   const queueIndex = usePlayerStore.getState().queue.findIndex((q: any) => q.id === ep.id);
                   const isInQueue = queueIndex !== -1;
                   return (

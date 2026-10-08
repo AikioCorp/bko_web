@@ -48,6 +48,7 @@ export function clearStoredTokens() {
 
 // Échange le refresh token contre un nouvel access token (dédupliqué).
 export function refreshAccessToken(): Promise<string | null> {
+  if (!getStoredRefreshToken() && !getAccessToken()) return Promise.resolve(null);
   if (!refreshPromise) {
     const storedRefresh = getStoredRefreshToken();
     refreshPromise = (nativeFetch()(`${API_BASE_URL}/auth/refresh`, {
@@ -64,13 +65,15 @@ export function refreshAccessToken(): Promise<string | null> {
           return memoryAccessToken;
         }
         
-        // Refresh failed, session is dead
+        if (res.status !== 401 && res.status !== 403) return null;
+
+        // An invalid refresh token ends the session.
         const hadSession = !!storedRefresh || !!memoryAccessToken;
         clearStoredTokens();
         
         // Redirige vers le login UNIQUEMENT si une session existait et a expiré.
         // Un visiteur invité doit pouvoir parcourir le site sans être renvoyé au login.
-        if (hadSession && typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+        if (hadSession && typeof window !== "undefined" && /^\/(admin|studio)(\/|$)/.test(window.location.pathname)) {
           window.location.href = "/login";
         }
         
@@ -123,7 +126,7 @@ if (typeof window !== "undefined" && !(window as any).__bkoFetchPatched) {
     };
 
     const res = await base(input, withToken(token));
-    if (res.status !== 401) return res;
+    if (res.status !== 401 || (!token && !getStoredRefreshToken())) return res;
 
     const fresh = await refreshAccessToken();
     return fresh ? base(input, withToken(fresh)) : res;

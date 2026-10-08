@@ -16,29 +16,32 @@ import {
 } from "lucide-react";
 import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
 import useSWR from "swr";
+import { useAuthStore } from "@/store/authStore";
 import { fetchApi } from "@/lib/api";
 import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 
 export default function LibraryPage() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const personalDataReady = isAuthenticated && !authLoading;
   const { playEpisode, currentEpisode, isPlaying, togglePlay } = usePlayerStore();
   const [activeTab, setActiveTab] = useState<"history" | "saved" | "following" | "downloads">("history");
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
 
   
-  const { data: historyData } = useSWR("/me/history", async (url) => {
+  const { data: historyData } = useSWR(personalDataReady ? ["/me/history", user?.id] : null, async ([url]) => {
     try { return (await fetchApi(url)).data || []; } catch { return []; }
   });
   
-  const { data: savedData, mutate: mutateSaved } = useSWR("/me/saved", async (url) => {
+  const { data: savedData, mutate: mutateSaved } = useSWR(personalDataReady ? ["/me/saved", user?.id] : null, async ([url]) => {
     try { return (await fetchApi(url)).data || []; } catch { return []; }
   });
 
-  const { data: followingData, mutate: mutateFollowing } = useSWR("/me/playlists", async (url) => {
+  const { data: followingData, mutate: mutateFollowing } = useSWR(personalDataReady ? ["/me/playlists", user?.id] : null, async ([url]) => {
     try { return [] } catch { return []; }
   });
 
-  const historyEpisodes = historyData || [];
-  const savedEpisodes = savedData || [];
+  const historyEpisodes = personalDataReady && Array.isArray(historyData) ? historyData : [];
+  const savedEpisodes = personalDataReady && Array.isArray(savedData) ? savedData : [];
   
   const followedPodcasts: any[] = [];
 
