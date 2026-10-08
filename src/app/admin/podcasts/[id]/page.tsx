@@ -364,7 +364,7 @@ export default function AdminPodcastDetailsPage() {
         {/* Podcast Identity Header */}
         <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <img src={podcast.cover || "/default-cover.png"} alt={podcast.name} className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover border border-[#2A2A2A]" />
+            <img src={podcast.cover || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=96&h=96&fit=crop"} alt={podcast.name} className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover border border-[#2A2A2A]" />
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl md:text-2xl font-extrabold text-white">{podcast.name}</h1>
@@ -745,7 +745,7 @@ export default function AdminPodcastDetailsPage() {
                         <tr key={ep.id} className="hover:bg-[#2A2A2A]/30 transition-colors group">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-4">
-                              <img src={ep.cover || podcast.cover} alt={ep.title} className="w-12 h-12 rounded-lg object-cover border border-[#2A2A2A]" />
+                              <img src={ep.cover || podcast.cover || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=96&h=96&fit=crop"} alt={ep.title} className="w-12 h-12 rounded-lg object-cover border border-[#2A2A2A]" />
                               <div>
                                 <p className="font-bold line-clamp-1">{ep.title}</p>
                                 <p className="text-xs text-[#757575] line-clamp-1">{ep.description}</p>
@@ -769,6 +769,24 @@ export default function AdminPodcastDetailsPage() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2 transition-opacity">
+                              {ep.status !== "PUBLISHED" && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 px-2 text-xs font-bold text-[#FFBF00] hover:text-black hover:bg-[#FFBF00]"
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    try {
+                                      await adminApi(`/admin/episodes/${ep.id}/publish`, { method: "POST", body: { mode: "now" } });
+                                      mutate(); // SWR mutate
+                                    } catch (err: any) {
+                                      setErrorMsg(err.message); setTimeout(() => setErrorMsg(null), 5000);
+                                    }
+                                  }}
+                                >
+                                  Publier
+                                </Button>
+                              )}
                               <Link href={`/admin/episodes/${ep.slug || ep.id}`}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-[#757575] hover:text-white hover:bg-[#2A2A2A]">
                                   <Edit3 className="w-4 h-4" />

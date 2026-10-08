@@ -9,7 +9,7 @@ import {
   X,
   TrendingUp,
   Clock,
-  Play,
+  Play, Pause,
   Share2,
   Bookmark,
   ListPlus,
@@ -26,7 +26,7 @@ import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 import SuggestModal from "@/components/ui/SuggestModal";
 
 function ExploreContent() {
-  const { playEpisode } = usePlayerStore();
+  const { playEpisode, currentEpisode, isPlaying, togglePlay } = usePlayerStore();
   const searchParams = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState("Musique et culture à Bamako");

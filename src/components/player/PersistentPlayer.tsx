@@ -74,6 +74,7 @@ export const PersistentPlayer = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [showVolumeMenu, setShowVolumeMenu] = useState(false);
   const [hoverCover, setHoverCover] = useState(false);
 
 
@@ -248,7 +249,16 @@ export const PersistentPlayer = () => {
             </button>
             <div className="absolute top-8 right-0 flex items-center gap-2">
               <Volume2 className="w-4 h-4 text-white/70" />
-              <input type="range" min={0} max={1} step={0.05} value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-24 h-1 bg-[#282828] accent-white rounded-full cursor-pointer" />
+              <input 
+                  type="range" min={0} max={1} step={0.01} 
+                  value={volume} 
+                  onChange={(e) => setVolume(parseFloat(e.target.value))} 
+                  style={{ background: `linear-gradient(to right, #FFBF00 ${volume * 100}%, rgba(255,255,255,0.2) ${volume * 100}%)` }}
+                  className="w-24 h-1.5 rounded-full cursor-pointer appearance-none 
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
+                    [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md 
+                    hover:[&::-webkit-slider-thumb]:scale-125 transition-all" 
+                />
             </div>
             <div className="w-full aspect-square bg-[#1C1C1E] rounded-3xl shadow-2xl overflow-hidden mt-8 mb-12">
               <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-full h-full object-cover" />
@@ -269,7 +279,16 @@ export const PersistentPlayer = () => {
               </button>
             </div>
             <div className="w-full mb-10">
-              <input type="range" min={0} max={total} value={Math.min(currentTime, total)} onChange={(e) => seek(parseFloat(e.target.value))} className="w-full h-1.5 bg-white/20 rounded-full cursor-pointer appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full" />
+              <input 
+                  type="range" min={0} max={total} 
+                  value={Math.min(currentTime, total)} 
+                  onChange={(e) => seek(parseFloat(e.target.value))} 
+                  style={{ background: `linear-gradient(to right, #FFBF00 ${progressPercent}%, rgba(255,255,255,0.2) ${progressPercent}%)` }}
+                  className="w-full h-1.5 rounded-full cursor-pointer appearance-none 
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 
+                    [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md 
+                    hover:[&::-webkit-slider-thumb]:scale-125 transition-all" 
+                />
               <div className="flex justify-between mt-2 text-xs text-white/50 font-mono"><span>{fmt(currentTime)}</span><span>-{fmt(total - currentTime)}</span></div>
             </div>
             <div className="w-full flex items-center justify-center gap-8">
@@ -281,7 +300,7 @@ export const PersistentPlayer = () => {
               <button onClick={() => { if (!isPlaying && kind === 'audio' && audioRef.current) { audioRef.current.play().catch(e => console.log(e)); } togglePlay(); }} className="w-20 h-20 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform" aria-label={isPlaying ? "Pause" : "Lecture"}>
                 {isPlaying ? <Pause className="w-8 h-8 fill-current stroke-none" /> : <Play className="w-8 h-8 fill-current stroke-none ml-1" />}
               </button>
-              <button onClick={() => seek(Math.min(total, currentTime + 30))} className="text-white hover:scale-110 transition-transform relative" aria-label="Avancer de 30s">
+              <button onClick={() => seek(Math.min(total || Infinity, currentTime + 30))} className="text-white hover:scale-110 transition-transform relative" aria-label="Avancer de 30s">
                 <RotateCw className="w-8 h-8" />
                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold mt-0.5">30</span>
               </button>
@@ -314,7 +333,7 @@ export const PersistentPlayer = () => {
             <button onClick={() => { if (!isPlaying && kind === 'audio' && audioRef.current) { audioRef.current.play().catch(e => console.log(e)); } togglePlay(); }} className="hover:scale-110 transition-transform" aria-label={isPlaying ? "Pause" : "Lecture"}>
               {isPlaying ? <Pause className="w-6 h-6 fill-current stroke-none" /> : <Play className="w-6 h-6 fill-current stroke-none" />}
             </button>
-            <button onClick={() => seek(Math.min(total, currentTime + 30))} className="hover:text-[#FFBF00] transition-colors relative" aria-label="Avancer de 30s">
+            <button onClick={() => seek(Math.min(total || Infinity, currentTime + 30))} className="hover:text-[#FFBF00] transition-colors relative" aria-label="Avancer de 30s">
               <RotateCw className="w-5 h-5" />
               <span className="absolute inset-0 flex items-center justify-center text-[7px] font-bold mt-0.5">30</span>
             </button>
@@ -344,14 +363,39 @@ export const PersistentPlayer = () => {
                 <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10 border-t border-white/10" onClick={() => setShowOptionsMenu(false)}>Intégrer - Épisode... <Code className="w-4 h-4" /></button>
               </div>
             )}
-            <button className="w-5 h-5 rounded-full border border-white flex items-center justify-center text-[10px] font-bold hover:bg-white hover:text-black transition-colors">i</button>
-            <button onClick={toggleRightPanel} className="hover:text-[#FFBF00] transition-colors relative">
-              <ListMusic className="w-5 h-5" />
-              {queue.length > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#FFBF00] rounded-full"></span>}
-            </button>
-            <button onClick={() => setVolume(volume === 0 ? 0.8 : 0)} className="hover:text-[#FFBF00] transition-colors">
-              {volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-            </button>
+            <Link href={episodeHref} className="w-5 h-5 rounded-full border border-white flex items-center justify-center text-[10px] font-bold hover:bg-white hover:text-black transition-colors" title="Infos sur l'épisode">i</Link>
+              <button onClick={toggleRightPanel} className="hover:text-[#FFBF00] transition-colors relative" title="File d'attente">
+                <ListMusic className="w-5 h-5" />
+                {queue.length > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#FFBF00] rounded-full"></span>}
+              </button>
+              <div 
+                className="relative flex items-center" 
+                onMouseEnter={() => setShowVolumeMenu(true)} 
+                onMouseLeave={() => setShowVolumeMenu(false)}
+              >
+                <button className="hover:text-[#FFBF00] transition-colors" title="Volume">
+                  {volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                </button>
+                
+                {/* Popup Volume Slider */}
+                {showVolumeMenu && (
+                  <div className="absolute bottom-full right-1/2 translate-x-1/2 pb-3 z-50">
+                    <div className="w-10 h-32 bg-[#1A1A1A]/95 backdrop-blur-xl rounded-full shadow-2xl border border-white/10 flex items-center justify-center py-4">
+                      <input 
+                        type="range" 
+                        min={0} max={1} step={0.01} 
+                        value={volume} 
+                        onChange={(e) => setVolume(parseFloat(e.target.value))} 
+                        style={{ background: `linear-gradient(to right, #FFBF00 ${volume * 100}%, rgba(255,255,255,0.2) ${volume * 100}%)` }}
+                        className="w-24 h-1.5 rounded-full cursor-pointer -rotate-90 appearance-none 
+                          [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
+                          [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md 
+                          hover:[&::-webkit-slider-thumb]:scale-125 transition-all" 
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
         </div>
         {showRightPanel && (
@@ -366,7 +410,7 @@ export const PersistentPlayer = () => {
               <div>
                 <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">En cours de lecture</p>
                 <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg">
-                  <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-10 h-10 rounded object-cover" />
+                  <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-16 aspect-video rounded-md object-cover shrink-0" />
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-white truncate">{currentEpisode.title}</p>
                     <p className="text-[10px] text-white/50 truncate">{currentEpisode.podcast.name}</p>
@@ -379,7 +423,7 @@ export const PersistentPlayer = () => {
                   <div className="space-y-2">
                     {queue.map((ep, i) => (
                       <div key={i} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg group">
-                        <img src={ep.cover || ep.podcast.cover} alt="" className="w-10 h-10 rounded object-cover" />
+                        <img src={ep.cover || ep.podcast.cover} alt="" className="w-16 aspect-video rounded-md object-cover shrink-0" />
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium text-white truncate">{ep.title}</p>
                           <p className="text-[10px] text-white/50 truncate">{ep.podcast.name}</p>

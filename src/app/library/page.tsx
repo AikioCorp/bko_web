@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Bookmark,
   Clock,
-  Play,
+  Play, Pause,
   Download,
   Trash2,
   Radio,
@@ -15,108 +15,32 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
+import useSWR from "swr";
+import { fetchApi } from "@/lib/api";
 import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 
 export default function LibraryPage() {
-  const { playEpisode } = usePlayerStore();
+  const { playEpisode, currentEpisode, isPlaying, togglePlay } = usePlayerStore();
   const [activeTab, setActiveTab] = useState<"history" | "saved" | "following" | "downloads">("history");
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
 
-  const historyEpisodes = [
-    {
-      id: "hist-1",
-      title: "Créer son activité à Bamako en 2025",
-      podcastName: "Entreprendre au Mali",
-      cover: "/images/cover-entreprendre.jpg",
-      resumeTime: "18:40",
-      durationStr: "45 min",
-      durationSeconds: 2700,
-      progressPercent: 41,
-      lang: "Français",
-    },
-    {
-      id: "hist-2",
-      title: "An ka taa Bamako • Épisode 18",
-      podcastName: "Bamanankan kuma",
-      cover: "/images/cover-griot.jpg",
-      resumeTime: "08:15",
-      durationStr: "28 min",
-      durationSeconds: 1680,
-      progressPercent: 29,
-      lang: "Bamanankan",
-    },
-    {
-      id: "hist-3",
-      title: "Les histoires que racontaient nos grands-parents",
-      podcastName: "Culture vivante",
-      cover: "/images/cover-culture.jpg",
-      resumeTime: "12:35",
-      durationStr: "38 min",
-      durationSeconds: 2330,
-      progressPercent: 35,
-      lang: "Bamanankan",
-    },
-  ];
+  
+  const { data: historyData } = useSWR("/me/history", async (url) => {
+    try { return (await fetchApi(url)).data || []; } catch { return []; }
+  });
+  
+  const { data: savedData, mutate: mutateSaved } = useSWR("/me/saved", async (url) => {
+    try { return (await fetchApi(url)).data || []; } catch { return []; }
+  });
 
-  const savedEpisodes = [
-    {
-      id: "saved-1",
-      title: "La kora à l'ère numérique : transmission avec Madou Sidiki",
-      podcastName: "Culture vivante",
-      cover: "/images/cover-kora.jpg",
-      durationStr: "36 min",
-      durationSeconds: 2160,
-      date: "Ajouté hier",
-      lang: "Français",
-    },
-    {
-      id: "saved-2",
-      title: "Solaire, off-grid et agriculture résiliente le long du fleuve Niger",
-      podcastName: "Afrique Demain",
-      cover: "/images/cover-culture.jpg",
-      durationStr: "51 min",
-      durationSeconds: 3060,
-      date: "Ajouté il y a 3 jours",
-      lang: "Français",
-    },
-    {
-      id: "saved-3",
-      title: "Kalan ni dɔnko : Sɛbɛnnikɛla fitininw ka kɔrɔbɔri",
-      podcastName: "Bamanankan kuma",
-      cover: "/images/cover-griot.jpg",
-      durationStr: "24 min",
-      durationSeconds: 1440,
-      date: "Ajouté il y a 1 semaine",
-      lang: "Bamanankan",
-    },
-  ];
+  const { data: followingData, mutate: mutateFollowing } = useSWR("/me/playlists", async (url) => {
+    try { return [] } catch { return []; }
+  });
 
-  const followedPodcasts = [
-    {
-      slug: "culture-vivante",
-      title: "Culture vivante",
-      author: "Oumar Traoré & Awa Kouyaté",
-      episodesCount: 48,
-      cover: "/images/cover-kora.jpg",
-      badge: "Arts",
-    },
-    {
-      slug: "entreprendre-au-mali",
-      title: "Entreprendre au Mali",
-      author: "Oumar Diarra",
-      episodesCount: 22,
-      cover: "/images/cover-entreprendre.jpg",
-      badge: "Économie",
-    },
-    {
-      slug: "les-voix-de-bamako",
-      title: "Les voix de Bamako",
-      author: "Aminata Touré",
-      episodesCount: 34,
-      cover: "/images/cover-musique.jpg",
-      badge: "Société",
-    },
-  ];
+  const historyEpisodes = historyData || [];
+  const savedEpisodes = savedData || [];
+  
+  const followedPodcasts: any[] = [];
 
   const handlePlay = (ep: any) => {
     const playerEp: PlayerEpisode = {
@@ -207,28 +131,39 @@ export default function LibraryPage() {
       {activeTab === "history" && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {historyEpisodes.map((item) => (
+            {historyEpisodes.map((item: any) => (
               <div
-                key={item.id}
-                onClick={() => handlePlay(item)}
+                key={item.id || item.episodeId}
+                onClick={() => {
+                  const epToPlay = item.episode || item;
+                  if (currentEpisode?.id === epToPlay.id && isPlaying) {
+                    togglePlay();
+                  } else {
+                    playEpisode(epToPlay);
+                  }
+                }}
                 className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#333333] rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all cursor-pointer group shadow"
               >
                 <div className="flex items-center gap-3.5">
                   <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#282828]">
-                    <Image src={item.cover} alt={item.title} fill className="object-cover" />
+                    <Image src={(item.episode?.cover || item.cover) || "/images/cover-entreprendre.jpg"} alt={item.episode?.title || item.title} fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Play className="w-5 h-5 fill-white text-white" />
-                    </div>
+                        {currentEpisode?.id === (item.episode?.id || item.id) && isPlaying ? (
+                          <Pause className="w-5 h-5 fill-white text-white" />
+                        ) : (
+                          <Play className="w-5 h-5 fill-white text-white" />
+                        )}
+                      </div>
                   </div>
                   <div className="min-w-0 space-y-1">
                     <span className="text-[10px] font-bold text-[#FFBF00] uppercase tracking-wider truncate block">
-                      {item.podcastName}
+                      {item.episode?.podcast?.name || item.podcast?.name || "Podcast"}
                     </span>
                     <h3 className="text-xs font-bold text-white truncate group-hover:text-[#FFBF00] transition-colors">
-                      {item.title}
+                      {item.episode?.title || item.title}
                     </h3>
                     <span className="bg-[#1E1E1E] text-[#B8B8B8] px-2 py-0.5 rounded text-[10px] border border-[#2A2A2A]">
-                      {item.lang}
+                      {item.episode?.language?.name || item.episode?.languageCode || "FR"}
                     </span>
                   </div>
                 </div>
@@ -236,12 +171,12 @@ export default function LibraryPage() {
                 <div className="space-y-1.5 pt-2 border-t border-[#222222]">
                   <div className="flex items-center justify-between text-[11px] text-[#757575] font-mono">
                     <span>Reprendre à {item.resumeTime}</span>
-                    <span>{item.durationStr}</span>
+                    <span>{item.episode?.durationSeconds ? `${Math.floor(item.episode.durationSeconds / 60)} min` : ""}</span>
                   </div>
                   <div className="w-full h-1.5 bg-[#262626] rounded-full overflow-hidden">
                     <div
                       className="h-full bg-[#FFBF00]"
-                      style={{ width: `${item.progressPercent}%` }}
+                      style={{ width: `${Math.floor(((item.positionSeconds || 0) / (item.episode?.durationSeconds || 1)) * 100)}%` }}
                     />
                   </div>
                 </div>
@@ -261,7 +196,14 @@ export default function LibraryPage() {
             >
               <div className="flex items-center gap-3.5 min-w-0">
                 <button
-                  onClick={() => handlePlay(ep)}
+                  onClick={() => {
+                      const epToPlay = ep.episode || ep;
+                      if (currentEpisode?.id === epToPlay.id && isPlaying) {
+                        togglePlay();
+                      } else {
+                        playEpisode(epToPlay);
+                      }
+                    }}
                   className="w-9 h-9 rounded-full bg-[#1E1E1E] group-hover:bg-[#FFBF00] text-[#B8B8B8] group-hover:text-[#0B0B0B] flex items-center justify-center shrink-0 shadow transition-colors"
                 >
                   <Play className="w-4 h-4 fill-current ml-0.5" />
@@ -269,20 +211,27 @@ export default function LibraryPage() {
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 text-[11px]">
-                    <span className="text-[#FFBF00] font-semibold">{ep.podcastName}</span>
-                    <span className="text-[#757575]">• {ep.date}</span>
+                    <span className="text-[#FFBF00] font-semibold">{ep.episode?.podcast?.name || ep.podcast?.name || "Podcast"}</span>
+                    <span className="text-[#757575]">• {ep.createdAt ? new Date(ep.createdAt).toLocaleDateString() : ""}</span>
                   </div>
                   <h3
-                    onClick={() => handlePlay(ep)}
+                    onClick={() => {
+                      const epToPlay = ep.episode || ep;
+                      if (currentEpisode?.id === epToPlay.id && isPlaying) {
+                        togglePlay();
+                      } else {
+                        playEpisode(epToPlay);
+                      }
+                    }}
                     className="text-xs md:text-sm font-bold text-white truncate cursor-pointer hover:underline"
                   >
-                    {ep.title}
+                    {ep.episode?.title || ep.title}
                   </h3>
                 </div>
               </div>
 
               <div className="flex items-center gap-4 shrink-0 text-xs">
-                <span className="font-mono text-[#B8B8B8]">{ep.durationStr}</span>
+                <span className="font-mono text-[#B8B8B8]">{(ep.episode?.durationSeconds || ep.durationSeconds) ? `${Math.floor((ep.episode?.durationSeconds || ep.durationSeconds) / 60)} min` : ""}</span>
                 <button className="p-1.5 text-[#757575] hover:text-white" title="Télécharger">
                   <Download className="w-4 h-4" />
                 </button>

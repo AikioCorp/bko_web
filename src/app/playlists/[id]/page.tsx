@@ -6,14 +6,14 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "../../../store/authStore";
 import { usePlayerStore, PlayerEpisode } from "../../../store/playerStore";
-import { ListMusic, Play, Trash2, Pencil, ArrowLeft } from "lucide-react";
+import { ListMusic, Play, Pause, Trash2, Pencil, ArrowLeft } from "lucide-react";
 
 export default function PlaylistDetailPage() {
   const params = useParams();
   const playlistId = String(params.id ?? "");
   const router = useRouter();
   const { user } = useAuthStore();
-  const { playEpisode } = usePlayerStore();
+  const { playEpisode, currentEpisode, isPlaying, togglePlay } = usePlayerStore();
 
   const [playlist, setPlaylist] = useState<any>(null);
   const [loading, setLoading] = useState(true);

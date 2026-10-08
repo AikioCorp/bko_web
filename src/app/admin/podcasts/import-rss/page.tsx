@@ -566,44 +566,7 @@ export default function RssImportPage() {
               </label>
 
               <div className="space-y-2.5">
-                <label className="flex items-center gap-3 p-3 bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.syncEnabled}
-                    onChange={(e) => setFormData({...formData, syncEnabled: e.target.checked})}
-                    className="w-4 h-4 rounded accent-[#FFBF00]"
-                  />
-                  <div>
-                    <p className="text-xs font-semibold text-white">Activer la scrutation automatique du flux RSS</p>
-                    <p className="text-[11px] text-[#757575]">Récupère automatiquement les nouveaux épisodes publiés.</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.keepManualEdits}
-                    onChange={(e) => setFormData({...formData, keepManualEdits: e.target.checked})}
-                    className="w-4 h-4 rounded accent-[#FFBF00]"
-                  />
-                  <div>
-                    <p className="text-xs font-semibold text-white">Conserver les modifications manuelles sur Bamako Podcast</p>
-                    <p className="text-[11px] text-[#757575]">Les titres, résumés ou pochettes retouchés ne seront pas écrasés.</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.flagRemovedEpisodes}
-                    onChange={(e) => setFormData({...formData, flagRemovedEpisodes: e.target.checked})}
-                    className="w-4 h-4 rounded accent-[#FFBF00]"
-                  />
-                  <div>
-                    <p className="text-xs font-semibold text-white">Signaler un épisode retiré du flux d'origine sans le supprimer</p>
-                    <p className="text-[11px] text-[#757575]">Évite les pertes accidentelles d'historique et de commentaires.</p>
-                  </div>
-                </label>
+                
               </div>
             </div>
           </div>

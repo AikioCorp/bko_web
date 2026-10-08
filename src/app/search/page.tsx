@@ -8,7 +8,7 @@ import { SearchBar } from "../../components/search/SearchBar";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { LoadingSkeleton } from "../../components/ui/LoadingSkeleton";
 import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
-import { Play, User, Mic, Tag, MessageSquare, Clock, ArrowRight } from "lucide-react";
+import { Play, Pause, User, Mic, Tag, MessageSquare, Clock, ArrowRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ function SearchContent() {
 
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const { playEpisode } = usePlayerStore();
+  const { playEpisode, currentEpisode, isPlaying, togglePlay } = usePlayerStore();
 
   useEffect(() => {
     if (!query.trim()) return;

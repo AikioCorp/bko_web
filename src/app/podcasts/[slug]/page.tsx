@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Play, Pause, Share2, Bookmark, BookmarkCheck, Heart, Check } from "lucide-react";
+import { Play, Pause, Share2, Bookmark, BookmarkCheck, Heart, Check, ListPlus } from "lucide-react";
 import { studioApi } from "@/lib/studioApi";
 import { formatDate, formatDuration, shareOrCopy, toPlayerEpisode } from "@/lib/playback";
 import { usePlayerStore } from "../../../store/playerStore";
@@ -145,7 +145,7 @@ export default function PodcastPage() {
     <div className="w-full px-4 py-8 space-y-8">
       <header className="flex flex-col sm:flex-row gap-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={podcast.cover} alt="" className="w-44 h-44 sm:w-52 sm:h-52 rounded-2xl object-cover bg-[#1C1C1C] shrink-0 mx-auto sm:mx-0" />
+        <img src={podcast.cover} alt="" className="w-full sm:w-80 lg:w-[400px] aspect-video rounded-2xl object-cover bg-[#1C1C1C] shrink-0 mx-auto sm:mx-0 shadow-2xl" />
         <div className="flex-1 space-y-3">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#FFBF00]">Podcast</p>
           <h1 className="text-3xl font-extrabold text-white">{podcast.name}</h1>
@@ -193,6 +193,17 @@ export default function PodcastPage() {
               <Share2 className="w-3.5 h-3.5" /> Partager
             </button>
             <ReportButton targetType="PODCAST" targetId={podcast.id} />
+            <button
+              onClick={() => {
+                podcast.episodes.forEach((e) => {
+                  if (e.mediaSources.length > 0) addToQueue(toPlayerEpisode(e, podcast));
+                });
+                flash("File d'attente mise à jour");
+              }}
+              className="inline-flex items-center gap-1.5 text-xs text-[#B8B8B8] hover:text-[#FFBF00] ml-1"
+            >
+              <ListPlus className="w-3.5 h-3.5" /> File d'attente
+            </button>
             {notice && <span className="text-xs text-[#FFBF00]" role="status">{notice}</span>}
           </div>
         </div>
@@ -229,21 +240,36 @@ export default function PodcastPage() {
                     <Link href={`/podcasts/${podcast.slug}/episodes/${ep.slug}`} className="block font-bold text-white hover:text-[#FFBF00] truncate">
                       {ep.title}
                     </Link>
-                    <p className="text-xs text-[#B8B8B8] line-clamp-2">{ep.description}</p>
+                    <p className="text-xs text-[#B8B8B8] line-clamp-2">{ep.description.replace(/https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]+/g, "").replace(/Regardez la vidéo :/gi, "").trim()}</p>
                     {pct > 0 && !prog?.completed && (
                       <div className="h-1 bg-[#262626] rounded-full overflow-hidden w-40" aria-label="Progression">
                         <div className="h-full bg-[#FFBF00]" style={{ width: `${pct}%` }} />
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => toggleSave(ep)}
-                    aria-label={saved.has(ep.id) ? "Retirer des favoris" : "Enregistrer"}
-                    aria-pressed={saved.has(ep.id)}
-                    className="self-center text-[#B8B8B8] hover:text-[#FFBF00] p-2"
-                  >
-                    {saved.has(ep.id) ? <BookmarkCheck className="w-5 h-5 text-[#FFBF00]" /> : <Bookmark className="w-5 h-5" />}
-                  </button>
+                  <div className="flex items-center self-center gap-1">
+                    <button
+                      onClick={() => {
+                        if (playable) {
+                          addToQueue(toPlayerEpisode(ep, podcast));
+                          flash("Ajouté à la file");
+                        }
+                      }}
+                      disabled={!playable}
+                      aria-label="Ajouter à la file d'attente"
+                      className="text-[#B8B8B8] hover:text-[#FFBF00] p-2 disabled:opacity-40"
+                    >
+                      <ListPlus className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => toggleSave(ep)}
+                      aria-label={saved.has(ep.id) ? "Retirer des favoris" : "Enregistrer"}
+                      aria-pressed={saved.has(ep.id)}
+                      className="text-[#B8B8B8] hover:text-[#FFBF00] p-2"
+                    >
+                      {saved.has(ep.id) ? <BookmarkCheck className="w-5 h-5 text-[#FFBF00]" /> : <Bookmark className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </li>
               );
             })}
