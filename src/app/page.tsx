@@ -9,11 +9,13 @@ import { API_BASE_URL, fetchApi } from "@/lib/api";
 import {
   Play, Pause,
   Bookmark,
+  BookmarkCheck,
   Share2,
   Clock,
   Download,
   MoreVertical,
   ListPlus,
+  ListMinus,
   SlidersHorizontal,
   Mic,
   ArrowRight,
@@ -67,8 +69,8 @@ function HomeSkeleton() {
           ))}
         </div>
       </div>
-    </div>
-  );
+        </div>
+    );
 }
 
 function HomeContent() {
@@ -76,6 +78,8 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const [selectedFilter, setSelectedFilter] = useState("Tous");
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
+  const [toast, setToast] = useState("");
+  const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
     const { data: resumeEpisodesData } = useSWR("/me/continue-listening", async (url) => {
     try { return (await fetchApi(url)).data || []; } catch { return []; }
   });
@@ -109,6 +113,22 @@ function HomeContent() {
   const savedEpisodes = savedEpisodesData || [];
 
   const isSaved = heroEpisode ? savedEpisodes.some((e: any) => e.episodeId === heroEpisode.id) : false;
+
+  const toggleSaveList = async (ep: any) => {
+    const currentlySaved = savedEpisodesData.some((e: any) => e.episodeId === ep.id);
+    mutateSaved(
+      currentlySaved 
+        ? savedEpisodesData.filter((e: any) => e.episodeId !== ep.id)
+        : [...savedEpisodesData, { episodeId: ep.id }],
+      false
+    );
+    try {
+      await fetchApi(`/episodes/${ep.id}/save`, { method: currentlySaved ? "DELETE" : "POST" });
+    } catch {
+      mutateSaved(savedEpisodesData, false);
+      flash("Erreur lors de la sauvegarde.");
+    }
+  };
 
   const handleSave = async () => {
     if (!heroEpisode) return;
@@ -256,9 +276,9 @@ function HomeContent() {
   
               <button
                 onClick={() => {
-                  usePlayerStore.getState().addToQueue(heroEpisode);
-                  alert("Ajouté à la file d'attente !");
-                }}
+                    usePlayerStore.getState().addToQueue(heroEpisode);
+                    flash("Ajouté à la file d'attente !");
+                  }}
                 className="p-2.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-[#B8B8B8] hover:text-white transition-colors"
                 title="Ajouter à la file d'attente"
               >
@@ -494,22 +514,37 @@ function HomeContent() {
 
               <div className="flex items-center gap-4 shrink-0 text-xs text-[#757575]">
                 <span className="font-mono text-[#B8B8B8]">{ep.durationStr}</span>
-                <button
-                  className="p-1.5 hover:text-white transition-colors"
-                  title="Télécharger l'épisode"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => {
-                  usePlayerStore.getState().addToQueue(ep);
-                  alert("Ajouté à la file d'attente !");
-                }}
-                  className="p-1.5 hover:text-white transition-colors"
-                  title="Ajouter à la file d'attente"
-                >
-                  <ListPlus className="w-4 h-4" />
-                </button>
+                {(() => {
+                  const isEpSaved = savedEpisodesData.some((e: any) => e.episodeId === ep.id);
+                  const queueIndex = usePlayerStore.getState().queue.findIndex((q: any) => q.id === ep.id);
+                  const isInQueue = queueIndex !== -1;
+                  return (
+                    <>
+                      <button
+                        onClick={() => toggleSaveList(ep)}
+                        className={`p-1.5 transition-colors ${isEpSaved ? "text-[#FFBF00]" : "hover:text-white"}`}
+                        title={isEpSaved ? "Retirer des favoris" : "Ajouter aux favoris"}
+                      >
+                        {isEpSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (isInQueue) {
+                            usePlayerStore.getState().removeFromQueue(queueIndex);
+                            flash("Retiré de la file d'attente !");
+                          } else {
+                            usePlayerStore.getState().addToQueue(ep);
+                            flash("Ajouté à la file d'attente !");
+                          }
+                        }}
+                        className={`p-1.5 transition-colors ${isInQueue ? "text-[#FFBF00]" : "hover:text-white"}`}
+                        title={isInQueue ? "Retirer de la file d'attente" : "Ajouter à la file d'attente"}
+                      >
+                        {isInQueue ? <ListMinus className="w-4 h-4" /> : <ListPlus className="w-4 h-4" />}
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           ))}
@@ -553,8 +588,13 @@ function HomeContent() {
 
       {/* App Download Modal */}
       <AppDownloadModal isOpen={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} />
-    </div>
-  );
+    {toast && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#FFBF00] text-[#0B0B0B] px-4 py-2 rounded-full font-bold text-sm shadow-xl animate-fade-in pointer-events-none">
+            {toast}
+          </div>
+        )}
+      </div>
+    );
 }
 
 export default function HomePage() {

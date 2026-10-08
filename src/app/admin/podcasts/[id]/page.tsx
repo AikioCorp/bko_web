@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -37,6 +37,10 @@ import useSWR from "swr";
 import { adminApi } from "@/lib/api";
 
 const TABS = ["Épisodes", "Sources RSS", "Équipe", "Historique", "Informations", "Paramètres"];
+const PODCAST_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Brouillon", PUBLISHED: "Publié", UNLISTED: "Non répertorié",
+  PENDING_REVIEW: "En attente de validation", SUSPENDED: "Suspendu", ARCHIVED: "Archivé",
+};
 
 export default function AdminPodcastDetailsPage() {
   const { id } = useParams();
@@ -114,6 +118,78 @@ export default function AdminPodcastDetailsPage() {
   };
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [publishingIds, setPublishingIds] = useState<Set<string>>(new Set());
+  const [publishingPodcast, setPublishingPodcast] = useState(false);
+  const podcastPublishLock = useRef(false);
+  const publishLocks = useRef(new Set<string>());
+
+  const publishPodcast = async () => {
+    if (podcastPublishLock.current || !id || hasUnsavedChanges) return;
+    podcastPublishLock.current = true;
+    setPublishingPodcast(true);
+    setErrorMsg(null);
+    try {
+      const response = await adminApi(`/admin/podcasts/${id}`, {
+        method: "PUT", body: JSON.stringify({ status: "PUBLISHED" }),
+      });
+      await mutate((previous: any) => ({ ...previous, ...response.data }), { revalidate: false });
+    } catch (error: any) {
+      setErrorMsg(error.message || "Impossible de publier l'émission.");
+    } finally {
+      podcastPublishLock.current = false;
+      setPublishingPodcast(false);
+    }
+  };
+
+  const [deletingEpisodeIds, setDeletingEpisodeIds] = useState<Set<string>>(new Set());
+  const deletingEpisodeLocks = useRef(new Set<string>());
+  const deleteEpisode = async (episode: any) => {
+    if (deletingEpisodeLocks.current.has(episode.id)) return;
+    if (!window.confirm(`Supprimer définitivement l’épisode « ${episode.title} » ?`)) return;
+    deletingEpisodeLocks.current.add(episode.id);
+    setDeletingEpisodeIds(previous => new Set(previous).add(episode.id));
+    setErrorMsg(null);
+    try {
+      await adminApi(`/admin/episodes/${episode.id}`, {method:"DELETE"});
+      await mutateEpisodes((previous: any[] | undefined) => previous?.filter(item => item.id !== episode.id), {revalidate:false});
+      void mutate();
+    } catch (error: any) {
+      setErrorMsg(error.message || "Impossible de supprimer cet épisode.");
+    } finally {
+      deletingEpisodeLocks.current.delete(episode.id);
+      setDeletingEpisodeIds(previous => {const next=new Set(previous);next.delete(episode.id);return next;});
+    }
+  };
+
+  const publishEpisode = async (episodeId: string) => {
+    if (publishLocks.current.has(episodeId)) return;
+    publishLocks.current.add(episodeId);
+    setPublishingIds(previous => new Set(previous).add(episodeId));
+    setErrorMsg(null);
+    try {
+      const response = await adminApi(`/admin/episodes/${episodeId}/publish`, {
+        method: "POST", body: JSON.stringify({ mode: "now" }),
+      });
+      const published = response.data;
+      // Update the episode list, not the unrelated podcast details cache.
+      await mutateEpisodes((previous: any[] | undefined) => previous?.map(episode =>
+        episode.id === episodeId ? {
+          ...episode,
+          status: published?.status ?? "PUBLISHED",
+          publishedAt: published?.publishedAt ?? episode.publishedAt,
+        } : episode
+      ), { revalidate: false });
+    } catch (error: any) {
+      setErrorMsg(error.message || "Impossible de publier cet épisode.");
+    } finally {
+      publishLocks.current.delete(episodeId);
+      setPublishingIds(previous => {
+        const next = new Set(previous);
+        next.delete(episodeId);
+        return next;
+      });
+    }
+  };
 
   const handleSave = async () => {
     if (!id) return;
@@ -583,16 +659,25 @@ export default function AdminPodcastDetailsPage() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs font-bold text-[#757575] uppercase mb-1">Statut</p>
-                    <p className="text-sm font-medium text-white">{podcast.status}</p>
+                    <p className="text-sm font-medium text-white">{PODCAST_STATUS_LABELS[podcast.status] || podcast.status}</p>
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[#757575] uppercase mb-1">Visibilité</p>
                     <p className="text-sm font-medium text-white">{podcast.visibility}</p>
+                    {podcast.status === "DRAFT" && <p className="mt-2 text-xs text-[#B8B8B8]">L'émission reste non publique même si certains épisodes sont publiés.</p>}
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[#757575] uppercase mb-1">Créé le</p>
                     <p className="text-sm font-medium text-white">{podcast.publishedAt}</p>
                   </div>
+                  {podcast.status === "DRAFT" && <div className="space-y-2">
+                    <Button onClick={() => void publishPodcast()} disabled={publishingPodcast || isSaving || hasUnsavedChanges}
+                      aria-busy={publishingPodcast} className="w-full bg-[#FFBF00] text-black hover:bg-[#E5AB00] font-bold">
+                      {publishingPodcast && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {publishingPodcast ? "Publication…" : "Publier l'émission"}
+                    </Button>
+                    {hasUnsavedChanges && <p className="text-xs text-[#B8B8B8]">Enregistrez vos modifications avant de publier.</p>}
+                  </div>}
                 </div>
               </div>
 
@@ -773,18 +858,15 @@ export default function AdminPodcastDetailsPage() {
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
+                                  disabled={publishingIds.has(ep.id)}
+                                  aria-busy={publishingIds.has(ep.id)}
                                   className="h-8 px-2 text-xs font-bold text-[#FFBF00] hover:text-black hover:bg-[#FFBF00]"
-                                  onClick={async (e) => {
+                                  onClick={(e) => {
                                     e.preventDefault();
-                                    try {
-                                      await adminApi(`/admin/episodes/${ep.id}/publish`, { method: "POST", body: { mode: "now" } });
-                                      mutate(); // SWR mutate
-                                    } catch (err: any) {
-                                      setErrorMsg(err.message); setTimeout(() => setErrorMsg(null), 5000);
-                                    }
+                                    void publishEpisode(ep.id);
                                   }}
                                 >
-                                  Publier
+                                  {publishingIds.has(ep.id) ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Publication…</> : "Publier"}
                                 </Button>
                               )}
                               <Link href={`/admin/episodes/${ep.slug || ep.id}`}>
@@ -792,8 +874,8 @@ export default function AdminPodcastDetailsPage() {
                                   <Edit3 className="w-4 h-4" />
                                 </Button>
                               </Link>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10">
-                                <Trash2 className="w-4 h-4" />
+                              <Button variant="ghost" size="icon" disabled={deletingEpisodeIds.has(ep.id) || publishingIds.has(ep.id)} aria-label={`Supprimer ${ep.title}`} aria-busy={deletingEpisodeIds.has(ep.id)} onClick={() => void deleteEpisode(ep)} className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                                {deletingEpisodeIds.has(ep.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                               </Button>
                             </div>
                           </td>

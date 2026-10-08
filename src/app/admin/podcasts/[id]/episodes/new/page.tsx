@@ -113,7 +113,7 @@ export default function NewEpisodeWizard() {
 
   // Step 4: Publication & Playback
   const [activePlayer, setActivePlayer] = useState<"NONE" | "AUDIO" | "VIDEO">("NONE");
-  const [publishAction, setPublishAction] = useState<"DRAFT" | "NOW" | "SCHEDULE" | "REVIEW">("DRAFT");
+  const [publishAction, setPublishAction] = useState<"DRAFT" | "NOW" | "SCHEDULE">("DRAFT");
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("18:00");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -130,114 +130,72 @@ export default function NewEpisodeWizard() {
     }
   }, [podcast]);
 
-  // Handle Primary File Drop / Select
+  const draftId = useRef<string | null>(null);
+  const createLock = useRef<Promise<string> | null>(null);
+  const submitLock = useRef(false);
+  const ensureDraft = async (): Promise<string> => {
+    if (draftId.current) return draftId.current;
+    if (!createLock.current) createLock.current = (async () => {
+      const res = await adminApi(`/admin/podcasts/${podcastId}/episodes`, {
+        method: "POST", body: JSON.stringify({title: title.trim() || "Nouvel épisode", languageCode}),
+      });
+      draftId.current = res.data.id;
+      return res.data.id as string;
+    })().finally(() => { createLock.current = null; });
+    return createLock.current!;
+  };
+
   const handlePrimaryFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const maxAudioBytes = 250 * 1024 * 1024;
-    const maxVideoBytes = 2000 * 1024 * 1024;
-    const isAudio = selectedFormat === "AUDIO";
-    const maxAllowed = isAudio ? maxAudioBytes : maxVideoBytes;
-
-    if (file.size > maxAllowed) {
-      setPrimarySource(prev => ({
-        ...prev,
-        status: "ERROR",
-        errorMessage: `Le fichier dépasse la limite autorisée de ${isAudio ? "250 Mo" : "2 Go"}.`,
-      }));
-      return;
-    }
-
-    setPrimarySource({
-      method: "FILE",
-      file,
-      url: "",
-      name: file.name,
-      sizeBytes: file.size,
-      durationSeconds: 0,
-      progress: 10,
-      status: "UPLOADING",
-      errorMessage: null,
-    });
-
-    // Simulated progress to provide immediate visual feedback before completion
-    let fakeProgress = 10;
-    const timer = setInterval(() => {
-      fakeProgress += 20;
-      if (fakeProgress >= 100) {
-        clearInterval(timer);
-        setPrimarySource(prev => ({
-          ...prev,
-          progress: 100,
-          status: "READY",
-          assetUrl: URL.createObjectURL(file),
-          durationSeconds: isAudio ? 1845 : 2410,
-        }));
-      } else {
-        setPrimarySource(prev => ({ ...prev, progress: fakeProgress }));
+    setPrimarySource({ method: "FILE", file, url: "", name: file.name, sizeBytes: file.size,
+      durationSeconds: 0, progress: 0, status: "UPLOADING", errorMessage: null });
+    try {
+      const id = await ensureDraft();
+      const {data: beforeUpload} = await adminApi(`/admin/episodes/${id}`);
+      const previousIds = new Set(beforeUpload.mediaSources?.map((source:any) => source.id));
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const mimeType = file.type || ({mp3:'audio/mpeg',m4a:'audio/mp4',aac:'audio/aac',wav:'audio/wav',ogg:'audio/ogg',mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime'} as Record<string,string>)[ext];
+      const {data: session} = await adminApi(`/admin/episodes/${id}/audio/uploads`, {
+        method: "POST", body: JSON.stringify({filename:file.name,mimeType,sizeBytes:file.size,mediaType:selectedFormat}),
+      });
+      await new Promise<void>((resolve,reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT",session.uploadUrl);
+        xhr.setRequestHeader("Content-Type",session.mimeType);
+        xhr.upload.onprogress = event => { if(event.lengthComputable) setPrimarySource(prev => ({...prev,progress:Math.round(event.loaded/event.total*100)})); };
+        xhr.onerror = () => reject(new Error("Le transfert a échoué. Vérifiez la connexion et le stockage."));
+        xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Transfert refusé (HTTP ${xhr.status}).`));
+        xhr.send(file);
+      });
+      await adminApi(`/admin/episodes/${id}/audio/uploads/${session.uploadId}/complete`, {method:"POST"});
+      setPrimarySource(prev => ({...prev,status:"PROCESSING",progress:100}));
+      for(let attempt=0;attempt<60;attempt++) {
+        const {data: episode} = await adminApi(`/admin/episodes/${id}`);
+        const source = episode.mediaSources?.find((m:any) => m.type === selectedFormat && m.sourceType === "UPLOAD" && !previousIds.has(m.id));
+        if(source) {
+          setPrimarySource(prev => ({...prev,status:"READY",assetUrl:source.externalUrl,durationSeconds:source.durationSeconds || 0}));
+          return;
+        }
+        if(episode.sources?.audioState === "ERROR") throw new Error("Le traitement du fichier a échoué.");
+        await new Promise(resolve => setTimeout(resolve,2000));
       }
-    }, 250);
+      throw new Error("Le fichier est encore en traitement. Vérifiez que le worker est démarré. Le brouillon est conservé.");
+    } catch(error:any) { setPrimarySource(prev => ({...prev,status:"ERROR",errorMessage:error.message})); }
   };
 
-  // Handle Link Verification
   const handleVerifyPrimaryLink = async () => {
-    if (!primarySource.url.trim()) return;
-    setPrimarySource(prev => ({
-      ...prev,
-      status: "CHECKING",
-      errorMessage: null,
-    }));
-
     const url = primarySource.url.trim();
-
-    // Check YouTube
-    if (selectedFormat === "VIDEO") {
-      const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-      if (ytMatch) {
-        setTimeout(() => {
-          setPrimarySource(prev => ({
-            ...prev,
-            status: "READY",
-            name: `Vidéo YouTube (${ytMatch[1]})`,
-            youtubeId: ytMatch[1],
-            durationSeconds: 1540,
-          }));
-          if (!title) setTitle("Épisode importé depuis YouTube");
-        }, 600);
-        return;
-      }
-    } else {
-      // Audio: Warn if YouTube or Spotify provided as direct audio
-      if (url.includes("youtube.com") || url.includes("youtu.be") || url.includes("spotify.com")) {
-        setPrimarySource(prev => ({
-          ...prev,
-          status: "ERROR",
-          errorMessage: "Une page YouTube ou Spotify ne constitue pas une adresse audio directe (MP3/M4A/WAV requis).",
-        }));
-        return;
-      }
-    }
-
-    // Direct stream link simulation
-    setTimeout(() => {
-      if (!url.startsWith("http")) {
-        setPrimarySource(prev => ({
-          ...prev,
-          status: "ERROR",
-          errorMessage: "Adresse URL non valide. Veuillez indiquer une URL absolue commençant par https://.",
-        }));
-        return;
-      }
-
-      setPrimarySource(prev => ({
-        ...prev,
-        status: "READY",
-        name: url.split("/").pop() || "Flux média distant",
-        assetUrl: url,
-        durationSeconds: 2100,
-      }));
-    }, 700);
+    if(!url) return;
+    setPrimarySource(prev => ({...prev,status:"CHECKING",errorMessage:null}));
+    try {
+      const id = await ensureDraft();
+      const {data: episode} = await adminApi(`/admin/episodes/${id}/${selectedFormat === "AUDIO" ? "audio/url" : "youtube"}`, {
+        method:"POST",body:JSON.stringify({url}),
+      });
+      const source = episode.mediaSources?.find((m:any) => m.type === selectedFormat);
+      setPrimarySource(prev => ({...prev,status:"READY",name:source?.quality || url,assetUrl:source?.externalUrl || url,youtubeId:source?.externalId || undefined,durationSeconds:source?.durationSeconds || 0}));
+    } catch(error:any) { setPrimarySource(prev => ({...prev,status:"ERROR",errorMessage:error.message})); }
   };
 
   // Checklist computation for Publication
@@ -269,63 +227,34 @@ export default function NewEpisodeWizard() {
     }
   };
 
-  // Final Action Handler
+  // Final action always uses the publication endpoint after real sources are attached.
   const handleFinalSubmit = async () => {
-    if (!allChecksPass && publishAction !== "DRAFT") {
-      setGlobalError("Veuillez remplir tous les critères requis de la checklist avant de publier.");
-      return;
+    if(submitLock.current) return;
+    if (!allChecksPass && publishAction !== "DRAFT") { setGlobalError("Complétez les informations et attendez que la source soit prête."); return; }
+    let publishAt: string | undefined;
+    if(publishAction === "SCHEDULE") {
+      const date = new Date(`${scheduleDate}T${scheduleTime}:00+00:00`);
+      if(!scheduleDate || !Number.isFinite(date.getTime()) || date.getTime() <= Date.now()+60000) { setGlobalError("Choisissez une date future, au moins une minute après maintenant."); return; }
+      publishAt = date.toISOString();
     }
-
-    setIsSubmitting(true);
-    setGlobalError(null);
-
+    submitLock.current=true; setIsSubmitting(true); setGlobalError(null);
     try {
-      // Create episode payload
-      const payload: any = {
-        title: title.trim(),
-        summary: summary.trim() || undefined,
-        description: description.trim(),
-        cover: useCustomCover && cover ? cover.trim() : podcast?.cover,
-        languageCode,
-        seasonNumber: seasonNumber !== "" ? Number(seasonNumber) : undefined,
-        episodeNumber: episodeNumber !== "" ? Number(episodeNumber) : undefined,
-        episodeType,
-        explicit: isExplicit,
-        format: selectedFormat,
-        status: publishAction === "NOW" ? "PUBLISHED" : publishAction === "SCHEDULE" ? "SCHEDULED" : "DRAFT",
-      };
-
-      if (publishAction === "SCHEDULE") {
-        payload.scheduledAt = `${scheduleDate}T${scheduleTime}:00Z`;
+      const id = await ensureDraft();
+      await adminApi(`/admin/episodes/${id}`, {method:"PATCH",body:JSON.stringify({
+        title:title.trim(),summary:summary.trim(),description:description.trim(),cover:useCustomCover ? cover.trim() : podcast?.cover,
+        languageCode,seasonNumber:seasonNumber === "" ? null : Number(seasonNumber),episodeNumber:episodeNumber === "" ? null : Number(episodeNumber),episodeType,explicit:isExplicit,
+      })});
+      if(hasSecondarySource && secondarySource.url.trim()) {
+        await adminApi(`/admin/episodes/${id}/${selectedFormat === "AUDIO" ? "youtube" : "audio/url"}`, {method:"POST",body:JSON.stringify({url:secondarySource.url.trim()})});
       }
-
-      const res = await adminApi(`/admin/podcasts/${podcastId}/episodes`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.success) throw new Error(res.message || "Erreur de création de l'épisode.");
-
-      const newEpId = res.data.id;
-
-      // Attach YouTube source if present
-      if (primarySource.youtubeId) {
-        await adminApi(`/admin/episodes/${newEpId}/sources/youtube`, {
-          method: "POST",
-          body: JSON.stringify({
-            url: primarySource.url,
-            durationSeconds: primarySource.durationSeconds || 1800,
-          }),
-        }).catch(() => {});
+      if(publishAction !== "DRAFT") {
+        const {data: published} = await adminApi(`/admin/episodes/${id}/publish`, {method:"POST",body:JSON.stringify({mode:publishAction === "NOW" ? "now" : "schedule",publishAt})});
+        if(published.status !== (publishAction === "NOW" ? "PUBLISHED" : "SCHEDULED")) throw new Error("Le serveur n'a pas confirmé le statut demandé.");
       }
-
       router.push(`/admin/podcasts/${podcastId}`);
-    } catch (err: any) {
-      setGlobalError(err.message || "Échec de l'enregistrement de l'épisode.");
-      setIsSubmitting(false);
-    }
+    } catch(error:any) { setGlobalError(error.message || "L'opération a échoué. Le brouillon est conservé."); }
+    finally { submitLock.current=false; setIsSubmitting(false); }
   };
-
   return (
     <div className="w-full max-w-5xl mx-auto py-4 pb-32 text-white space-y-8 animate-in fade-in">
       
@@ -416,7 +345,7 @@ export default function NewEpisodeWizard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Carte Épisode audio */}
             <div
-              onClick={() => setSelectedFormat("AUDIO")}
+              onClick={() => { setSelectedFormat("AUDIO"); setPrimarySource(prev => ({...prev,status:"IDLE",url:"",assetUrl:undefined,youtubeId:undefined})); }}
               className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
                 selectedFormat === "AUDIO"
                   ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]"
@@ -450,7 +379,7 @@ export default function NewEpisodeWizard() {
 
             {/* Carte Épisode vidéo */}
             <div
-              onClick={() => setSelectedFormat("VIDEO")}
+              onClick={() => { setSelectedFormat("VIDEO"); setPrimarySource(prev => ({...prev,status:"IDLE",url:"",assetUrl:undefined,youtubeId:undefined})); }}
               className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
                 selectedFormat === "VIDEO"
                   ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]"
@@ -523,7 +452,7 @@ export default function NewEpisodeWizard() {
             <div className="flex items-center gap-3 border-b border-[#2A2A2A] pb-4">
               <button
                 type="button"
-                onClick={() => setPrimarySource(prev => ({ ...prev, method: "FILE" }))}
+                onClick={() => setPrimarySource(prev => ({ ...prev, method: "FILE", status: "IDLE" }))}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
                   primarySource.method === "FILE"
                     ? "bg-[#FFBF00] text-[#0B0B0B]"
@@ -534,7 +463,7 @@ export default function NewEpisodeWizard() {
               </button>
               <button
                 type="button"
-                onClick={() => setPrimarySource(prev => ({ ...prev, method: "LINK" }))}
+                onClick={() => setPrimarySource(prev => ({ ...prev, method: "LINK", status: "IDLE" }))}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
                   primarySource.method === "LINK"
                     ? "bg-[#FFBF00] text-[#0B0B0B]"
@@ -586,7 +515,7 @@ export default function NewEpisodeWizard() {
                     <input
                       type="url"
                       value={primarySource.url}
-                      onChange={(e) => setPrimarySource(prev => ({ ...prev, url: e.target.value }))}
+                      onChange={(e) => setPrimarySource(prev => ({ ...prev, url: e.target.value, status: "IDLE", errorMessage: null }))}
                       placeholder={selectedFormat === "AUDIO" ? "https://domaine.com/episode.mp3" : "https://www.youtube.com/watch?v=..."}
                       className="flex-1 bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                     />
@@ -915,8 +844,8 @@ export default function NewEpisodeWizard() {
                   <input
                     type="url"
                     value={secondarySource.url}
-                    onChange={(e) => setSecondarySource(prev => ({ ...prev, url: e.target.value }))}
-                    placeholder={selectedFormat === "AUDIO" ? "Lien YouTube ou URL vidéo directe..." : "URL audio MP3/M4A directe..."}
+                    onChange={(e) => setSecondarySource(prev => ({ ...prev, url: e.target.value, status: "IDLE", errorMessage: null }))}
+                    placeholder={selectedFormat === "AUDIO" ? "Lien YouTube..." : "URL audio MP3/M4A directe..."}
                     className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm text-white focus:border-[#FFBF00] outline-none"
                   />
                   <div className="mt-2 flex items-center justify-between">
@@ -926,8 +855,15 @@ export default function NewEpisodeWizard() {
                     <Button
                       size="sm"
                       type="button"
-                      onClick={() => setSecondarySource(prev => ({ ...prev, status: "READY", name: "Version rattachée" }))}
-                      disabled={!secondarySource.url.trim()}
+                      onClick={async () => {
+                        setSecondarySource(prev => ({...prev,status:"CHECKING",errorMessage:null}));
+                        try {
+                          const id=await ensureDraft();
+                          await adminApi(`/admin/episodes/${id}/${selectedFormat === "AUDIO" ? "youtube" : "audio/url"}`, {method:"POST",body:JSON.stringify({url:secondarySource.url.trim()})});
+                          setSecondarySource(prev => ({...prev,status:"READY",name:"Version vérifiée"}));
+                        } catch(error:any) { setSecondarySource(prev => ({...prev,status:"ERROR",errorMessage:error.message})); setGlobalError(error.message); }
+                      }}
+                      disabled={!secondarySource.url.trim() || secondarySource.status === "CHECKING"}
                       className="bg-[#2A2A2A] hover:bg-[#333333] text-white text-xs h-8"
                     >
                       Valider la source
@@ -1175,7 +1111,7 @@ export default function NewEpisodeWizard() {
                 {/* Bouton d'action principal */}
                 <Button
                   onClick={handleFinalSubmit}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || ["UPLOADING", "PROCESSING", "CHECKING"].includes(primarySource.status)}
                   className="w-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-12 rounded-xl"
                 >
                   {isSubmitting ? (

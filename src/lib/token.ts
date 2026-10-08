@@ -77,7 +77,7 @@ export function refreshAccessToken(): Promise<string | null> {
         return null;
       })
       .catch(() => {
-        clearStoredTokens();
+        // A temporary network outage must not destroy a valid session.
         return null;
       }) as Promise<string | null>).finally(() => {
       refreshPromise = null;
@@ -88,7 +88,7 @@ export function refreshAccessToken(): Promise<string | null> {
 
 let originalFetch: typeof fetch | null = null;
 function nativeFetch(): typeof fetch {
-  return (originalFetch ?? window.fetch).bind(window);
+  return ((window as any).__bkoNativeFetch ?? originalFetch ?? window.fetch).bind(window);
 }
 
 // Intercepte fetch pour les appels vers l'API : injecte le Bearer et, sur 401,
@@ -96,6 +96,7 @@ function nativeFetch(): typeof fetch {
 if (typeof window !== "undefined" && !(window as any).__bkoFetchPatched) {
   (window as any).__bkoFetchPatched = true;
   originalFetch = window.fetch;
+  (window as any).__bkoNativeFetch = originalFetch;
   const base = originalFetch;
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -104,7 +105,16 @@ if (typeof window !== "undefined" && !(window as any).__bkoFetchPatched) {
     const isAuthEndpoint = isApi && /\/auth\/(login|register|refresh|verify-otp)/.test(url);
     if (!isApi || isAuthEndpoint) return base(input, init);
 
-    const token = getAccessToken();
+    let token = getAccessToken();
+    // Refresh before sending an expired token, avoiding predictable 401 responses.
+    if (token) {
+      try {
+        const payload=JSON.parse(atob(token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+        if(typeof payload.exp === "number" && payload.exp*1000 <= Date.now()+30000) {
+          token=await refreshAccessToken();
+        }
+      } catch { /* The server remains authoritative for malformed tokens. */ }
+    }
     const withToken = (tok: string | null): RequestInit => {
       const headers = new Headers(init?.headers);
       if (tok) headers.set("Authorization", `Bearer ${tok}`);

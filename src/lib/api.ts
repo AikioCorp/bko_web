@@ -27,7 +27,9 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
       headers,
     });
   } catch (error: any) {
-    throw new Error(error.message || "Impossible de joindre le serveur.");
+    const networkError = new Error("Impossible de joindre le serveur. Vérifiez votre connexion et que le backend est démarré, puis réessayez.");
+    (networkError as any).code = "NETWORK_ERROR";
+    throw networkError;
   }
 
   let json: any = null;

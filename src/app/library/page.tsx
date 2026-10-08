@@ -189,7 +189,7 @@ export default function LibraryPage() {
       {/* Tab: Saved */}
       {activeTab === "saved" && (
         <div className="space-y-3">
-          {savedEpisodes.map((ep) => (
+          {savedEpisodes.map((ep: { id: string; [key: string]: any }) => (
             <div
               key={ep.id}
               className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#383838] rounded-2xl p-4 flex items-center justify-between gap-4 transition-all group"

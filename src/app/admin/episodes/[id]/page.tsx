@@ -21,6 +21,8 @@ export default function AdminEditEpisodePage() {
 
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const saveInFlight = useRef<Promise<boolean> | null>(null);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -92,7 +94,13 @@ export default function AdminEditEpisodePage() {
 
   const handleSaveInfo = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (saveInFlight.current) {
+      const succeeded = await saveInFlight.current;
+      if (!succeeded) return false;
+    }
     setSaving(true);
+    setActionError("");
+    const operation = (async () => {
     try {
       await adminApi(`/admin/episodes/${id}`, {
         method: "PATCH",
@@ -108,19 +116,25 @@ export default function AdminEditEpisodePage() {
           explicit,
         }),
       });
-      mutate();
+      await mutate();
+      return true;
     } catch (err: any) {
-      console.error(err);
-      alert(err.message || "Erreur lors de l'enregistrement");
+      setActionError(err.message || "Erreur lors de l'enregistrement");
+      return false;
     } finally {
       setSaving(false);
     }
+    })();
+    saveInFlight.current = operation;
+    try { return await operation; }
+    finally { if (saveInFlight.current === operation) saveInFlight.current = null; }
   };
 
   const handlePublish = async (status: "PUBLISHED" | "DRAFT" | "SCHEDULED", scheduledAt?: string) => {
+    if (publishing) return;
     setPublishing(true);
-    await handleSaveInfo(); // Save info first
     try {
+      if (!await handleSaveInfo()) return;
       if (status === "DRAFT") {
         await adminApi(`/admin/episodes/${id}`, {
           method: "PATCH",
@@ -137,8 +151,7 @@ export default function AdminEditEpisodePage() {
       }
       mutate();
     } catch (err: any) {
-      console.error(err);
-      alert(err.message || "Erreur lors de la publication");
+      setActionError(err.message || "Erreur lors de la publication");
     } finally {
       setPublishing(false);
     }
@@ -280,7 +293,7 @@ export default function AdminEditEpisodePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-[#2A2A2A] text-white hover:bg-[#1A1A1A]" onClick={() => handlePublish("DRAFT")}>
+          <Button variant="outline" disabled={saving || publishing} className="border-[#2A2A2A] text-white hover:bg-[#1A1A1A]" onClick={() => handlePublish("DRAFT")}>
             Enregistrer le brouillon
           </Button>
           <Button 
@@ -294,6 +307,7 @@ export default function AdminEditEpisodePage() {
         </div>
       </div>
 
+      {actionError && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{actionError}</div>}
       <div className="flex flex-col lg:flex-row gap-8">
         {/* COLONNE GAUCHE : Formulaires */}
         <div className="flex-1 space-y-8">

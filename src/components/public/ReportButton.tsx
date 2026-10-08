@@ -16,7 +16,7 @@ const REASONS: [string, string][] = [
 ];
 
 /** Signaler un podcast ou un épisode à la modération (connexion requise). */
-export function ReportButton({ targetType, targetId }: { targetType: "PODCAST" | "EPISODE"; targetId: string }) {
+export function ReportButton({ targetType, targetId }: { targetType: "PODCAST" | "EPISODE" | "COMMENT"; targetId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
