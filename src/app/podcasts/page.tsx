@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -15,12 +15,12 @@ export default function PodcastsCatalogPage() {
       id: "p1",
       name: "Les voix de Bamako",
       slug: "les-voix-de-bamako",
-      author: "Aminata Touré",
+      author: "Aminata TourÃ©",
       cover: "/images/cover-musique.jpg",
-      badge: "Société",
+      badge: "SociÃ©tÃ©",
       episodesCount: 34,
       language: "FR / BM",
-      description: "Interviews intimes et exploration sonore au cœur de la capitale malienne.",
+      description: "Interviews intimes et exploration sonore au cÅ“ur de la capitale malienne.",
     },
     {
       id: "p2",
@@ -28,21 +28,21 @@ export default function PodcastsCatalogPage() {
       slug: "entreprendre-au-mali",
       author: "Oumar Diarra",
       cover: "/images/cover-entreprendre.jpg",
-      badge: "Économie",
+      badge: "Ã‰conomie",
       episodesCount: 22,
-      language: "Français",
-      description: "Stratégies, financements locaux et réussites entrepreneuriales à Bamako et dans les régions.",
+      language: "FranÃ§ais",
+      description: "StratÃ©gies, financements locaux et rÃ©ussites entrepreneuriales Ã  Bamako et dans les rÃ©gions.",
     },
     {
       id: "p3",
       name: "Culture vivante",
       slug: "culture-vivante",
-      author: "Kadiatou Sangaré",
+      author: "Kadiatou SangarÃ©",
       cover: "/images/cover-kora.jpg",
       badge: "Arts",
       episodesCount: 18,
-      language: "Français",
-      description: "Un voyage sonore à travers la musique, la littérature orale et le patrimoine vivant du Mali.",
+      language: "FranÃ§ais",
+      description: "Un voyage sonore Ã  travers la musique, la littÃ©rature orale et le patrimoine vivant du Mali.",
     },
     {
       id: "p4",
@@ -53,18 +53,18 @@ export default function PodcastsCatalogPage() {
       badge: "Bamanankan",
       episodesCount: 40,
       language: "Bamanankan",
-      description: "Sɛbɛnnikɛla, maana ani tarikuw bamanankan kɔnɔ.",
+      description: "SÉ›bÉ›nnikÉ›la, maana ani tarikuw bamanankan kÉ”nÉ”.",
     },
     {
       id: "p5",
       name: "Afrique Demain",
       slug: "afrique-demain",
-      author: "Dr. Moussa Koné",
+      author: "Dr. Moussa KonÃ©",
       cover: "/images/cover-culture.jpg",
       badge: "Prospective",
       episodesCount: 15,
-      language: "Français",
-      description: "Transitions énergétiques, innovations technologiques et défis du continent.",
+      language: "FranÃ§ais",
+      description: "Transitions Ã©nergÃ©tiques, innovations technologiques et dÃ©fis du continent.",
     },
     {
       id: "p6",
@@ -75,7 +75,7 @@ export default function PodcastsCatalogPage() {
       badge: "Musique",
       episodesCount: 28,
       language: "Bamanankan",
-      description: "L'exploration des ponts entre les mélodies traditionnelles mandingues et la production moderne.",
+      description: "L'exploration des ponts entre les mÃ©lodies traditionnelles mandingues et la production moderne.",
     },
   ];
 
@@ -87,7 +87,7 @@ export default function PodcastsCatalogPage() {
     const matchesLang =
       selectedLanguage === "ALL" ||
       (selectedLanguage === "bm" && (p.language.includes("Bamanankan") || p.language.includes("BM"))) ||
-      (selectedLanguage === "fr" && (p.language.includes("Français") || p.language.includes("FR")));
+      (selectedLanguage === "fr" && (p.language.includes("FranÃ§ais") || p.language.includes("FR")));
     return matchesSearch && matchesLang;
   });
 
@@ -100,10 +100,10 @@ export default function PodcastsCatalogPage() {
           <span>CATALOGUE OFFICIEL</span>
         </div>
         <h1 className="text-3xl md:text-4xl font-headline font-black text-white">
-          Tous les Podcasts & Émissions
+          Tous les Podcasts & Ã‰missions
         </h1>
         <p className="text-xs md:text-sm text-[#B8B8B8] max-w-2xl leading-relaxed">
-          Découvrez la collection complète des séries audio et débats enregistrés à Bamako et dans toute la sous-région.
+          DÃ©couvrez la collection complÃ¨te des sÃ©ries audio et dÃ©bats enregistrÃ©s Ã  Bamako et dans toute la sous-rÃ©gion.
         </p>
       </div>
 
@@ -116,7 +116,7 @@ export default function PodcastsCatalogPage() {
               type="text"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="Filtrer les émissions..."
+              placeholder="Filtrer les Ã©missions..."
               className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#757575] text-xs rounded-xl py-2 pl-9 pr-4 outline-none"
             />
           </div>
@@ -136,7 +136,7 @@ export default function PodcastsCatalogPage() {
                 selectedLanguage === "bm" ? "bg-[#FFBF00] text-[#0B0B0B]" : "text-[#888888] hover:text-white"
               }`}
             >
-              🇲🇱 Bamanankan
+              ðŸ‡²ðŸ‡± Bamanankan
             </button>
             <button
               onClick={() => setSelectedLanguage("fr")}
@@ -144,7 +144,7 @@ export default function PodcastsCatalogPage() {
                 selectedLanguage === "fr" ? "bg-[#FFBF00] text-[#0B0B0B]" : "text-[#888888] hover:text-white"
               }`}
             >
-              🇫🇷 Français
+              ðŸ‡«ðŸ‡· FranÃ§ais
             </button>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function PodcastsCatalogPage() {
                 {podcast.description}
               </p>
               <p className="text-[11px] text-[#FFBF00] pt-2 font-medium">
-                {podcast.episodesCount} épisodes disponibles
+                {podcast.episodesCount} Ã©pisodes disponibles
               </p>
             </div>
           </Link>
@@ -186,3 +186,4 @@ export default function PodcastsCatalogPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -31,7 +31,7 @@ export const SearchBar = ({ initialQuery = "" }: { initialQuery?: string }) => {
     }
   }, []);
 
-  // Détection de clic extérieur
+  // DÃ©tection de clic extÃ©rieur
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -102,7 +102,7 @@ export const SearchBar = ({ initialQuery = "" }: { initialQuery?: string }) => {
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
-          placeholder="Rechercher un podcast, un épisode, Modibo Keita, Bamanankan..."
+          placeholder="Rechercher un podcast, un Ã©pisode, Modibo Keita, Bamanankan..."
           className="w-full bg-[#121722] text-white border border-[#1E2638] focus:border-[#E5A93C] rounded-full py-3 pl-11 pr-10 text-sm outline-none transition shadow-inner placeholder-gray-500"
         />
         <Search className="w-5 h-5 text-gray-400 absolute left-3.5 top-3.5" />
@@ -120,10 +120,10 @@ export const SearchBar = ({ initialQuery = "" }: { initialQuery?: string }) => {
         )}
       </form>
 
-      {/* Popover Autocomplétion & Historique */}
+      {/* Popover AutocomplÃ©tion & Historique */}
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-[#121722] border border-[#1E2638] rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-[#1E2638]">
-          {/* Autocomplétion en direct */}
+          {/* AutocomplÃ©tion en direct */}
           {suggestions.length > 0 && (
             <div className="p-2 space-y-1">
               <p className="px-3 py-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
@@ -155,12 +155,12 @@ export const SearchBar = ({ initialQuery = "" }: { initialQuery?: string }) => {
             </div>
           )}
 
-          {/* Historique des Recherches Récents */}
+          {/* Historique des Recherches RÃ©cents */}
           {recentSearches.length > 0 && (
             <div className="p-3 space-y-2">
               <div className="flex justify-between items-center px-1">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center space-x-1">
-                  <Clock className="w-3 h-3 mr-1" /> Recherches récentes
+                  <Clock className="w-3 h-3 mr-1" /> Recherches rÃ©centes
                 </span>
                 <button
                   onClick={clearAllRecent}
@@ -197,3 +197,4 @@ export const SearchBar = ({ initialQuery = "" }: { initialQuery?: string }) => {
     </div>
   );
 };
+

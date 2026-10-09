@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { useAuthStore } from "@/store/authStore";
 
 type Notif = { id: string; type: string; title: string; body?: string | null; link?: string | null; readAt?: string | null; createdAt: string };
 
-/** Cloche de notifications : compteur de non-lues (interrogé toutes les 60 s) et liste déroulante. */
+/** Cloche de notifications : compteur de non-lues (interrogÃ© toutes les 60 s) et liste dÃ©roulante. */
 export function NotificationBell({ align = "right" }: { align?: "right" | "left" }) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -29,7 +29,7 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
   useEffect(() => {
     if (!isAuthenticated) return;
     refreshCount();
-    // Pas d'interrogation quand l'onglet est caché.
+    // Pas d'interrogation quand l'onglet est cachÃ©.
     const t = setInterval(() => document.visibilityState === "visible" && refreshCount(), 60000);
     return () => clearInterval(t);
   }, [isAuthenticated, refreshCount]);
@@ -102,7 +102,7 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
           </div>
           <div className="max-h-96 overflow-y-auto">
             {!items ? (
-              <p className="p-6 text-center text-xs text-gray-500">Chargement…</p>
+              <p className="p-6 text-center text-xs text-gray-500">Chargementâ€¦</p>
             ) : items.length === 0 ? (
               <p className="p-6 text-center text-xs text-gray-500">Aucune notification pour le moment.</p>
             ) : (
@@ -130,3 +130,4 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
     </div>
   );
 }
+

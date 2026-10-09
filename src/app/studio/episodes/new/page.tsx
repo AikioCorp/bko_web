@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useRef } from "react";
 import useSWR from "swr";
@@ -55,7 +55,7 @@ export default function NewEpisodePage() {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
       if (selected.size > 250 * 1024 * 1024) {
-        alert("Le fichier audio dépasse la taille maximale autorisée de 250 Mo.");
+        alert("Le fichier audio dÃ©passe la taille maximale autorisÃ©e de 250 Mo.");
         return;
       }
       setFile(selected);
@@ -65,18 +65,18 @@ export default function NewEpisodePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!podcastId || !title.trim() || !file) {
-      alert("Veuillez sélectionner un podcast, renseigner un titre et choisir un fichier audio.");
+      alert("Veuillez sÃ©lectionner un podcast, renseigner un titre et choisir un fichier audio.");
       return;
     }
 
     if (file.size > 250 * 1024 * 1024) {
-      alert("Le fichier audio dépasse la limite autorisée de 250 Mo.");
+      alert("Le fichier audio dÃ©passe la limite autorisÃ©e de 250 Mo.");
       return;
     }
 
     setIsSubmitting(true);
     setUploadProgress(0);
-    setUploadStatusText("Création du brouillon de l'épisode...");
+    setUploadStatusText("CrÃ©ation du brouillon de l'Ã©pisode...");
     try {
       // 1. Create episode draft
       const metaRes = await fetchApi(`/creator/podcasts/${podcastId}/episodes`, {
@@ -93,7 +93,7 @@ export default function NewEpisodePage() {
       const newEpisode = metaRes.data;
 
       // 2. Prepare native R2 presigned upload session
-      setUploadStatusText("Préparation du téléversement sécurisé...");
+      setUploadStatusText("PrÃ©paration du tÃ©lÃ©versement sÃ©curisÃ©...");
       const sessionRes = await fetchApi("/creator/uploads", {
         method: "POST",
         body: JSON.stringify({
@@ -108,7 +108,7 @@ export default function NewEpisodePage() {
       const { uploadSessionId, uploadUrl } = sessionRes.data;
 
       // 3. Upload file directly to S3/R2 storage with progress
-      setUploadStatusText("Téléversement du fichier audio en cours...");
+      setUploadStatusText("TÃ©lÃ©versement du fichier audio en cours...");
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", uploadUrl, true);
       xhr.setRequestHeader("Content-Type", file.type || "audio/mpeg");
@@ -121,9 +121,9 @@ export default function NewEpisodePage() {
       await new Promise((resolve, reject) => {
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) resolve(true);
-          else reject(new Error("Échec du téléversement vers le stockage"));
+          else reject(new Error("Ã‰chec du tÃ©lÃ©versement vers le stockage"));
         };
-        xhr.onerror = () => reject(new Error("Erreur de connexion lors du téléversement"));
+        xhr.onerror = () => reject(new Error("Erreur de connexion lors du tÃ©lÃ©versement"));
         xhr.send(file);
       });
 
@@ -141,7 +141,7 @@ export default function NewEpisodePage() {
 
     } catch (error: any) {
       console.error(error);
-      alert(error.message || "Une erreur est survenue lors de la création.");
+      alert(error.message || "Une erreur est survenue lors de la crÃ©ation.");
       setIsSubmitting(false);
       setUploadProgress(0);
       setUploadStatusText("");
@@ -155,8 +155,8 @@ export default function NewEpisodePage() {
           <CheckCircle className="w-12 h-12 text-green-500" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold text-white">Épisode enregistré !</h1>
-          <p className="text-[#888]">Votre fichier audio a été téléversé avec succès. Redirection vers vos épisodes...</p>
+          <h1 className="text-3xl font-extrabold text-white">Ã‰pisode enregistrÃ© !</h1>
+          <p className="text-[#888]">Votre fichier audio a Ã©tÃ© tÃ©lÃ©versÃ© avec succÃ¨s. Redirection vers vos Ã©pisodes...</p>
         </div>
       </div>
     );
@@ -170,10 +170,10 @@ export default function NewEpisodePage() {
         </Link>
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            Ajouter un épisode
+            Ajouter un Ã©pisode
           </h1>
           <p className="text-[#888888]">
-            Renseignez les détails et téléversez votre fichier audio.
+            Renseignez les dÃ©tails et tÃ©lÃ©versez votre fichier audio.
           </p>
         </div>
       </div>
@@ -183,10 +183,10 @@ export default function NewEpisodePage() {
           <CardHeader className="border-b border-[#222] pb-4">
             <CardTitle className="text-xl flex items-center gap-2">
               <Radio className="w-5 h-5 text-[#FFBF00]" />
-              Informations générales
+              Informations gÃ©nÃ©rales
             </CardTitle>
             <CardDescription className="text-[#888]">
-              Choisissez l'émission et décrivez l'épisode.
+              Choisissez l'Ã©mission et dÃ©crivez l'Ã©pisode.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
@@ -202,7 +202,7 @@ export default function NewEpisodePage() {
                   onChange={(e) => setPodcastId(e.target.value)}
                   required
                 >
-                  <option value="" disabled>Sélectionnez un podcast...</option>
+                  <option value="" disabled>SÃ©lectionnez un podcast...</option>
                   {podcasts.map((p: any) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
@@ -211,9 +211,9 @@ export default function NewEpisodePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[#CCC]">Titre de l'épisode *</label>
+              <label className="text-sm font-medium text-[#CCC]">Titre de l'Ã©pisode *</label>
               <Input
-                placeholder="Ex: Épisode 4 - Les origines"
+                placeholder="Ex: Ã‰pisode 4 - Les origines"
                 className="bg-[#0E0E0E] border-[#333] text-white focus-visible:ring-[#FFBF00]"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -222,9 +222,9 @@ export default function NewEpisodePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[#CCC]">Description (Notes de l'émission)</label>
+              <label className="text-sm font-medium text-[#CCC]">Description (Notes de l'Ã©mission)</label>
               <textarea
-                placeholder="Décrivez le contenu de l'épisode, les invités, les liens pertinents..."
+                placeholder="DÃ©crivez le contenu de l'Ã©pisode, les invitÃ©s, les liens pertinents..."
                 className="flex w-full rounded-md border border-[#333] bg-[#0E0E0E] px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] min-h-[120px] resize-y"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -233,7 +233,7 @@ export default function NewEpisodePage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[#CCC]">Numéro de Saison</label>
+                <label className="text-sm font-medium text-[#CCC]">NumÃ©ro de Saison</label>
                 <Input
                   type="number"
                   min="1"
@@ -244,7 +244,7 @@ export default function NewEpisodePage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[#CCC]">Numéro d'Épisode</label>
+                <label className="text-sm font-medium text-[#CCC]">NumÃ©ro d'Ã‰pisode</label>
                 <Input
                   type="number"
                   min="1"
@@ -266,7 +266,7 @@ export default function NewEpisodePage() {
               Fichier Audio
             </CardTitle>
             <CardDescription className="text-[#888]">
-              Formats supportés: MP3, AAC, WAV (Max: 250 Mo)
+              Formats supportÃ©s: MP3, AAC, WAV (Max: 250 Mo)
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
@@ -331,12 +331,12 @@ export default function NewEpisodePage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Téléversement ({uploadProgress}%)...
+                TÃ©lÃ©versement ({uploadProgress}%)...
               </>
             ) : (
               <>
                 <Save className="w-5 h-5 mr-2" />
-                Enregistrer l'épisode
+                Enregistrer l'Ã©pisode
               </>
             )}
           </Button>
@@ -345,3 +345,4 @@ export default function NewEpisodePage() {
     </div>
   );
 }
+

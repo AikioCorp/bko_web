@@ -51,6 +51,7 @@ export default function AdminPodcastDetailsPage() {
   const [activeTab, setActiveTab] = useState("Épisodes");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isBulkPublishing, setIsBulkPublishing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -799,9 +800,21 @@ export default function AdminPodcastDetailsPage() {
                 <h2 className="text-lg font-bold text-white">Épisodes du podcast</h2>
                 <p className="text-sm text-[#757575]">Gérez la liste de tous les épisodes de cette émission.</p>
               </div>
-              <Button onClick={() => router.push(`/admin/podcasts/${id}/episodes/new`)} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
+              <div className="flex gap-2">
+                  {episodes?.some((ep: any) => ep.status === "DRAFT") && (
+                    <Button 
+                      onClick={handleBulkPublish}
+                      disabled={isBulkPublishing}
+                      className="bg-green-600 hover:bg-green-700 text-white font-bold"
+                    >
+                      {isBulkPublishing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Publier les brouillons ({episodes.filter((ep: any) => ep.status === "DRAFT").length})
+                    </Button>
+                  )}
+                  <Button onClick={() => router.push(`/admin/podcasts/${id}/episodes/new`)} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
                 Ajouter un épisode <Plus className="w-4 h-4 ml-2" />
               </Button>
+                </div>
             </div>
 
             <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl overflow-hidden">

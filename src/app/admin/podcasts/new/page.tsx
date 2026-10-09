@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -21,7 +21,7 @@ import {
   Building2,
   UserCheck,
   Globe,
-  Sparkles,
+  Star,
   ArrowRight,
   Eye,
   Info
@@ -144,7 +144,7 @@ export default function NewPodcastWizard() {
       });
 
       if (!initRes.success || !initRes.data?.uploadUrl) {
-        throw new Error(initRes.message || "Impossible d'obtenir l'URL de téléversement R2.");
+        throw new Error(initRes.message || "Impossible d'obtenir l'URL de tÃ©lÃ©versement R2.");
       }
 
       const { uploadUrl, publicUrl } = initRes.data;
@@ -156,7 +156,7 @@ export default function NewPodcastWizard() {
       });
 
       if (!uploadHttp.ok) {
-        throw new Error(`Échec de l'envoi vers Cloudflare R2 (${uploadHttp.status})`);
+        throw new Error(`Ã‰chec de l'envoi vers Cloudflare R2 (${uploadHttp.status})`);
       }
 
       setFormData(prev => ({
@@ -164,7 +164,7 @@ export default function NewPodcastWizard() {
         [folder === "covers" ? "cover" : "banner"]: publicUrl
       }));
     } catch (err: any) {
-      setError(err.message || "Erreur de téléversement de l'image.");
+      setError(err.message || "Erreur de tÃ©lÃ©versement de l'image.");
     } finally {
       if (folder === "covers") setUploadingCover(false);
       else setUploadingBanner(false);
@@ -174,15 +174,15 @@ export default function NewPodcastWizard() {
   // Enregistrement (Brouillon ou avec redirection)
   const handleSave = async (redirectTarget: "DETAILS" | "NEW_EPISODE" | "STAY") => {
     if (!formData.name.trim()) {
-      setError("Le nom de l'émission est obligatoire.");
+      setError("Le nom de l'Ã©mission est obligatoire.");
       return;
     }
     if (!formData.description.trim()) {
-      setError("La description complète est obligatoire.");
+      setError("La description complÃ¨te est obligatoire.");
       return;
     }
     if (!formData.cover) {
-      setError("La pochette de l'émission est obligatoire.");
+      setError("La pochette de l'Ã©mission est obligatoire.");
       return;
     }
 
@@ -213,7 +213,7 @@ export default function NewPodcastWizard() {
         body: JSON.stringify(payload)
       });
 
-      if (!res.success) throw new Error(res.message || "Erreur de création de l'émission");
+      if (!res.success) throw new Error(res.message || "Erreur de crÃ©ation de l'Ã©mission");
 
       localStorage.removeItem("bko_podcast_new_draft");
       const createdId = res.data.id || res.data.slug;
@@ -230,7 +230,7 @@ export default function NewPodcastWizard() {
   };
 
   // ==========================================
-  // ÉCRAN 2 — CHOIX DU PARCOURS DE CRÉATION
+  // Ã‰CRAN 2 â€” CHOIX DU PARCOURS DE CRÃ‰ATION
   // ==========================================
   if (currentScreen === "CHOICE") {
     return (
@@ -242,34 +242,34 @@ export default function NewPodcastWizard() {
             href="/admin/podcasts" 
             className="inline-flex items-center text-xs font-semibold text-[#888888] hover:text-[#FFBF00] transition-colors"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" /> Retour aux émissions
+            <ChevronLeft className="w-4 h-4 mr-1" /> Retour aux Ã©missions
           </Link>
           <div className="flex items-center gap-2 text-xs font-bold text-[#FFBF00] uppercase tracking-wider">
-            <span>Étape 1 sur 2</span>
-            <span>•</span>
-            <span>Type d'émission</span>
+            <span>Ã‰tape 1 sur 2</span>
+            <span>â€¢</span>
+            <span>Type d'Ã©mission</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white">
-            Choisir le format de votre émission
+            Choisir le format de votre Ã©mission
           </h1>
           <p className="text-sm text-[#888888] max-w-2xl">
-            Sélectionnez la structure principale de votre nouvelle émission. Le format choisi configure l'expérience par défaut de vos auditeurs et prépare la création de votre premier épisode.
+            SÃ©lectionnez la structure principale de votre nouvelle Ã©mission. Le format choisi configure l'expÃ©rience par dÃ©faut de vos auditeurs et prÃ©pare la crÃ©ation de votre premier Ã©pisode.
           </p>
         </div>
 
-        {/* Note pédagogique */}
+        {/* Note pÃ©dagogique */}
         <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-4 flex items-start gap-3.5">
           <Info className="w-5 h-5 text-[#FFBF00] shrink-0 mt-0.5" />
           <div className="text-xs text-[#B8B8B8] leading-relaxed">
-            <span className="font-bold text-white">Évolution flexible : </span>
-            Le format choisi décrit l'émission et prépare le parcours du premier épisode. Il reste possible d'ajouter d'autres formats plus tard (par exemple ajouter une vidéo filmée à un épisode d'une émission initialement audio).
+            <span className="font-bold text-white">Ã‰volution flexible : </span>
+            Le format choisi dÃ©crit l'Ã©mission et prÃ©pare le parcours du premier Ã©pisode. Il reste possible d'ajouter d'autres formats plus tard (par exemple ajouter une vidÃ©o filmÃ©e Ã  un Ã©pisode d'une Ã©mission initialement audio).
           </div>
         </div>
 
         {/* Les 3 Grandes Cartes de Format */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           
-          {/* Carte 1 : Émission audio */}
+          {/* Carte 1 : Ã‰mission audio */}
           <div 
             onClick={() => { setSelectedFormat("AUDIO"); setCurrentScreen("FORM"); }}
             className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
@@ -284,14 +284,14 @@ export default function NewPodcastWizard() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white group-hover:text-[#FFBF00] transition-colors">
-                  Émission audio
+                  Ã‰mission audio
                 </h3>
                 <span className="inline-block mt-1 text-[11px] font-semibold text-[#7DD3FC] bg-[#15232D] px-2 py-0.5 rounded border border-[#1E3A4C]">
                   Podcast vocal classique
                 </span>
               </div>
               <p className="text-xs text-[#888888] leading-relaxed">
-                Idéal pour les chroniques parlées, interviews en studio, débats, documentaires sonores et récits. Conçu pour une écoute nomade fluide.
+                IdÃ©al pour les chroniques parlÃ©es, interviews en studio, dÃ©bats, documentaires sonores et rÃ©cits. ConÃ§u pour une Ã©coute nomade fluide.
               </p>
             </div>
 
@@ -301,7 +301,7 @@ export default function NewPodcastWizard() {
             </div>
           </div>
 
-          {/* Carte 2 : Émission vidéo */}
+          {/* Carte 2 : Ã‰mission vidÃ©o */}
           <div 
             onClick={() => { setSelectedFormat("VIDEO"); setCurrentScreen("FORM"); }}
             className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
@@ -316,14 +316,14 @@ export default function NewPodcastWizard() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white group-hover:text-[#FFBF00] transition-colors">
-                  Émission vidéo
+                  Ã‰mission vidÃ©o
                 </h3>
                 <span className="inline-block mt-1 text-[11px] font-semibold text-[#D8B4FE] bg-[#1F172E] px-2 py-0.5 rounded border border-[#3B2D54]">
                   Format visuel & talk-show
                 </span>
               </div>
               <p className="text-xs text-[#888888] leading-relaxed">
-                Pour les talk-shows filmés, émissions plateau, reportages vidéo et vlogs culturels. Compatible avec les fichiers vidéo directs et les liens YouTube.
+                Pour les talk-shows filmÃ©s, Ã©missions plateau, reportages vidÃ©o et vlogs culturels. Compatible avec les fichiers vidÃ©o directs et les liens YouTube.
               </p>
             </div>
 
@@ -333,7 +333,7 @@ export default function NewPodcastWizard() {
             </div>
           </div>
 
-          {/* Carte 3 : Émission audio et vidéo */}
+          {/* Carte 3 : Ã‰mission audio et vidÃ©o */}
           <div 
             onClick={() => { setSelectedFormat("HYBRID"); setCurrentScreen("FORM"); }}
             className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
@@ -344,18 +344,18 @@ export default function NewPodcastWizard() {
           >
             <div className="space-y-4">
               <div className="w-14 h-14 rounded-xl bg-[#262012] text-[#FFBF00] border border-[#524115] flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Sparkles className="w-7 h-7" />
+                <Star className="w-7 h-7" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white group-hover:text-[#FFBF00] transition-colors">
-                  Émission audio & vidéo
+                  Ã‰mission audio & vidÃ©o
                 </h3>
                 <span className="inline-block mt-1 text-[11px] font-semibold text-[#FFBF00] bg-[#262012] px-2 py-0.5 rounded border border-[#524115]">
-                  Double diffusion intégrée
+                  Double diffusion intÃ©grÃ©e
                 </span>
               </div>
               <p className="text-xs text-[#888888] leading-relaxed">
-                Le meilleur des deux mondes : chaque épisode peut offrir une version audio pour l'écoute nomade et une version vidéo filmée pour le salon et mobile.
+                Le meilleur des deux mondes : chaque Ã©pisode peut offrir une version audio pour l'Ã©coute nomade et une version vidÃ©o filmÃ©e pour le salon et mobile.
               </p>
             </div>
 
@@ -367,16 +367,16 @@ export default function NewPodcastWizard() {
 
         </div>
 
-        {/* Entrée distincte : Flux RSS */}
+        {/* EntrÃ©e distincte : Flux RSS */}
         <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-[#171717] border border-[#2A2A2A] flex items-center justify-center text-[#FFBF00] shrink-0">
               <Rss className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-white">J'ai déjà un flux RSS</h4>
+              <h4 className="text-base font-bold text-white">J'ai dÃ©jÃ  un flux RSS</h4>
               <p className="text-xs text-[#888888] mt-0.5">
-                Vous hébergez déjà votre émission sur Acast, Anchor/Spotify for Podcasters ou un serveur dédié ? Importez-la en 4 étapes.
+                Vous hÃ©bergez dÃ©jÃ  votre Ã©mission sur Acast, Anchor/Spotify for Podcasters ou un serveur dÃ©diÃ© ? Importez-la en 4 Ã©tapes.
               </p>
             </div>
           </div>
@@ -395,12 +395,12 @@ export default function NewPodcastWizard() {
   }
 
   // ==========================================
-  // ÉCRAN 3 — INFORMATIONS DE L’ÉMISSION
+  // Ã‰CRAN 3 â€” INFORMATIONS DE Lâ€™Ã‰MISSION
   // ==========================================
   const formatLabels = {
-    AUDIO: "Émission audio",
-    VIDEO: "Émission vidéo",
-    HYBRID: "Émission audio & vidéo",
+    AUDIO: "Ã‰mission audio",
+    VIDEO: "Ã‰mission vidÃ©o",
+    HYBRID: "Ã‰mission audio & vidÃ©o",
   };
 
   return (
@@ -417,15 +417,15 @@ export default function NewPodcastWizard() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-[#FFBF00] uppercase tracking-wider mb-1">
-              <span>Étape 2 sur 2</span>
-              <span>•</span>
-              <span>Informations générales</span>
+              <span>Ã‰tape 2 sur 2</span>
+              <span>â€¢</span>
+              <span>Informations gÃ©nÃ©rales</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-white">
-              Créer une nouvelle émission
+              CrÃ©er une nouvelle Ã©mission
             </h1>
             <p className="text-sm text-[#888888] mt-1">
-              Renseignez l'identité, les visuels, la classification et le responsable de l'émission.
+              Renseignez l'identitÃ©, les visuels, la classification et le responsable de l'Ã©mission.
             </p>
           </div>
 
@@ -443,58 +443,58 @@ export default function NewPodcastWizard() {
         </div>
       )}
 
-      {/* Disposition principale : Formulaire (gauche) + Aperçu en direct (droite) */}
+      {/* Disposition principale : Formulaire (gauche) + AperÃ§u en direct (droite) */}
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         
         {/* Colonne Formulaire (2/3 sur desktop) */}
         <div className="w-full lg:flex-1 space-y-8">
           
-          {/* BLOC 1 : IDENTITÉ */}
+          {/* BLOC 1 : IDENTITÃ‰ */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
             <div className="border-b border-[#2A2A2A] pb-4">
-              <h2 className="text-base font-bold text-white">1. Identité de l'émission</h2>
-              <p className="text-xs text-[#888888] mt-0.5">Le nom et la description permettront aux auditeurs de découvrir votre série.</p>
+              <h2 className="text-base font-bold text-white">1. IdentitÃ© de l'Ã©mission</h2>
+              <p className="text-xs text-[#888888] mt-0.5">Le nom et la description permettront aux auditeurs de dÃ©couvrir votre sÃ©rie.</p>
             </div>
 
             <div className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
-                  Nom de l'émission <span className="text-[#FFBF00]">*</span>
+                  Nom de l'Ã©mission <span className="text-[#FFBF00]">*</span>
                 </label>
                 <input 
                   type="text" 
                   name="name" 
                   value={formData.name} 
                   onChange={handleChange} 
-                  placeholder="Ex: Les Voix du Mandé, Économie Bamako..."
+                  placeholder="Ex: Les Voix du MandÃ©, Ã‰conomie Bamako..."
                   className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
-                  Résumé court (Slogan / Accroche)
+                  RÃ©sumÃ© court (Slogan / Accroche)
                 </label>
                 <input 
                   type="text" 
                   name="descriptionShort" 
                   value={formData.descriptionShort} 
                   onChange={handleChange} 
-                  placeholder="Ex: Le rendez-vous hebdomadaire des récits et traditions orales."
+                  placeholder="Ex: Le rendez-vous hebdomadaire des rÃ©cits et traditions orales."
                   className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
-                  Description complète <span className="text-[#FFBF00]">*</span>
+                  Description complÃ¨te <span className="text-[#FFBF00]">*</span>
                 </label>
                 <textarea 
                   name="description" 
                   rows={5} 
                   value={formData.description} 
                   onChange={handleChange} 
-                  placeholder="Présentez le concept de l'émission, les thèmes abordés, le ton et la fréquence de diffusion..."
+                  placeholder="PrÃ©sentez le concept de l'Ã©mission, les thÃ¨mes abordÃ©s, le ton et la frÃ©quence de diffusion..."
                   className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555] resize-none" 
                 />
               </div>
@@ -504,20 +504,20 @@ export default function NewPodcastWizard() {
           {/* BLOC 2 : VISUELS */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
             <div className="border-b border-[#2A2A2A] pb-4">
-              <h2 className="text-base font-bold text-white">2. Identité visuelle</h2>
-              <p className="text-xs text-[#888888] mt-0.5">Pochette carrée obligatoire et bannière d'en-tête facultative.</p>
+              <h2 className="text-base font-bold text-white">2. IdentitÃ© visuelle</h2>
+              <p className="text-xs text-[#888888] mt-0.5">Pochette carrÃ©e obligatoire et banniÃ¨re d'en-tÃªte facultative.</p>
             </div>
 
             <div className="space-y-6">
               {/* Pochette */}
               <div>
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
-                  Pochette carrée (1:1, min 1400×1400 px) <span className="text-[#FFBF00]">*</span>
+                  Pochette carrÃ©e (1:1, min 1400Ã—1400 px) <span className="text-[#FFBF00]">*</span>
                 </label>
                 <div className="flex flex-col sm:flex-row gap-5 items-start">
                   <div className="w-28 h-28 shrink-0 bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl overflow-hidden flex items-center justify-center relative group">
                     {formData.cover ? (
-                      <img src={formData.cover} alt="Aperçu pochette" className="w-full h-full object-cover" />
+                      <img src={formData.cover} alt="AperÃ§u pochette" className="w-full h-full object-cover" />
                     ) : (
                       <ImageIcon className="w-8 h-8 text-[#444444]" />
                     )}
@@ -539,7 +539,7 @@ export default function NewPodcastWizard() {
                     />
                     <label className="w-full flex items-center justify-center bg-[#0B0B0B] border border-[#2A2A2A] border-dashed text-white hover:bg-[#202020] rounded-lg h-10 px-4 cursor-pointer text-xs font-semibold transition-colors">
                       {uploadingCover ? (
-                        <><Loader2 className="w-4 h-4 mr-2 animate-spin text-[#FFBF00]" /> Téléversement vers Cloudflare R2...</>
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin text-[#FFBF00]" /> TÃ©lÃ©versement vers Cloudflare R2...</>
                       ) : (
                         <><UploadCloud className="w-4 h-4 mr-2 text-[#FFBF00]" /> Importer un fichier image (JPG, PNG, WebP)</>
                       )}
@@ -558,10 +558,10 @@ export default function NewPodcastWizard() {
                 </div>
               </div>
 
-              {/* Bannière */}
+              {/* BanniÃ¨re */}
               <div className="pt-4 border-t border-[#2A2A2A]">
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
-                  Bannière de couverture (Optionnel, format paysage 16:9)
+                  BanniÃ¨re de couverture (Optionnel, format paysage 16:9)
                 </label>
                 <div className="space-y-3">
                   <input 
@@ -569,14 +569,14 @@ export default function NewPodcastWizard() {
                     name="banner" 
                     value={formData.banner} 
                     onChange={handleChange} 
-                    placeholder="URL directe de la bannière (https://...)"
+                    placeholder="URL directe de la banniÃ¨re (https://...)"
                     className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
                   />
                   <label className="w-full flex items-center justify-center bg-[#0B0B0B] border border-[#2A2A2A] border-dashed text-white hover:bg-[#202020] rounded-lg h-10 px-4 cursor-pointer text-xs font-semibold transition-colors">
                     {uploadingBanner ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin text-[#FFBF00]" /> Téléversement de la bannière...</>
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin text-[#FFBF00]" /> TÃ©lÃ©versement de la banniÃ¨re...</>
                     ) : (
-                      <><UploadCloud className="w-4 h-4 mr-2 text-[#FFBF00]" /> Importer une bannière</>
+                      <><UploadCloud className="w-4 h-4 mr-2 text-[#FFBF00]" /> Importer une banniÃ¨re</>
                     )}
                     <input 
                       type="file" 
@@ -598,7 +598,7 @@ export default function NewPodcastWizard() {
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
             <div className="border-b border-[#2A2A2A] pb-4">
               <h2 className="text-base font-bold text-white">3. Classification & Langues</h2>
-              <p className="text-xs text-[#888888] mt-0.5">Catégorisez l'émission pour faciliter sa recommandation.</p>
+              <p className="text-xs text-[#888888] mt-0.5">CatÃ©gorisez l'Ã©mission pour faciliter sa recommandation.</p>
             </div>
 
             <div className="space-y-5">
@@ -665,10 +665,10 @@ export default function NewPodcastWizard() {
                 </div>
               </div>
 
-              {/* Catégories */}
+              {/* CatÃ©gories */}
               <div>
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-3">
-                  Catégories (Sélectionnez au moins une catégorie)
+                  CatÃ©gories (SÃ©lectionnez au moins une catÃ©gorie)
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {categories.map((c: any) => {
@@ -702,7 +702,7 @@ export default function NewPodcastWizard() {
                   name="city" 
                   value={formData.city} 
                   onChange={handleChange} 
-                  placeholder="Ex: Bamako, Ségou, Sikasso..."
+                  placeholder="Ex: Bamako, SÃ©gou, Sikasso..."
                   className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
                 />
               </div>
@@ -712,14 +712,14 @@ export default function NewPodcastWizard() {
           {/* BLOC 4 : GESTION & RESPONSABLE */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
             <div className="border-b border-[#2A2A2A] pb-4">
-              <h2 className="text-base font-bold text-white">4. Responsable & Propriété</h2>
-              <p className="text-xs text-[#888888] mt-0.5">Attribution éditoriale et gestion des droits de l'émission.</p>
+              <h2 className="text-base font-bold text-white">4. Responsable & PropriÃ©tÃ©</h2>
+              <p className="text-xs text-[#888888] mt-0.5">Attribution Ã©ditoriale et gestion des droits de l'Ã©mission.</p>
             </div>
 
             <div className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
-                  Organisation ou Créateur responsable
+                  Organisation ou CrÃ©ateur responsable
                 </label>
                 <select
                   name="organizationId"
@@ -727,20 +727,20 @@ export default function NewPodcastWizard() {
                   onChange={handleChange}
                   className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none"
                 >
-                  <option value="">Aucune organisation (Créateur indépendant / Plateforme)</option>
+                  <option value="">Aucune organisation (CrÃ©ateur indÃ©pendant / Plateforme)</option>
                   {organizations.map((org: any) => (
                     <option key={org.id} value={org.id}>{org.name}</option>
                   ))}
                 </select>
                 <p className="text-xs text-[#757575] mt-1.5">
-                  Permet de regrouper les émissions par maison de production ou radio partenaire.
+                  Permet de regrouper les Ã©missions par maison de production ou radio partenaire.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
-                    Statut de propriété
+                    Statut de propriÃ©tÃ©
                   </label>
                   <select
                     name="ownershipStatus"
@@ -748,8 +748,8 @@ export default function NewPodcastWizard() {
                     onChange={handleChange}
                     className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none"
                   >
-                    <option value="UNCLAIMED">Propriétaire non revendiqué (Géré par la plateforme)</option>
-                    <option value="CLAIMED">Revendiqué (Propriétaire officiel authentifié)</option>
+                    <option value="UNCLAIMED">PropriÃ©taire non revendiquÃ© (GÃ©rÃ© par la plateforme)</option>
+                    <option value="CLAIMED">RevendiquÃ© (PropriÃ©taire officiel authentifiÃ©)</option>
                   </select>
                 </div>
 
@@ -790,7 +790,7 @@ export default function NewPodcastWizard() {
                 onClick={() => handleSave("DETAILS")}
                 className="bg-[#1C1C1C] border-[#2A2A2A] text-white hover:bg-[#262626] text-xs font-semibold h-11 w-full sm:w-auto px-5"
               >
-                Terminer sans épisode
+                Terminer sans Ã©pisode
               </Button>
 
               <Button
@@ -800,9 +800,9 @@ export default function NewPodcastWizard() {
                 className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-11 w-full sm:w-auto px-6"
               >
                 {isSubmitting ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Création en cours...</>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> CrÃ©ation en cours...</>
                 ) : (
-                  <>Continuer vers le premier épisode <ArrowRight className="w-4 h-4 ml-2" /></>
+                  <>Continuer vers le premier Ã©pisode <ArrowRight className="w-4 h-4 ml-2" /></>
                 )}
               </Button>
             </div>
@@ -810,11 +810,11 @@ export default function NewPodcastWizard() {
 
         </div>
 
-        {/* Colonne Aperçu en Direct (1/3 sur desktop, sous le formulaire sur mobile) */}
+        {/* Colonne AperÃ§u en Direct (1/3 sur desktop, sous le formulaire sur mobile) */}
         <div className="w-full lg:w-80 shrink-0 sticky top-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-[#888888] uppercase tracking-wider flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5 text-[#FFBF00]" /> Aperçu de l'émission
+              <Eye className="w-3.5 h-3.5 text-[#FFBF00]" /> AperÃ§u de l'Ã©mission
             </h3>
             <span className="text-[10px] text-[#FFBF00] bg-[#FFBF00]/10 px-2 py-0.5 rounded font-bold">
               En direct
@@ -822,13 +822,13 @@ export default function NewPodcastWizard() {
           </div>
 
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl overflow-hidden shadow-xl">
-            {/* Bannière ou placeholder */}
+            {/* BanniÃ¨re ou placeholder */}
             <div className="w-full h-24 bg-[#0B0B0B] relative overflow-hidden">
               {formData.banner ? (
-                <img src={formData.banner} alt="Bannière" className="w-full h-full object-cover" />
+                <img src={formData.banner} alt="BanniÃ¨re" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-[#121212] flex items-center justify-center">
-                  <span className="text-[10px] text-[#444444]">Bannière d'en-tête (Optionnelle)</span>
+                  <span className="text-[10px] text-[#444444]">BanniÃ¨re d'en-tÃªte (Optionnelle)</span>
                 </div>
               )}
             </div>
@@ -851,10 +851,10 @@ export default function NewPodcastWizard() {
                   {formatLabels[selectedFormat]}
                 </span>
                 <h4 className="text-base font-extrabold text-white leading-tight">
-                  {formData.name || "Titre de l'émission"}
+                  {formData.name || "Titre de l'Ã©mission"}
                 </h4>
                 <p className="text-xs text-[#888888] mt-1 line-clamp-2">
-                  {formData.descriptionShort || formData.description || "Description de l'émission qui s'affichera sur Bamako Podcast..."}
+                  {formData.descriptionShort || formData.description || "Description de l'Ã©mission qui s'affichera sur Bamako Podcast..."}
                 </p>
               </div>
 
@@ -871,7 +871,7 @@ export default function NewPodcastWizard() {
                 <div className="flex items-center justify-between text-[#888888]">
                   <span>Responsable</span>
                   <span className="text-white font-semibold truncate max-w-[120px]">
-                    {formData.ownershipStatus === "UNCLAIMED" ? "Non revendiqué" : "Revendiqué"}
+                    {formData.ownershipStatus === "UNCLAIMED" ? "Non revendiquÃ©" : "RevendiquÃ©"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[#888888]">
@@ -883,7 +883,7 @@ export default function NewPodcastWizard() {
           </div>
 
           <div className="text-[11px] text-[#757575] text-center px-2">
-            La création d'une émission ne publie aucun contenu tant qu'aucun épisode n'est validé et publié.
+            La crÃ©ation d'une Ã©mission ne publie aucun contenu tant qu'aucun Ã©pisode n'est validÃ© et publiÃ©.
           </div>
         </div>
 
@@ -891,3 +891,4 @@ export default function NewPodcastWizard() {
     </div>
   );
 }
+

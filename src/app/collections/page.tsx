@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/api";
+﻿import { API_BASE_URL } from "@/lib/api";
 import React from "react";
 import Link from "next/link";
 import { FolderHeart } from "lucide-react";
@@ -23,10 +23,10 @@ export default async function CollectionsIndexPage() {
     <div className="w-full px-4 py-8 space-y-8">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-2">
         <span className="bg-[#E5A93C]/10 text-[#E5A93C] text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#E5A93C]/30 uppercase">
-          SÉLECTIONS ÉDITORIALES
+          SÃ‰LECTIONS Ã‰DITORIALES
         </span>
         <h1 className="text-3xl font-black text-white">Collections</h1>
-        <p className="text-xs text-gray-400">Des sélections thématiques préparées par l'équipe Bamako Podcast.</p>
+        <p className="text-xs text-gray-400">Des sÃ©lections thÃ©matiques prÃ©parÃ©es par l'Ã©quipe Bamako Podcast.</p>
       </div>
 
       {collections.length === 0 ? (
@@ -60,3 +60,4 @@ export default async function CollectionsIndexPage() {
     </div>
   );
 }
+

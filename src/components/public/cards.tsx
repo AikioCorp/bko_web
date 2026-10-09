@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import Link from "next/link";
@@ -72,7 +72,7 @@ export function PodcastCard({ p }: { p: PodcastLite }) {
       <div className="min-w-0">
         <p className="text-sm font-bold text-white truncate group-hover:text-[#FFBF00]">{p.name}</p>
         <p className="text-[11px] text-[#8A8A8A] truncate">
-          {[p.country?.name, p.primaryLanguage?.name, p._count ? `${p._count.episodes} épisode(s)` : null].filter(Boolean).join(" • ")}
+          {[p.country?.name, p.primaryLanguage?.name, p._count ? `${p._count.episodes} Ã©pisode(s)` : null].filter(Boolean).join(" â€¢ ")}
         </p>
       </div>
     </Link>
@@ -110,8 +110,8 @@ export function EpisodeCard({ ep, resumeAt = 0, progressPct }: { ep: EpisodeLite
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-[11px] text-[#8A8A8A] truncate">
           <Link href={`/podcasts/${ep.podcast.slug}`} className="hover:text-white">{ep.podcast.name}</Link>
-          {ep.publishedAt ? ` • ${formatDate(ep.publishedAt)}` : ""}
-          {ep.durationSeconds ? ` • ${formatDuration(ep.durationSeconds)}` : ""}
+          {ep.publishedAt ? ` â€¢ ${formatDate(ep.publishedAt)}` : ""}
+          {ep.durationSeconds ? ` â€¢ ${formatDuration(ep.durationSeconds)}` : ""}
         </p>
         <Link href={`/podcasts/${ep.podcast.slug}/episodes/${ep.slug}`} className="block text-sm font-bold text-white hover:text-[#FFBF00] line-clamp-2">
           {ep.title}
@@ -159,8 +159,9 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry: () =>
     <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-xl p-4 flex items-center justify-between gap-4">
       <span>{message}</span>
       <button onClick={onRetry} className="bg-[#262626] text-white text-xs font-bold px-3 py-1.5 rounded-lg">
-        Réessayer
+        RÃ©essayer
       </button>
     </div>
   );
 }
+

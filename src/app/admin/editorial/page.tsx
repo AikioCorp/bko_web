@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -31,7 +31,7 @@ export default function EditorialListPage() {
       router.push(`/admin/editorial/${res.data.id}`);
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de la création");
+      alert("Erreur lors de la crÃ©ation");
     } finally {
       setIsSubmitting(false);
     }
@@ -49,8 +49,8 @@ export default function EditorialListPage() {
     <div className="w-full">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-2">Sélections Éditoriales</h1>
-          <p className="text-[#888888]">Gérez les sections de la page d'accueil et de découverte.</p>
+          <h1 className="text-2xl font-bold text-white mb-2">SÃ©lections Ã‰ditoriales</h1>
+          <p className="text-[#888888]">GÃ©rez les sections de la page d'accueil et de dÃ©couverte.</p>
         </div>
         <button
           onClick={() => setIsCreating(true)}
@@ -63,7 +63,7 @@ export default function EditorialListPage() {
 
       {isCreating && (
         <form onSubmit={handleCreate} className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6 mb-8">
-          <h2 className="text-lg font-semibold text-white mb-4">Créer une section</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">CrÃ©er une section</h2>
           <div className="flex flex-col gap-4">
             <div>
               <label className="block text-sm font-medium text-[#888888] mb-1">Titre de la section</label>
@@ -73,7 +73,7 @@ export default function EditorialListPage() {
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl px-4 py-2 text-white outline-none focus:border-[#444444]"
-                placeholder="Ex: Nouveautés"
+                placeholder="Ex: NouveautÃ©s"
                 required
               />
             </div>
@@ -84,10 +84,10 @@ export default function EditorialListPage() {
                 onChange={(e) => setNewType(e.target.value)}
                 className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl px-4 py-2 text-white outline-none focus:border-[#444444]"
               >
-                <option value="HERO">Hero (Bannière d'en-tête)</option>
+                <option value="HERO">Hero (BanniÃ¨re d'en-tÃªte)</option>
                 <option value="PODCAST_ROW">Ligne de Podcasts</option>
-                <option value="EPISODE_ROW">Ligne d'Épisodes</option>
-                <option value="PERSON_ROW">Ligne de Personnalités</option>
+                <option value="EPISODE_ROW">Ligne d'Ã‰pisodes</option>
+                <option value="PERSON_ROW">Ligne de PersonnalitÃ©s</option>
                 <option value="COLLECTION_ROW">Ligne de Collections</option>
               </select>
             </div>
@@ -104,7 +104,7 @@ export default function EditorialListPage() {
                 disabled={isSubmitting || !newTitle.trim()}
                 className="px-4 py-2 rounded-xl text-sm font-medium bg-white text-black hover:bg-gray-100 disabled:opacity-50 transition-colors"
               >
-                {isSubmitting ? "Création..." : "Créer"}
+                {isSubmitting ? "CrÃ©ation..." : "CrÃ©er"}
               </button>
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function EditorialListPage() {
         <div className="text-center py-12 border border-[#2A2A2A] border-dashed rounded-2xl bg-[#0B0B0B]">
           <LayoutList className="w-12 h-12 text-[#333333] mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">Aucune section</h3>
-          <p className="text-[#888888]">Créez votre première sélection pour animer l'application.</p>
+          <p className="text-[#888888]">CrÃ©ez votre premiÃ¨re sÃ©lection pour animer l'application.</p>
         </div>
       ) : (
         <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl overflow-hidden">
@@ -125,7 +125,7 @@ export default function EditorialListPage() {
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider w-10"></th>
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Titre</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Type</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Éléments</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Ã‰lÃ©ments</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Statut</th>
                 <th className="px-6 py-4 text-right"></th>
               </tr>
@@ -148,7 +148,7 @@ export default function EditorialListPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-[#888888]">
-                    {section._count.items} {section._count.items > 1 ? "éléments" : "élément"}
+                    {section._count.items} {section._count.items > 1 ? "Ã©lÃ©ments" : "Ã©lÃ©ment"}
                   </td>
                   <td className="px-6 py-4">
                     {section.isActive ? (
@@ -178,3 +178,4 @@ export default function EditorialListPage() {
     </div>
   );
 }
+

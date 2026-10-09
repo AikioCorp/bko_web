@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { Suspense, useState } from "react";
@@ -42,7 +42,7 @@ function VerifyOtpInner() {
         setSuccess(true);
         setTimeout(() => router.push("/login"), 1500);
       } else {
-        setError(json.error?.message || "Code invalide ou expiré.");
+        setError(json.error?.message || "Code invalide ou expirÃ©.");
       }
     } catch (err) {
       setError("Impossible de contacter le serveur.");
@@ -58,9 +58,9 @@ function VerifyOtpInner() {
           <div className="mx-auto w-12 h-12 rounded-full bg-[#1C180E] border border-[#FFBF00]/30 flex items-center justify-center">
             <ShieldCheck className="w-6 h-6 text-[#FFBF00]" />
           </div>
-          <h1 className="text-2xl font-headline font-black text-white">Vérifiez votre compte</h1>
+          <h1 className="text-2xl font-headline font-black text-white">VÃ©rifiez votre compte</h1>
           <p className="text-xs text-[#B8B8B8]">
-            Saisissez le code à 6 chiffres envoyé{email ? " à " : "."}
+            Saisissez le code Ã  6 chiffres envoyÃ©{email ? " Ã  " : "."}
             {email && <span className="text-white font-semibold">{email}</span>}
           </p>
         </div>
@@ -73,12 +73,12 @@ function VerifyOtpInner() {
 
         {success ? (
           <div className="bg-green-500/10 border border-green-500/30 text-green-400 p-4 rounded-xl text-xs font-semibold text-center">
-            Compte vérifié ✓ Redirection vers la connexion…
+            Compte vÃ©rifiÃ© âœ“ Redirection vers la connexionâ€¦
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-[#B8B8B8] mb-1">Code de vérification</label>
+              <label className="block text-xs font-bold text-[#B8B8B8] mb-1">Code de vÃ©rification</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -97,7 +97,7 @@ function VerifyOtpInner() {
               disabled={loading}
               className="w-full bg-[#FFBF00] text-[#0B0B0B] font-extrabold py-3.5 rounded-xl text-xs hover:bg-[#E5AB00] transition shadow-lg flex items-center justify-center space-x-2"
             >
-              <span>{loading ? "Vérification…" : "VÉRIFIER"}</span>
+              <span>{loading ? "VÃ©rificationâ€¦" : "VÃ‰RIFIER"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -116,8 +116,9 @@ function VerifyOtpInner() {
 
 export default function VerifyOtpPage() {
   return (
-    <Suspense fallback={<div className="max-w-md mx-auto px-4 py-12 text-center text-gray-400 text-xs">Chargement…</div>}>
+    <Suspense fallback={<div className="max-w-md mx-auto px-4 py-12 text-center text-gray-400 text-xs">Chargementâ€¦</div>}>
       <VerifyOtpInner />
     </Suspense>
   );
 }
+

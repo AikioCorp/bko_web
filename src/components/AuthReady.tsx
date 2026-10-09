@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 
-// Les pages protégées lisent le token en mémoire dès leur montage : on attend donc la
+// Les pages protÃ©gÃ©es lisent le token en mÃ©moire dÃ¨s leur montage : on attend donc la
 // restauration de session (refresh par cookie) avant de les afficher.
 export function AuthReady({ children }: { children: React.ReactNode }) {
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -16,3 +16,4 @@ export function AuthReady({ children }: { children: React.ReactNode }) {
   if (isLoading) return null;
   return <>{children}</>;
 }
+

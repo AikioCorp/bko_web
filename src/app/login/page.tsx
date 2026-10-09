@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
@@ -29,13 +29,13 @@ function AuthComponent() {
   const { user, isAuthenticated, setAuth, logout } = useAuthStore();
 
   const tabParam = searchParams.get("tab");
-  // Redirection post-connexion limitée aux chemins internes (évite l'open redirect : "//site.com", "https://…").
+  // Redirection post-connexion limitÃ©e aux chemins internes (Ã©vite l'open redirect : "//site.com", "https://â€¦").
   const rawRedirect = searchParams.get("redirect") || "";
   const redirect = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.includes("\\") ? rawRedirect : "";
 
-  // Calcule la destination post-connexion en fonction du rôle et de l'intention
+  // Calcule la destination post-connexion en fonction du rÃ´le et de l'intention
   const getDestinationForUser = (userRoles: string[] = [], explicitTarget?: string | null) => {
-    // Si une page précise était demandée (ex: /podcasts/x, /studio/new, /admin/users)
+    // Si une page prÃ©cise Ã©tait demandÃ©e (ex: /podcasts/x, /studio/new, /admin/users)
     if (explicitTarget && explicitTarget !== "/" && explicitTarget !== "/login") {
       return explicitTarget;
     }
@@ -47,16 +47,16 @@ function AuthComponent() {
       return "/admin/dashboard";
     }
 
-    // 2. Créateur ou Éditeur -> Redirection directe vers le Studio
+    // 2. CrÃ©ateur ou Ã‰diteur -> Redirection directe vers le Studio
     if (roles.includes("CREATOR") || roles.includes("EDITOR")) {
       return "/studio";
     }
 
-    // 3. Auditeur ou rôle standard -> Accueil
+    // 3. Auditeur ou rÃ´le standard -> Accueil
     return "/";
   };
 
-  // Si l'utilisateur est déjà authentifié, le rediriger directement selon ses droits
+  // Si l'utilisateur est dÃ©jÃ  authentifiÃ©, le rediriger directement selon ses droits
   useEffect(() => {
     if (isAuthenticated && user && !isNavigating) {
       const destination = getDestinationForUser(user.roles || [], redirect);
@@ -101,7 +101,7 @@ function AuthComponent() {
   const [podcastName, setPodcastName] = useState("");
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([
     "Bamanankan",
-    "Français",
+    "FranÃ§ais",
   ]);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
@@ -241,7 +241,7 @@ function AuthComponent() {
       : user.roles?.some((r) => r.toUpperCase() === "ADMIN")
       ? "Administrateur"
       : user.roles?.some((r) => ["CREATOR", "EDITOR"].includes(r.toUpperCase()))
-      ? "Créateur"
+      ? "CrÃ©ateur"
       : "Auditeur";
 
     return (
@@ -252,7 +252,7 @@ function AuthComponent() {
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white">Vous êtes déjà connecté</h1>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-white">Vous Ãªtes dÃ©jÃ  connectÃ©</h1>
             <p className="text-sm text-gray-300">
               Session active pour <span className="font-bold text-white">{user.fullName || user.email}</span>
             </p>
@@ -270,7 +270,7 @@ function AuthComponent() {
               href={destination}
               className="flex-1 py-3 px-4 rounded-xl bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs transition-all flex items-center justify-center gap-2 shadow"
             >
-              <span>Accéder à mon espace</span>
+              <span>AccÃ©der Ã  mon espace</span>
             </Link>
 
             <button
@@ -356,7 +356,7 @@ function AuthComponent() {
               <div className="flex items-center justify-between text-xs">
                 <label className="font-bold text-white">Mot de passe</label>
                 <Link href="/forgot-password" className="text-[11px] text-[#FFBF00] hover:underline">
-                  Mot de passe oublié ?
+                  Mot de passe oubliÃ© ?
                 </Link>
               </div>
               <div className="relative flex items-center">
@@ -366,7 +366,7 @@ function AuthComponent() {
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 pl-10 pr-10 outline-none transition-colors"
                 />
                 <button
@@ -393,7 +393,7 @@ function AuthComponent() {
 
               <div className="flex items-center gap-1 text-[11px] text-[#757575]">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#FFBF00]" />
-                <span>Session sécurisée</span>
+                <span>Session sÃ©curisÃ©e</span>
               </div>
             </div>
 
@@ -404,7 +404,7 @@ function AuthComponent() {
               disabled={loading}
               className="w-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold py-3 sm:py-3.5 rounded-xl text-xs sm:text-sm shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              <span>▶</span>
+              <span>â–¶</span>
               <span>{loading ? "Connexion en cours..." : "Se connecter"}</span>
             </button>
 
@@ -415,7 +415,7 @@ function AuthComponent() {
                   <Headphones className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">Écoute libre immédiate</h4>
+                  <h4 className="text-xs font-bold text-white">Ã‰coute libre immÃ©diate</h4>
                   <p className="text-[10px] text-[#757575]">Sans inscription requise</p>
                 </div>
               </div>
@@ -424,17 +424,17 @@ function AuthComponent() {
                 href="/"
                 className="w-full sm:w-auto text-center px-3 py-1.5 rounded-xl bg-[#1A1A1A] hover:bg-[#252525] border border-[#2E2E2E] text-white text-xs font-semibold whitespace-nowrap transition-colors"
               >
-                Continuer sans compte →
+                Continuer sans compte â†’
               </Link>
             </div>
 
             {/* Footer */}
             <div className="pt-2 text-center text-[11px] text-[#666666] flex flex-wrap items-center justify-center gap-2">
               <Link href="/explore" className="hover:underline">Centre d'aide</Link>
-              <span>•</span>
+              <span>â€¢</span>
               <Link href="/explore" className="hover:underline">Conditions</Link>
-              <span>•</span>
-              <Link href="/explore" className="hover:underline">Confidentialité</Link>
+              <span>â€¢</span>
+              <Link href="/explore" className="hover:underline">ConfidentialitÃ©</Link>
             </div>
           </form>
         ) : (
@@ -455,7 +455,7 @@ function AuthComponent() {
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="ex: Awa Traoré"
+                  placeholder="ex: Awa TraorÃ©"
                   className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 pl-10 pr-4 outline-none transition-colors"
                 />
               </div>
@@ -480,11 +480,11 @@ function AuthComponent() {
               </div>
             </div>
 
-            {/* Téléphone */}
+            {/* TÃ©lÃ©phone */}
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <label className="font-bold text-white">Numéro de téléphone</label>
-                <span className="text-[10px] text-[#757575]">Optionnel • SMS / Alertes</span>
+                <label className="font-bold text-white">NumÃ©ro de tÃ©lÃ©phone</label>
+                <span className="text-[10px] text-[#757575]">Optionnel â€¢ SMS / Alertes</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="bg-[#181818] border border-[#262626] px-3 py-2.5 rounded-xl text-xs font-semibold text-[#FFBF00] shrink-0">
@@ -504,7 +504,7 @@ function AuthComponent() {
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <label className="font-bold text-white">Mot de passe</label>
-                <span className="text-[10px] text-[#757575]">Sécurité</span>
+                <span className="text-[10px] text-[#757575]">SÃ©curitÃ©</span>
               </div>
               <div className="relative flex items-center">
                 <Lock className="w-4 h-4 text-[#757575] absolute left-3.5" />
@@ -513,7 +513,7 @@ function AuthComponent() {
                   required
                   value={registerPassword}
                   onChange={(e) => setRegisterPassword(e.target.value)}
-                  placeholder="8+ caractères, 1 majuscule, 1 chiffre"
+                  placeholder="8+ caractÃ¨res, 1 majuscule, 1 chiffre"
                   className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 pl-10 pr-10 outline-none transition-colors"
                 />
                 <button
@@ -541,7 +541,7 @@ function AuthComponent() {
                 ))}
               </div>
               <p className="text-[10px] text-[#757575]">
-                Minimum 8 caractères, dont une majuscule et un chiffre.
+                Minimum 8 caractÃ¨res, dont une majuscule et un chiffre.
               </p>
             </div>
 
@@ -558,7 +558,7 @@ function AuthComponent() {
               />
               <span>
                 J'accepte les <span className="text-[#FFBF00] font-semibold">Conditions d'utilisation</span> et la{" "}
-                <span className="text-[#FFBF00] font-semibold">Politique de confidentialité</span> de Bamako Podcast.
+                <span className="text-[#FFBF00] font-semibold">Politique de confidentialitÃ©</span> de Bamako Podcast.
               </span>
             </label>
 
@@ -571,7 +571,7 @@ function AuthComponent() {
                   onChange={(e) => setIsCreator(e.target.checked)}
                   className="w-4 h-4 accent-[#FFBF00] cursor-pointer"
                 />
-                <span className="text-sm font-bold text-white">Je suis créateur de contenu</span>
+                <span className="text-sm font-bold text-white">Je suis crÃ©ateur de contenu</span>
               </label>
               {isCreator && (
                 <div className="pt-2 space-y-1 animate-in fade-in slide-in-from-top-2">
@@ -601,7 +601,7 @@ function AuthComponent() {
               className="w-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold py-3 sm:py-3.5 rounded-xl text-xs sm:text-sm shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <UserPlus className="w-4 h-4 stroke-[2.5]" />
-              <span>{loading ? "Création en cours..." : "Créer mon compte gratuit"}</span>
+              <span>{loading ? "CrÃ©ation en cours..." : "CrÃ©er mon compte gratuit"}</span>
             </button>
 
             {/* Assurance note */}
@@ -612,10 +612,10 @@ function AuthComponent() {
             {/* Secondary actions */}
             <div className="pt-2 text-center space-y-2 text-xs">
               <Link href="/" className="text-[#B8B8B8] hover:text-white block">
-                Continuer à écouter sans compte →
+                Continuer Ã  Ã©couter sans compte â†’
               </Link>
               <p className="text-[#757575]">
-                Vous avez déjà un compte ?{" "}
+                Vous avez dÃ©jÃ  un compte ?{" "}
                 <button
                   type="button"
                   onClick={() => handleTabChange("login")}
@@ -639,3 +639,4 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import useSWR from "swr";
@@ -25,7 +25,7 @@ export default function StudioPodcastsPage() {
             Mes Podcasts
           </h1>
           <p className="text-[#888888]">
-            Gérez vos émissions, modifiez leurs informations et consultez leurs statistiques.
+            GÃ©rez vos Ã©missions, modifiez leurs informations et consultez leurs statistiques.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -38,7 +38,7 @@ export default function StudioPodcastsPage() {
           <Button className="bg-[#FFBF00] hover:bg-[#E5A800] text-[#0B0B0B] font-bold" asChild>
             <Link href="/studio/podcasts/new">
               <Plus className="w-4 h-4 mr-2" />
-              Nouvelle Émission
+              Nouvelle Ã‰mission
             </Link>
           </Button>
         </div>
@@ -59,10 +59,10 @@ export default function StudioPodcastsPage() {
           </div>
           <h3 className="text-xl font-bold text-white mb-2">Aucun podcast</h3>
           <p className="text-[#888] max-w-md mb-6">
-            Vous n'avez pas encore créé ou revendiqué de podcast sur la plateforme. Commencez par créer votre première émission !
+            Vous n'avez pas encore crÃ©Ã© ou revendiquÃ© de podcast sur la plateforme. Commencez par crÃ©er votre premiÃ¨re Ã©mission !
           </p>
           <Button className="bg-[#FFBF00] hover:bg-[#E5A800] text-[#0B0B0B] font-bold" asChild>
-            <Link href="/studio/podcasts/new">Créer un podcast</Link>
+            <Link href="/studio/podcasts/new">CrÃ©er un podcast</Link>
           </Button>
         </div>
       ) : (
@@ -87,7 +87,7 @@ export default function StudioPodcastsPage() {
                     </p>
                     <div className="mt-auto flex flex-wrap gap-2">
                       <Badge className="bg-[#222] hover:bg-[#333] text-[#AAA] border-none">
-                        {podcast._count?.episodes || 0} épisodes
+                        {podcast._count?.episodes || 0} Ã©pisodes
                       </Badge>
                       {podcast.status === "PUBLISHED" && (
                         <Badge className="bg-green-500/10 text-green-500 border-green-500/20">En ligne</Badge>
@@ -100,13 +100,13 @@ export default function StudioPodcastsPage() {
                   <Button variant="ghost" size="sm" className="text-[#888] hover:text-white hover:bg-[#2A2A2A]" asChild>
                     <a href={`/podcasts/${podcast.id}`} target="_blank" rel="noreferrer">
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Aperçu
+                      AperÃ§u
                     </a>
                   </Button>
                   <Button variant="ghost" size="sm" className="text-[#FFBF00] hover:text-[#FFBF00] hover:bg-[#FFBF00]/10" asChild>
                     <Link href={`/studio/podcasts/${podcast.id}`}>
                       <Settings className="w-4 h-4 mr-2" />
-                      Gérer
+                      GÃ©rer
                     </Link>
                   </Button>
                 </div>
@@ -118,3 +118,4 @@ export default function StudioPodcastsPage() {
     </div>
   );
 }
+

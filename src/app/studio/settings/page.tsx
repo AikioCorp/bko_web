@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { Settings } from "lucide-react";
@@ -10,10 +10,10 @@ export default function StudioSettingsPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
             <Settings className="w-7 h-7 text-[#FFBF00]" />
-            Paramètres Studio
+            ParamÃ¨tres Studio
           </h1>
           <p className="text-[#888888]">
-            Configurez votre profil créateur et vos préférences.
+            Configurez votre profil crÃ©ateur et vos prÃ©fÃ©rences.
           </p>
         </div>
       </div>
@@ -22,11 +22,12 @@ export default function StudioSettingsPage() {
         <div className="w-16 h-16 bg-[#222] rounded-full flex items-center justify-center mb-4">
           <Settings className="w-8 h-8 text-[#888]" />
         </div>
-        <h3 className="text-xl font-bold text-white mb-2">Paramètres en construction</h3>
+        <h3 className="text-xl font-bold text-white mb-2">ParamÃ¨tres en construction</h3>
         <p className="text-[#888] max-w-md">
-          Cette page vous permettra de modifier vos informations publiques de créateur, vos notifications et vos options de monétisation.
+          Cette page vous permettra de modifier vos informations publiques de crÃ©ateur, vos notifications et vos options de monÃ©tisation.
         </p>
       </div>
     </div>
   );
 }
+

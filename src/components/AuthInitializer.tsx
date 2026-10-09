@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -9,7 +9,7 @@ export function AuthInitializer() {
   useEffect(() => {
     checkAuth();
 
-    // Synchronisation multi-onglets si l'utilisateur se connecte ou se déconnecte ailleurs
+    // Synchronisation multi-onglets si l'utilisateur se connecte ou se dÃ©connecte ailleurs
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "bko_access_token" || e.key === "bko_user_profile" || e.key === "bko_refresh_token") {
         checkAuth();
@@ -22,3 +22,4 @@ export function AuthInitializer() {
 
   return null;
 }
+

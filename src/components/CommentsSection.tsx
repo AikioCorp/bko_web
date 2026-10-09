@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useState } from "react";
 import useSWRInfinite from "swr/infinite";
 import { fetchApi } from "@/lib/api";
@@ -58,7 +58,7 @@ export function CommentsSection({ episodeId, allowComments }: Props) {
     setActionError("");
     const text = draft.trim();
     if (!text) return;
-    if (text.length > 2000) return alert("Le commentaire est trop long (max 2000 caractères).");
+    if (text.length > 2000) return alert("Le commentaire est trop long (max 2000 caractÃ¨res).");
 
     setSubmitting(true);
     try {
@@ -91,11 +91,11 @@ export function CommentsSection({ episodeId, allowComments }: Props) {
         <h2 className="text-xl font-extrabold text-white mb-2">Commentaires</h2>
         {(error || actionError) && <div role="alert" className="text-sm text-red-300">
           {actionError || "Impossible de charger les commentaires."}
-          {error && <button type="button" onClick={() => mutate()} className="ml-3 underline">Réessayer</button>}
+          {error && <button type="button" onClick={() => mutate()} className="ml-3 underline">RÃ©essayer</button>}
         </div>}
         {!allowComments && (
           <p className="text-sm text-[#FFBF00] bg-[#FFBF00]/10 p-3 rounded-lg border border-[#FFBF00]/20">
-            Les commentaires sont fermés pour cet épisode.
+            Les commentaires sont fermÃ©s pour cet Ã©pisode.
           </p>
         )}
       </div>
@@ -200,3 +200,4 @@ export function CommentsSection({ episodeId, allowComments }: Props) {
     </div>
   );
 }
+

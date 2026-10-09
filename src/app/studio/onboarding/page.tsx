@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -62,16 +62,16 @@ export default function CreatorOnboardingPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#B8B8B8] mb-2 uppercase tracking-wide">Catégorie principale</label>
+                <label className="block text-xs font-bold text-[#B8B8B8] mb-2 uppercase tracking-wide">CatÃ©gorie principale</label>
                 <select 
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white rounded-xl p-4 outline-none appearance-none"
                 >
-                  <option value="">Sélectionnez une catégorie</option>
-                  <option value="societe">Société & Culture</option>
+                  <option value="">SÃ©lectionnez une catÃ©gorie</option>
+                  <option value="societe">SociÃ©tÃ© & Culture</option>
                   <option value="business">Business & Entrepreneuriat</option>
-                  <option value="education">Éducation</option>
+                  <option value="education">Ã‰ducation</option>
                   <option value="divertissement">Divertissement</option>
                 </select>
               </div>
@@ -83,7 +83,7 @@ export default function CreatorOnboardingPage() {
         {step === 2 && (
           <div className="space-y-6 animate-fade-in">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-extrabold text-white">Donnez une identité à votre podcast</h1>
+              <h1 className="text-2xl font-extrabold text-white">Donnez une identitÃ© Ã  votre podcast</h1>
               <p className="text-sm text-[#888888] mt-2">Une belle description et une image accrocheuse attirent plus d'auditeurs.</p>
             </div>
             <div className="space-y-6">
@@ -94,7 +94,7 @@ export default function CreatorOnboardingPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
                   className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white rounded-xl p-4 outline-none resize-none"
-                  placeholder="De quoi parle votre podcast ? Donnez envie aux gens de l'écouter..."
+                  placeholder="De quoi parle votre podcast ? Donnez envie aux gens de l'Ã©couter..."
                 />
               </div>
               <div>
@@ -104,7 +104,7 @@ export default function CreatorOnboardingPage() {
                     <UploadCloud className="w-6 h-6 text-[#757575] group-hover:text-[#FFBF00]" />
                   </div>
                   <span className="text-sm font-semibold text-white">Cliquez pour uploader une image</span>
-                  <span className="text-xs text-[#757575] mt-1">JPG, PNG (max 5MB). Format carré recommandé.</span>
+                  <span className="text-xs text-[#757575] mt-1">JPG, PNG (max 5MB). Format carrÃ© recommandÃ©.</span>
                 </div>
               </div>
             </div>
@@ -117,9 +117,9 @@ export default function CreatorOnboardingPage() {
             <div className="w-20 h-20 bg-[#FFBF00]/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-[#FFBF00]/30">
               <CheckCircle className="w-10 h-10 text-[#FFBF00]" />
             </div>
-            <h1 className="text-3xl font-extrabold text-white">Tout est prêt !</h1>
+            <h1 className="text-3xl font-extrabold text-white">Tout est prÃªt !</h1>
             <p className="text-base text-[#888888] max-w-md mx-auto leading-relaxed">
-              Votre podcast <strong>{formData.title || "Mon super podcast"}</strong> est configuré. Vous allez maintenant accéder à votre espace Studio où vous pourrez uploader votre tout premier épisode.
+              Votre podcast <strong>{formData.title || "Mon super podcast"}</strong> est configurÃ©. Vous allez maintenant accÃ©der Ã  votre espace Studio oÃ¹ vous pourrez uploader votre tout premier Ã©pisode.
             </p>
           </div>
         )}
@@ -148,7 +148,7 @@ export default function CreatorOnboardingPage() {
               disabled={loading}
               className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold px-8"
             >
-              {loading ? "Création..." : "Accéder à mon Studio"} <ArrowRight className="w-4 h-4 ml-2" />
+              {loading ? "CrÃ©ation..." : "AccÃ©der Ã  mon Studio"} <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           )}
         </div>
@@ -156,3 +156,4 @@ export default function CreatorOnboardingPage() {
     </div>
   );
 }
+

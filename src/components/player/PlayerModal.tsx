@@ -5,7 +5,7 @@ import {
   Play, Pause, X, RotateCw, RotateCcw, 
   SkipBack, SkipForward, Maximize2, Share, FileText
 } from "lucide-react";
-import { usePlayerStore } from "@/stores/playerStore";
+import { usePlayerStore } from "@/store/playerStore";
 
 interface PlayerModalProps {
   isOpen: boolean;
@@ -136,4 +136,6 @@ export function PlayerModal({ isOpen, onClose }: PlayerModalProps) {
     </div>
   );
 }
+
+
 

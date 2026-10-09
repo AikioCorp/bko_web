@@ -4,7 +4,7 @@ import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import { FileText, Play, Pause, Upload, Sparkles, Check, Edit2, Clock, User, AlertCircle } from "lucide-react";
+import { FileText, Play, Pause, Upload, Star, Check, Edit2, Clock, User, AlertCircle } from "lucide-react";
 
 export default function EpisodeTranscriptEditorPage() {
   const params = useParams();
@@ -169,7 +169,7 @@ export default function EpisodeTranscriptEditorPage() {
             onClick={handleGenerate}
             className="bg-[#E5A93C] text-black hover:bg-[#F5B82E] px-5 py-2.5 rounded-xl text-xs font-black flex items-center space-x-2 transition shadow-lg"
           >
-            <Sparkles className="w-4 h-4 fill-current" />
+            <Star />
             <span>Générer IA</span>
           </button>
         </div>

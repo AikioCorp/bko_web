@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -48,7 +48,7 @@ export default function NewPodcastPage() {
       if (json.success) {
         router.push(`/studio/podcasts/${json.data.id}`);
       } else {
-        setError(json.error?.message || "Erreur lors de la création");
+        setError(json.error?.message || "Erreur lors de la crÃ©ation");
       }
     } catch (err) {
       setError("Erreur de communication avec le serveur.");
@@ -61,9 +61,9 @@ export default function NewPodcastPage() {
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-6 shadow-2xl">
         <div className="space-y-1 border-b border-[#1E2638] pb-4">
-          <span className="text-[#E5A93C] text-[10px] font-bold uppercase tracking-wider">Créer une Émission</span>
+          <span className="text-[#E5A93C] text-[10px] font-bold uppercase tracking-wider">CrÃ©er une Ã‰mission</span>
           <h1 className="text-2xl font-black text-white">Nouveau Podcast</h1>
-          <p className="text-xs text-gray-400">Renseignez les détails principaux de votre émission.</p>
+          <p className="text-xs text-gray-400">Renseignez les dÃ©tails principaux de votre Ã©mission.</p>
         </div>
 
         {error && (
@@ -92,7 +92,7 @@ export default function NewPodcastPage() {
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Présentez les thèmes abordés dans votre émission..."
+              placeholder="PrÃ©sentez les thÃ¨mes abordÃ©s dans votre Ã©mission..."
               className="w-full bg-[#0A0D14] border border-[#1E2638] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-[#E5A93C]"
             />
           </div>
@@ -119,10 +119,10 @@ export default function NewPodcastPage() {
                 onChange={(e) => setCountryId(e.target.value)}
                 className="w-full bg-[#0A0D14] border border-[#1E2638] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-[#E5A93C]"
               >
-                <option value="ML">🇲🇱 Mali</option>
-                <option value="SN">🇸🇳 Sénégal</option>
-                <option value="CI">🇨🇮 Côte d'Ivoire</option>
-                <option value="BF">🇧🇫 Burkina Faso</option>
+                <option value="ML">ðŸ‡²ðŸ‡± Mali</option>
+                <option value="SN">ðŸ‡¸ðŸ‡³ SÃ©nÃ©gal</option>
+                <option value="CI">ðŸ‡¨ðŸ‡® CÃ´te d'Ivoire</option>
+                <option value="BF">ðŸ‡§ðŸ‡« Burkina Faso</option>
               </select>
             </div>
 
@@ -133,7 +133,7 @@ export default function NewPodcastPage() {
                 onChange={(e) => setPrimaryLanguageCode(e.target.value)}
                 className="w-full bg-[#0A0D14] border border-[#1E2638] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-[#E5A93C]"
               >
-                <option value="fr">Français</option>
+                <option value="fr">FranÃ§ais</option>
                 <option value="bm">Bamanankan (Bambara)</option>
                 <option value="en">English</option>
               </select>
@@ -145,7 +145,7 @@ export default function NewPodcastPage() {
             disabled={loading}
             className="w-full bg-[#E5A93C] text-black font-extrabold py-3.5 rounded-xl text-xs hover:bg-[#F5B82E] transition shadow-lg flex items-center justify-center space-x-2"
           >
-            <span>{loading ? "Création..." : "ENREGISTRER LE PODCAST"}</span>
+            <span>{loading ? "CrÃ©ation..." : "ENREGISTRER LE PODCAST"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
@@ -153,3 +153,4 @@ export default function NewPodcastPage() {
     </div>
   );
 }
+

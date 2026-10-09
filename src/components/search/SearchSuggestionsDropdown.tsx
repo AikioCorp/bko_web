@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -44,7 +44,7 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
           setSelectedIndex(-1);
         }
       } catch (e) {
-        console.error("Erreur de récupération des suggestions de recherche:", e);
+        console.error("Erreur de rÃ©cupÃ©ration des suggestions de recherche:", e);
       } finally {
         setLoading(false);
       }
@@ -102,7 +102,7 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, selectedIndex, totalNavCount, navigationItems, query]);
 
-  // Clic Extérieur
+  // Clic ExtÃ©rieur
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -140,7 +140,7 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
 
       {!loading && navigationItems.length === 0 && query.length >= 2 && (
         <div className="p-4 text-center text-[#8B949E]">
-          Aucun résultat direct pour « <span className="text-[#F0F6FC]">{query}</span> »
+          Aucun rÃ©sultat direct pour Â« <span className="text-[#F0F6FC]">{query}</span> Â»
         </div>
       )}
 
@@ -176,10 +176,10 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
             </div>
           )}
 
-          {/* Section Épisodes */}
+          {/* Section Ã‰pisodes */}
           {episodes.length > 0 && (
             <div className="p-2 space-y-1">
-              <span className="px-2 text-[10px] font-bold text-[#E6B009] uppercase tracking-wider">Épisodes</span>
+              <span className="px-2 text-[10px] font-bold text-[#E6B009] uppercase tracking-wider">Ã‰pisodes</span>
               {episodes.map((ep: any) => {
                 const itemIdx = globalIndexCounter++;
                 const isSelected = selectedIndex === itemIdx;
@@ -195,7 +195,7 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
                         : "hover:bg-[#1F242D] text-[#F0F6FC]"
                     }`}
                   >
-                    <span className="text-[#E6B009] text-sm">▶</span>
+                    <span className="text-[#E6B009] text-sm">â–¶</span>
                     <div className="min-w-0 flex-1">
                       <h5 className="font-semibold truncate">{ep.title}</h5>
                       <p className="text-[10px] text-[#8B949E] truncate">{ep.podcast?.name}</p>
@@ -258,7 +258,7 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
             </div>
           )}
 
-          {/* Bottom Action Row: Voir tous les résultats */}
+          {/* Bottom Action Row: Voir tous les rÃ©sultats */}
           {(() => {
             const itemIdx = globalIndexCounter++;
             const isSelected = selectedIndex === itemIdx;
@@ -271,8 +271,8 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
                     : "bg-[#1F242D]/50 hover:bg-[#1F242D]"
                 }`}
               >
-                <span>Voir tous les résultats pour « {query} »</span>
-                <span>→</span>
+                <span>Voir tous les rÃ©sultats pour Â« {query} Â»</span>
+                <span>â†’</span>
               </div>
             );
           })()}
@@ -281,3 +281,4 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
     </div>
   );
 };
+

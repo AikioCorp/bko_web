@@ -6,7 +6,7 @@ import {
   Play, Pause, Volume2, VolumeX, ListMusic, MoreHorizontal, 
   Share, Code, RotateCw, RotateCcw, X, Maximize2, Gauge
 } from "lucide-react";
-import { usePlayerStore } from "@/stores/playerStore";
+import { usePlayerStore } from "@/store/playerStore";
 import { PlayerModal } from "./PlayerModal";
 
 export function PersistentPlayer() {
@@ -168,7 +168,7 @@ export function PersistentPlayer() {
                 <div>
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2 px-1">À suivre</p>
                   <div className="space-y-1">
-                    {queue.map((ep, i) => (
+                    {queue.map((ep: any, i: number) => (
                       <div key={i} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl group transition-colors">
                         <img src={ep.cover || ep.podcast?.cover} alt="" className="w-10 h-10 rounded-md object-cover shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" />
                         <div className="min-w-0 flex-1">
@@ -192,3 +192,6 @@ export function PersistentPlayer() {
     </>
   );
 }
+
+
+

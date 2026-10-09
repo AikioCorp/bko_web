@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import useSWR from "swr";
@@ -148,9 +148,9 @@ export default function CategoriesLanguagesPage() {
         <div>
           <h1 className="text-3xl font-extrabold flex items-center gap-3">
             <Tag className="w-8 h-8 text-[#FFBF00]" />
-            Catégories et langues
+            CatÃ©gories et langues
           </h1>
-          <p className="text-[#888888] mt-2">Gérez les choix disponibles pour la classification des podcasts.</p>
+          <p className="text-[#888888] mt-2">GÃ©rez les choix disponibles pour la classification des podcasts.</p>
         </div>
       </div>
 
@@ -164,7 +164,7 @@ export default function CategoriesLanguagesPage() {
               : "border-transparent text-[#757575] hover:text-white"
           }`}
         >
-          <Tag className="w-4 h-4" /> Catégories
+          <Tag className="w-4 h-4" /> CatÃ©gories
         </button>
         <button
           onClick={() => setActiveTab("Languages")}
@@ -184,7 +184,7 @@ export default function CategoriesLanguagesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#757575]" />
           <input 
             type="text" 
-            placeholder={`Rechercher une ${activeTab === "Categories" ? "catégorie" : "langue"}...`}
+            placeholder={`Rechercher une ${activeTab === "Categories" ? "catÃ©gorie" : "langue"}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#171717] border border-[#2A2A2A] rounded-lg pl-10 pr-4 py-2 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#757575]"
@@ -195,7 +195,7 @@ export default function CategoriesLanguagesPage() {
           className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold w-full md:w-auto"
         >
           <Plus className="w-4 h-4 mr-2" /> 
-          Ajouter une {activeTab === "Categories" ? "catégorie" : "langue"}
+          Ajouter une {activeTab === "Categories" ? "catÃ©gorie" : "langue"}
         </Button>
       </div>
 
@@ -208,7 +208,7 @@ export default function CategoriesLanguagesPage() {
                 <tr className="border-b border-[#2A2A2A] text-xs font-semibold text-[#757575] uppercase tracking-wider bg-[#0B0B0B]/50">
                   <th className="p-4">Nom</th>
                   <th className="p-4">Description</th>
-                  <th className="p-4 text-center">Podcasts associés</th>
+                  <th className="p-4 text-center">Podcasts associÃ©s</th>
                   <th className="p-4">Statut</th>
                   <th className="p-4 text-right">Actions</th>
                 </tr>
@@ -217,12 +217,12 @@ export default function CategoriesLanguagesPage() {
                 {catLoading ? (
                   <tr><td colSpan={5} className="p-12 text-center text-[#757575]"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
                 ) : categories.length === 0 ? (
-                  <tr><td colSpan={5} className="p-12 text-center text-[#757575]">Aucune catégorie trouvée.</td></tr>
+                  <tr><td colSpan={5} className="p-12 text-center text-[#757575]">Aucune catÃ©gorie trouvÃ©e.</td></tr>
                 ) : (
                   categories.map((cat: any) => (
                     <tr key={cat.id} className="hover:bg-[#1C1C1C] transition-colors group cursor-pointer" onClick={() => setEditingItem({ ...cat, isCategory: true })}>
                       <td className="p-4 font-bold text-white text-sm">{cat.icon} {cat.name}</td>
-                      <td className="p-4 text-sm text-[#B8B8B8] max-w-md truncate">{cat.description || "—"}</td>
+                      <td className="p-4 text-sm text-[#B8B8B8] max-w-md truncate">{cat.description || "â€”"}</td>
                       <td className="p-4 text-center text-sm font-bold text-[#FFBF00]">{cat._count?.podcasts || 0}</td>
                       <td className="p-4">
                         {cat.isActive ? (
@@ -262,9 +262,9 @@ export default function CategoriesLanguagesPage() {
               <thead>
                 <tr className="border-b border-[#2A2A2A] text-xs font-semibold text-[#757575] uppercase tracking-wider bg-[#0B0B0B]/50">
                   <th className="p-4">Code</th>
-                  <th className="p-4">Nom affiché</th>
+                  <th className="p-4">Nom affichÃ©</th>
                   <th className="p-4">Nom dans la langue</th>
-                  <th className="p-4 text-center">Podcasts associés</th>
+                  <th className="p-4 text-center">Podcasts associÃ©s</th>
                   <th className="p-4">Statut</th>
                   <th className="p-4 text-right">Actions</th>
                 </tr>
@@ -273,7 +273,7 @@ export default function CategoriesLanguagesPage() {
                 {langLoading ? (
                   <tr><td colSpan={6} className="p-12 text-center text-[#757575]"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
                 ) : languages.length === 0 ? (
-                  <tr><td colSpan={6} className="p-12 text-center text-[#757575]">Aucune langue trouvée.</td></tr>
+                  <tr><td colSpan={6} className="p-12 text-center text-[#757575]">Aucune langue trouvÃ©e.</td></tr>
                 ) : (
                   languages.map((lang: any) => (
                     <tr key={lang.code} className="hover:bg-[#1C1C1C] transition-colors group cursor-pointer" onClick={() => setEditingItem({ ...lang, isLanguage: true, isEdit: true })}>
@@ -321,7 +321,7 @@ export default function CategoriesLanguagesPage() {
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl w-full max-w-sm shadow-2xl p-6 animate-in fade-in zoom-in-95" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold text-white mb-2">Confirmer la suppression</h2>
             <p className="text-[#888888] text-sm mb-6">
-              Voulez-vous vraiment supprimer {deletingItem.isCategory ? "la catégorie" : "la langue"} <strong className="text-white">{deletingItem.name}</strong> ? Cette action est irréversible.
+              Voulez-vous vraiment supprimer {deletingItem.isCategory ? "la catÃ©gorie" : "la langue"} <strong className="text-white">{deletingItem.name}</strong> ? Cette action est irrÃ©versible.
             </p>
             <div className="flex gap-3 justify-end">
               <Button variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => setDeletingItem(null)}>Annuler</Button>
@@ -341,7 +341,7 @@ export default function CategoriesLanguagesPage() {
             <div className="p-6 border-b border-[#2A2A2A]">
               <h2 className="text-xl font-bold text-white">
                 {editingItem.id || editingItem.isEdit ? "Modifier" : "Ajouter"}{" "}
-                {editingItem.isCategory ? "une catégorie" : "une langue"}
+                {editingItem.isCategory ? "une catÃ©gorie" : "une langue"}
               </h2>
             </div>
             
@@ -350,7 +350,7 @@ export default function CategoriesLanguagesPage() {
               {editingItem.isCategory ? (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Nom de la catégorie</label>
+                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Nom de la catÃ©gorie</label>
                     <input name="name" required defaultValue={editingItem.name} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
                   </div>
                   <div>
@@ -368,10 +368,10 @@ export default function CategoriesLanguagesPage() {
                   <div>
                     <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Code de la langue (ex: fr, bm)</label>
                     <input name="code" required disabled={editingItem.isEdit} defaultValue={editingItem.code} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white font-mono disabled:opacity-50" />
-                    {editingItem.isEdit && <p className="text-xs text-[#757575] mt-1">Le code sert de référence stable et ne peut être modifié.</p>}
+                    {editingItem.isEdit && <p className="text-xs text-[#757575] mt-1">Le code sert de rÃ©fÃ©rence stable et ne peut Ãªtre modifiÃ©.</p>}
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Nom affiché</label>
+                    <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Nom affichÃ©</label>
                     <input name="name" required defaultValue={editingItem.name} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
                   </div>
                   <div>
@@ -393,3 +393,4 @@ export default function CategoriesLanguagesPage() {
     </div>
   );
 }
+

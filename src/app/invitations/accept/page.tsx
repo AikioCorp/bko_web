@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
@@ -33,12 +33,12 @@ function AcceptInner() {
   return (
     <div className="max-w-md mx-auto px-4 py-20">
       <Card className="p-8 space-y-4 text-center">
-        <h1 className="text-xl font-extrabold text-white">Invitation à rejoindre une équipe</h1>
+        <h1 className="text-xl font-extrabold text-white">Invitation Ã  rejoindre une Ã©quipe</h1>
         {!token && <p className="text-sm text-red-300">Lien d&apos;invitation incomplet.</p>}
-        {token && isLoading && <p className="text-sm text-gray-400">Chargement…</p>}
+        {token && isLoading && <p className="text-sm text-gray-400">Chargementâ€¦</p>}
         {token && !isLoading && !isAuthenticated && (
           <>
-            <p className="text-sm text-gray-400">Connectez-vous avec l&apos;adresse email qui a reçu l&apos;invitation.</p>
+            <p className="text-sm text-gray-400">Connectez-vous avec l&apos;adresse email qui a reÃ§u l&apos;invitation.</p>
             <Link href={`/login?redirect=${encodeURIComponent(`/invitations/accept?token=${token}`)}`}>
               <Btn variant="primary">Se connecter</Btn>
             </Link>
@@ -46,16 +46,16 @@ function AcceptInner() {
         )}
         {token && !isLoading && isAuthenticated && state !== "done" && (
           <>
-            <p className="text-sm text-gray-400">Acceptez pour rejoindre l&apos;équipe du podcast avec le rôle prévu.</p>
+            <p className="text-sm text-gray-400">Acceptez pour rejoindre l&apos;Ã©quipe du podcast avec le rÃ´le prÃ©vu.</p>
             {state === "error" && <p className="text-sm text-red-300">{message}</p>}
             <Btn variant="primary" disabled={state === "busy"} onClick={accept}>
-              {state === "busy" ? "…" : "Accepter l'invitation"}
+              {state === "busy" ? "â€¦" : "Accepter l'invitation"}
             </Btn>
           </>
         )}
         {state === "done" && (
           <>
-            <p className="text-sm text-emerald-400">Vous faites maintenant partie de l&apos;équipe.</p>
+            <p className="text-sm text-emerald-400">Vous faites maintenant partie de l&apos;Ã©quipe.</p>
             <Link href={`/studio/podcasts/${podcastId}`}>
               <Btn variant="primary">Ouvrir le podcast</Btn>
             </Link>
@@ -73,3 +73,4 @@ export default function AcceptInvitationPage() {
     </Suspense>
   );
 }
+

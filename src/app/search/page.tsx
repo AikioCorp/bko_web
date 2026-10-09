@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useEffect, useState, Suspense } from "react";
@@ -47,7 +47,7 @@ function SearchContent() {
         <SearchBar initialQuery={query} />
         {query && !loading && (
           <p className="text-xs text-center text-[#8B949E]">
-            {totalResults} résultat(s) trouvé(s) pour <span className="text-[#E6B009] font-bold">"{query}"</span>
+            {totalResults} rÃ©sultat(s) trouvÃ©(s) pour <span className="text-[#E6B009] font-bold">"{query}"</span>
           </p>
         )}
       </div>
@@ -68,7 +68,7 @@ function SearchContent() {
                 </h2>
               </div>
               <p className="text-xs text-[#8B949E]">
-                L'expression recherchée a été entendue précisément à ces moments clés dans les enregistrements :
+                L'expression recherchÃ©e a Ã©tÃ© entendue prÃ©cisÃ©ment Ã  ces moments clÃ©s dans les enregistrements :
               </p>
 
               <div className="space-y-3">
@@ -97,7 +97,7 @@ function SearchContent() {
                         className="bg-[#1C180E] text-[#FFBF00] border border-[#FFBF00]/30 hover:bg-[#FFBF00] hover:text-[#0B0B0B] px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
                       >
                         <Clock className="w-3.5 h-3.5" />
-                        <span>Écouter à {p.formattedTime}</span>
+                        <span>Ã‰couter Ã  {p.formattedTime}</span>
                         <ArrowRight className="w-3.5 h-3.5 ml-1" />
                       </Link>
                     </div>
@@ -130,7 +130,7 @@ function SearchContent() {
                     <img src={p.cover} alt={p.name} className="w-14 h-14 rounded-xl object-cover border border-[#242424]" />
                     <div className="min-w-0 flex-1">
                       <h4 className="font-bold text-white text-sm truncate">{p.name}</h4>
-                      <p className="text-xs text-[#8B949E] truncate">{p.country?.name || "Mali"} • {p.primaryLanguage?.name || "Bamanankan"}</p>
+                      <p className="text-xs text-[#8B949E] truncate">{p.country?.name || "Mali"} â€¢ {p.primaryLanguage?.name || "Bamanankan"}</p>
                     </div>
                   </Link>
                 ))}
@@ -138,12 +138,12 @@ function SearchContent() {
             </section>
           )}
 
-          {/* Section Épisodes */}
+          {/* Section Ã‰pisodes */}
           {results.episodes?.length > 0 && (
             <section className="space-y-4">
               <h2 className="text-xl font-bold text-[#F0F6FC] flex items-center gap-2">
                 <Play className="w-5 h-5 text-[#E6B009]" />
-                <span>Épisodes ({results.episodes.length})</span>
+                <span>Ã‰pisodes ({results.episodes.length})</span>
               </h2>
 
               <div className="space-y-3">
@@ -184,7 +184,7 @@ function SearchContent() {
                         className="bg-[#E6B009] text-[#0B0F17] px-4 py-2 rounded-xl text-xs font-extrabold hover:bg-[#F5B82E] transition-colors flex items-center gap-1.5 shrink-0"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Écouter</span>
+                        <span>Ã‰couter</span>
                       </button>
                     </div>
                   );
@@ -198,7 +198,7 @@ function SearchContent() {
             <section className="space-y-4">
               <h2 className="text-xl font-bold text-[#F0F6FC] flex items-center gap-2">
                 <User className="w-5 h-5 text-[#E6B009]" />
-                <span>Personnes & Hôtes ({results.people.length})</span>
+                <span>Personnes & HÃ´tes ({results.people.length})</span>
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -229,3 +229,4 @@ export default function SearchPage() {
     </Suspense>
   );
 }
+

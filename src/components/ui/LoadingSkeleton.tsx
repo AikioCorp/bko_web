@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 
@@ -24,3 +24,4 @@ export const LoadingSkeleton = ({ count = 3 }: { count?: number }) => {
     </div>
   );
 };
+

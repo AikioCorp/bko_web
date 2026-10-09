@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -40,7 +40,7 @@ export default function DevicesPage() {
   };
 
   const handleLogoutAll = async () => {
-    if (!confirm("Voulez-vous déconnecter TOUS les appareils ?")) return;
+    if (!confirm("Voulez-vous dÃ©connecter TOUS les appareils ?")) return;
 
     const token = getAccessToken();
     if (!token) return;
@@ -58,8 +58,8 @@ export default function DevicesPage() {
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
       <div className="flex justify-between items-center border-b border-[#1E2638] pb-6">
         <div>
-          <h1 className="text-2xl font-black text-white">Appareils Connectés</h1>
-          <p className="text-xs text-gray-400">Gérez vos sessions et révoquez l'accès à tout appareil suspect</p>
+          <h1 className="text-2xl font-black text-white">Appareils ConnectÃ©s</h1>
+          <p className="text-xs text-gray-400">GÃ©rez vos sessions et rÃ©voquez l'accÃ¨s Ã  tout appareil suspect</p>
         </div>
 
         <button
@@ -67,7 +67,7 @@ export default function DevicesPage() {
           className="bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 px-4 py-2 rounded-full text-xs font-bold transition flex items-center space-x-1.5"
         >
           <ShieldAlert className="w-3.5 h-3.5" />
-          <span>Déconnecter tous les appareils</span>
+          <span>DÃ©connecter tous les appareils</span>
         </button>
       </div>
 
@@ -84,7 +84,7 @@ export default function DevicesPage() {
               </div>
               <div>
                 <h4 className="font-bold text-white text-sm">{device.deviceName || device.deviceType}</h4>
-                <p className="text-xs text-gray-400">Dernière activité : {new Date(device.lastActiveAt).toLocaleString("fr-FR")}</p>
+                <p className="text-xs text-gray-400">DerniÃ¨re activitÃ© : {new Date(device.lastActiveAt).toLocaleString("fr-FR")}</p>
               </div>
             </div>
 
@@ -100,3 +100,4 @@ export default function DevicesPage() {
     </div>
   );
 }
+

@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import Link from "next/link";
-import { Check, Mic, Video, Edit3, Share2, Calculator, Headphones, Sparkles } from "lucide-react";
+import { Check, Mic, Video, Edit3, Share2, Calculator, Headphones, Star } from "lucide-react";
 
 export default function TarifsPage() {
   const packages = [
@@ -13,7 +13,7 @@ export default function TarifsPage() {
       description: "Parfait pour commencer",
       features: [
         "2h d'enregistrement",
-        "4 épisodes montés",
+        "4 Ã©pisodes montÃ©s",
         "Distribution basique",
         "Support Email/WhatsApp",
       ],
@@ -23,12 +23,12 @@ export default function TarifsPage() {
       name: "Professionnel",
       price: "150 000 FCFA",
       unit: "/ mois",
-      description: "Pour les créateurs réguliers",
+      description: "Pour les crÃ©ateurs rÃ©guliers",
       features: [
         "5h50 d'enregistrement/mois",
-        "10 épisodes de 35min montés et optimisés",
-        "Visuels personnalisés",
-        "1 coaching personnalisé/mois",
+        "10 Ã©pisodes de 35min montÃ©s et optimisÃ©s",
+        "Visuels personnalisÃ©s",
+        "1 coaching personnalisÃ©/mois",
       ],
       popular: true,
     },
@@ -38,9 +38,9 @@ export default function TarifsPage() {
       unit: "",
       description: "Solutions sur-mesure",
       features: [
-        "Accès studio illimité",
-        "Équipe dédiée à la production",
-        "Formation de l'équipe",
+        "AccÃ¨s studio illimitÃ©",
+        "Ã‰quipe dÃ©diÃ©e Ã  la production",
+        "Formation de l'Ã©quipe",
         "Support prioritaire 24/7",
       ],
       popular: false,
@@ -51,31 +51,31 @@ export default function TarifsPage() {
     {
       name: "Podcast Standard",
       price: "25 000 FCFA",
-      description: "Enregistrement + montage basique (≤ 45 min).",
+      description: "Enregistrement + montage basique (â‰¤ 45 min).",
       icon: <Mic className="w-5 h-5 text-[#FFBF00]" />,
     },
     {
       name: "Podcast Pro",
       price: "35 000 FCFA",
-      description: "Montage avancé multi-pistes, habillage sonore, teaser.",
-      icon: <Sparkles className="w-5 h-5 text-[#FFBF00]" />,
+      description: "Montage avancÃ© multi-pistes, habillage sonore, teaser.",
+      icon: <Star className="w-5 h-5 text-[#FFBF00]" />,
     },
     {
       name: "Formation Podcast",
       price: "50 000 FCFA",
-      description: "Formation de 4h (Théorie + pratique en studio).",
+      description: "Formation de 4h (ThÃ©orie + pratique en studio).",
       icon: <Headphones className="w-5 h-5 text-[#FFBF00]" />,
     },
     {
-      name: "Coaching Éditorial",
+      name: "Coaching Ã‰ditorial",
       price: "30 000 FCFA",
-      description: "Clarifiez votre cible, ton et roadmap éditoriale.",
+      description: "Clarifiez votre cible, ton et roadmap Ã©ditoriale.",
       icon: <Edit3 className="w-5 h-5 text-[#FFBF00]" />,
     },
     {
       name: "Location Studio Seul",
       price: "10 000 FCFA",
-      description: "45 min d'accès à notre studio (avec votre équipe).",
+      description: "45 min d'accÃ¨s Ã  notre studio (avec votre Ã©quipe).",
       icon: <Video className="w-5 h-5 text-[#FFBF00]" />,
     },
     {
@@ -98,11 +98,11 @@ export default function TarifsPage() {
           Produisez dans notre <span className="text-[#FFBF00]">Studio Professionnel</span>
         </h1>
         <p className="text-base md:text-lg text-[#B8B8B8] leading-relaxed mb-10">
-          Vous êtes à Bamako ? Vous n'avez pas de matériel de qualité ? Bamako Podcast vous met à disposition son studio équipé, ses ingénieurs du son et ses monteurs vidéos pour vous accompagner.
+          Vous Ãªtes Ã  Bamako ? Vous n'avez pas de matÃ©riel de qualitÃ© ? Bamako Podcast vous met Ã  disposition son studio Ã©quipÃ©, ses ingÃ©nieurs du son et ses monteurs vidÃ©os pour vous accompagner.
         </p>
         <div className="flex justify-center gap-4">
           <Link href="/contact" className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm transition-all shadow-md active:scale-95">
-            Réserver une session
+            RÃ©server une session
           </Link>
         </div>
       </section>
@@ -112,7 +112,7 @@ export default function TarifsPage() {
         <div className="w-full">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-headline font-bold mb-4">Nos Forfaits Mensuels</h2>
-            <p className="text-[#B8B8B8]">Pour une collaboration régulière et un accompagnement de A à Z.</p>
+            <p className="text-[#B8B8B8]">Pour une collaboration rÃ©guliÃ¨re et un accompagnement de A Ã  Z.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -151,10 +151,10 @@ export default function TarifsPage() {
         </div>
       </section>
 
-      {/* Services à la carte */}
+      {/* Services Ã  la carte */}
       <section className="px-6 py-24 w-full">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-headline font-bold mb-4">Services à la Carte</h2>
+          <h2 className="text-3xl md:text-4xl font-headline font-bold mb-4">Services Ã  la Carte</h2>
           <p className="text-[#B8B8B8]">Payez uniquement pour ce dont vous avez besoin.</p>
         </div>
 
@@ -172,7 +172,7 @@ export default function TarifsPage() {
               <h3 className="text-lg font-bold mb-2">{service.name}</h3>
               <p className="text-sm text-[#B8B8B8] leading-relaxed mb-6">{service.description}</p>
               <Link href="/contact" className="text-sm font-bold text-white hover:text-[#FFBF00] flex items-center gap-1">
-                Réserver <span className="text-lg leading-none">→</span>
+                RÃ©server <span className="text-lg leading-none">â†’</span>
               </Link>
             </div>
           ))}
@@ -181,3 +181,4 @@ export default function TarifsPage() {
     </div>
   );
 }
+

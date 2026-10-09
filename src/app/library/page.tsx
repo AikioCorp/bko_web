@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
@@ -78,10 +78,10 @@ export default function LibraryPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-headline font-black text-white">
-            Ma Bibliothèque
+            Ma BibliothÃ¨que
           </h1>
           <p className="text-xs text-[#B8B8B8]">
-            Retrouvez vos écoutes en cours, podcasts favoris et téléchargements hors-ligne.
+            Retrouvez vos Ã©coutes en cours, podcasts favoris et tÃ©lÃ©chargements hors-ligne.
           </p>
         </div>
 
@@ -95,7 +95,7 @@ export default function LibraryPage() {
                 : "text-[#888888] hover:text-white"
             }`}
           >
-            Continuer l'écoute ({historyEpisodes.length})
+            Continuer l'Ã©coute ({historyEpisodes.length})
           </button>
           <button
             onClick={() => setActiveTab("saved")}
@@ -105,7 +105,7 @@ export default function LibraryPage() {
                 : "text-[#888888] hover:text-white"
             }`}
           >
-            Enregistrés ({savedEpisodes.length})
+            EnregistrÃ©s ({savedEpisodes.length})
           </button>
           <button
             onClick={() => setActiveTab("following")}
@@ -173,7 +173,7 @@ export default function LibraryPage() {
 
                 <div className="space-y-1.5 pt-2 border-t border-[#222222]">
                   <div className="flex items-center justify-between text-[11px] text-[#757575] font-mono">
-                    <span>Reprendre à {item.resumeTime}</span>
+                    <span>Reprendre Ã  {item.resumeTime}</span>
                     <span>{item.episode?.durationSeconds ? `${Math.floor(item.episode.durationSeconds / 60)} min` : ""}</span>
                   </div>
                   <div className="w-full h-1.5 bg-[#262626] rounded-full overflow-hidden">
@@ -215,7 +215,7 @@ export default function LibraryPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 text-[11px]">
                     <span className="text-[#FFBF00] font-semibold">{ep.episode?.podcast?.name || ep.podcast?.name || "Podcast"}</span>
-                    <span className="text-[#757575]">• {ep.createdAt ? new Date(ep.createdAt).toLocaleDateString() : ""}</span>
+                    <span className="text-[#757575]">â€¢ {ep.createdAt ? new Date(ep.createdAt).toLocaleDateString() : ""}</span>
                   </div>
                   <h3
                     onClick={() => {
@@ -235,7 +235,7 @@ export default function LibraryPage() {
 
               <div className="flex items-center gap-4 shrink-0 text-xs">
                 <span className="font-mono text-[#B8B8B8]">{(ep.episode?.durationSeconds || ep.durationSeconds) ? `${Math.floor((ep.episode?.durationSeconds || ep.durationSeconds) / 60)} min` : ""}</span>
-                <button className="p-1.5 text-[#757575] hover:text-white" title="Télécharger">
+                <button className="p-1.5 text-[#757575] hover:text-white" title="TÃ©lÃ©charger">
                   <Download className="w-4 h-4" />
                 </button>
                 <button className="p-1.5 text-[#757575] hover:text-white" title="Options">
@@ -267,7 +267,7 @@ export default function LibraryPage() {
                   {pod.title}
                 </h3>
                 <p className="text-[11px] text-[#757575] truncate">{pod.author}</p>
-                <p className="text-[10px] text-[#B8B8B8] pt-1">{pod.episodesCount} épisodes</p>
+                <p className="text-[10px] text-[#B8B8B8] pt-1">{pod.episodesCount} Ã©pisodes</p>
               </div>
             </Link>
           ))}
@@ -280,9 +280,9 @@ export default function LibraryPage() {
           <div className="w-12 h-12 rounded-full bg-[#1C180E] border border-[#FFBF00]/40 text-[#FFBF00] flex items-center justify-center mx-auto">
             <Smartphone className="w-6 h-6" />
           </div>
-          <h3 className="text-base font-headline font-bold text-white">Écoute Hors-ligne sur l'App Mobile</h3>
+          <h3 className="text-base font-headline font-bold text-white">Ã‰coute Hors-ligne sur l'App Mobile</h3>
           <p className="text-xs text-[#B8B8B8] leading-relaxed">
-            Pour sauvegarder vos podcasts et les écouter sans aucune connexion Internet (dans les transports, en voyage ou sans data), utilisez l'application mobile officielle Bamako Podcast.
+            Pour sauvegarder vos podcasts et les Ã©couter sans aucune connexion Internet (dans les transports, en voyage ou sans data), utilisez l'application mobile officielle Bamako Podcast.
           </p>
           <div className="pt-2">
             <button
@@ -290,7 +290,7 @@ export default function LibraryPage() {
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] text-xs font-bold transition-all shadow-md"
             >
               <Smartphone className="w-4 h-4" />
-              <span>Télécharger l'application mobile</span>
+              <span>TÃ©lÃ©charger l'application mobile</span>
             </button>
           </div>
         </div>
@@ -301,3 +301,4 @@ export default function LibraryPage() {
     </div>
   );
 }
+

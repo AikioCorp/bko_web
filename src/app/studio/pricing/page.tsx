@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Info, Zap, Sparkles, Building2, Crown, ChevronRight, X } from "lucide-react";
+import { Check, Info, Zap, Star, Building2, Crown, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/store/authStore";
 
 const plans = [
   {
@@ -12,7 +12,7 @@ const plans = [
     name: "Créateur Débutant",
     price: "0",
     description: "Pour lancer votre premier podcast.",
-    icon: <Sparkles className="w-5 h-5 text-zinc-400" />,
+    icon: <Star className="w-5 h-5 text-zinc-400" />,
     features: [
       "1 podcast actif",
       "Jusqu'à 3 épisodes par mois",
@@ -186,4 +186,6 @@ export default function StudioPricingPage() {
     </div>
   );
 }
+
+
 

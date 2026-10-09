@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -52,7 +52,7 @@ export default function AdminRolesPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Voulez-vous vraiment supprimer le rÃƒÂ´le "${name}" ?`)) return;
+    if (!confirm(`Voulez-vous vraiment supprimer le rÃƒÆ’Ã‚Â´le "${name}" ?`)) return;
     try {
       await adminApi(`/admin/roles/${id}`, { method: "DELETE" });
       await mutate();
@@ -69,13 +69,13 @@ export default function AdminRolesPage() {
         <div>
           <h1 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
             <Shield className="w-6 h-6 text-[#FFBF00]" />
-            Administrateurs et rÃƒÂ´les
+            Administrateurs et rÃƒÆ’Ã‚Â´les
           </h1>
-          <p className="text-[#888888]">GÃƒÂ©rez les niveaux d'accÃƒÂ¨s et les permissions de vos ÃƒÂ©quipes.</p>
+          <p className="text-[#888888]">GÃƒÆ’Ã‚Â©rez les niveaux d'accÃƒÆ’Ã‚Â¨s et les permissions de vos ÃƒÆ’Ã‚Â©quipes.</p>
         </div>
         <Button onClick={() => handleOpenEdit()} className="bg-[#FFBF00] text-black font-bold hover:bg-[#E5AB00]">
           <Plus className="w-4 h-4 mr-2" />
-          Nouveau RÃƒÂ´le
+          Nouveau RÃƒÆ’Ã‚Â´le
         </Button>
       </div>
 
@@ -87,7 +87,7 @@ export default function AdminRolesPage() {
             <div key={role.id} className="bg-[#111] border border-[#222] rounded-2xl p-6 flex flex-col h-full relative group transition-colors hover:border-[#333]">
               {role.isSystem && (
                 <div className="absolute -top-3 left-6 bg-[#222] text-[#888] text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 border border-[#333]">
-                  RÃƒÂ´le SystÃƒÂ¨me
+                  RÃƒÆ’Ã‚Â´le SystÃƒÆ’Ã‚Â¨me
                 </div>
               )}
               
@@ -113,7 +113,7 @@ export default function AdminRolesPage() {
               </div>
 
               <p className="text-sm text-[#888] mb-6 flex-1 line-clamp-3">
-                {role.description || "Aucune description fournie pour ce rÃƒÂ´le."}
+                {role.description || "Aucune description fournie pour ce rÃƒÆ’Ã‚Â´le."}
               </p>
               
               <div className="border-t border-[#222] pt-4 flex items-center justify-between">
@@ -144,13 +144,13 @@ export default function AdminRolesPage() {
           <div className="relative bg-[#111] border border-[#222] w-full max-w-3xl rounded-2xl shadow-2xl p-6 flex flex-col h-[90vh] animate-in zoom-in-95">
             <h2 className="text-xl font-bold text-white mb-2 border-b border-[#222] pb-4 flex items-center gap-2">
               <Shield className="w-5 h-5 text-[#FFBF00]" />
-              {isEditing.isNew ? "CrÃƒÂ©er un RÃƒÂ´le" : isEditing.isSystem ? "Voir le RÃƒÂ´le (Lecture seule)" : "Modifier le RÃƒÂ´le"}
+              {isEditing.isNew ? "CrÃƒÆ’Ã‚Â©er un RÃƒÆ’Ã‚Â´le" : isEditing.isSystem ? "Voir le RÃƒÆ’Ã‚Â´le (Lecture seule)" : "Modifier le RÃƒÆ’Ã‚Â´le"}
             </h2>
             
             <form id="roleForm" onSubmit={handleSave} className="overflow-y-auto pr-4 custom-scrollbar flex-1 space-y-6 mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#888] uppercase mb-2">Nom du rÃƒÂ´le</label>
+                  <label className="block text-xs font-bold text-[#888] uppercase mb-2">Nom du rÃƒÆ’Ã‚Â´le</label>
                   <input
                     required
                     disabled={isEditing.isSystem}
@@ -173,13 +173,13 @@ export default function AdminRolesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#888] uppercase mb-4">Permissions attribuÃƒÂ©es</label>
+                <label className="block text-xs font-bold text-[#888] uppercase mb-4">Permissions attribuÃƒÆ’Ã‚Â©es</label>
                 
                 {isEditing.isSuperAdmin ? (
                   <div className="bg-[#FFBF00]/10 border border-[#FFBF00]/30 rounded-lg p-6 text-center">
                     <ShieldAlert className="w-8 h-8 text-[#FFBF00] mx-auto mb-3" />
                     <h4 className="text-[#FFBF00] font-bold">Super Administrateur</h4>
-                    <p className="text-sm text-[#FFBF00]/70 mt-1">Ce rÃƒÂ´le possÃƒÂ¨de implicitement toutes les permissions du systÃƒÂ¨me. Elles ne peuvent ÃƒÂªtre restreintes.</p>
+                    <p className="text-sm text-[#FFBF00]/70 mt-1">Ce rÃƒÆ’Ã‚Â´le possÃƒÆ’Ã‚Â¨de implicitement toutes les permissions du systÃƒÆ’Ã‚Â¨me. Elles ne peuvent ÃƒÆ’Ã‚Âªtre restreintes.</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -233,3 +233,4 @@ export default function AdminRolesPage() {
     </div>
   );
 }
+

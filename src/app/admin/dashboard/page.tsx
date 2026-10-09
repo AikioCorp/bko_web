@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
@@ -35,7 +35,7 @@ const fetcher = (url: string) => adminApi<OverviewData>(url);
 export default function AdminDashboardPage() {
   const pageRef = useRef<HTMLDivElement>(null);
   const { data, error, isLoading } = useSWR("/admin/overview", fetcher, {
-    refreshInterval: 60000, // rafraîchissement toutes les 60s
+    refreshInterval: 60000, // rafraÃ®chissement toutes les 60s
     revalidateOnFocus: true,
   });
 
@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
       <div className="flex h-[60vh] items-center justify-center flex-col text-center space-y-4">
         <ShieldAlert className="w-12 h-12 text-red-500" />
         <h2 className="text-xl font-bold text-white">Erreur de connexion</h2>
-        <p className="text-[#888]">{error?.message || "Impossible de charger les données"}</p>
+        <p className="text-[#888]">{error?.message || "Impossible de charger les donnÃ©es"}</p>
       </div>
     );
   }
@@ -74,10 +74,10 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col gap-2 border-b border-[#222] pb-6">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-3">
           <ShieldAlert className="w-8 h-8 text-[#FFBF00]" />
-          Centre de Contrôle
+          Centre de ContrÃ´le
         </h1>
         <p className="text-[#888888] text-base">
-          Supervision en temps réel de la plateforme, modération et santé du système.
+          Supervision en temps rÃ©el de la plateforme, modÃ©ration et santÃ© du systÃ¨me.
         </p>
       </div>
 
@@ -90,7 +90,7 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{kpis.activeListeners24h.toLocaleString()}</div>
-              <p className="text-xs text-blue-400 mt-1 font-medium">{kpis.plays7d.toLocaleString()} écoutes (7j)</p>
+              <p className="text-xs text-blue-400 mt-1 font-medium">{kpis.plays7d.toLocaleString()} Ã©coutes (7j)</p>
             </CardContent>
           </Card>
         </Link>
@@ -98,7 +98,7 @@ export default function AdminDashboardPage() {
         <Link href="/admin/episodes" className="block outline-none ring-offset-[#0E0E0E] focus-visible:ring-2 focus-visible:ring-[#FFBF00] rounded-xl">
           <Card className="bg-[#111] border-[#222] text-white hover:border-[#444] hover:bg-[#161616] transition-all cursor-pointer h-full">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium text-[#888]">Épisodes publiés</CardTitle>
+              <CardTitle className="text-sm font-medium text-[#888]">Ã‰pisodes publiÃ©s</CardTitle>
               <Radio className="w-4 h-4 text-green-500" />
             </CardHeader>
             <CardContent>
@@ -119,7 +119,7 @@ export default function AdminDashboardPage() {
                 {kpis.openReports}
               </div>
               <p className={`text-xs mt-1 font-medium ${kpis.openReports > 0 ? 'text-red-400' : 'text-[#666]'}`}>
-                {kpis.openReports > 0 ? "Nécessite votre attention" : "Tout est calme"}
+                {kpis.openReports > 0 ? "NÃ©cessite votre attention" : "Tout est calme"}
               </p>
             </CardContent>
           </Card>
@@ -133,7 +133,7 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{formatBytes(kpis.storageBytes)}</div>
-              <p className="text-xs text-purple-400 mt-1 font-medium">{kpis.failedJobs} tâches échouées</p>
+              <p className="text-xs text-purple-400 mt-1 font-medium">{kpis.failedJobs} tÃ¢ches Ã©chouÃ©es</p>
             </CardContent>
           </Card>
         </Link>
@@ -143,7 +143,7 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-xl font-semibold text-white flex items-center gap-2">
             <Activity className="w-5 h-5 text-[#888]" />
-            Derniers Audits Système
+            Derniers Audits SystÃ¨me
           </h2>
           <div className="bg-[#111] border border-[#222] rounded-lg overflow-hidden">
             {recentAudit.length === 0 ? (
@@ -158,7 +158,7 @@ export default function AdminDashboardPage() {
                     <div>
                       <p className="font-medium text-white text-sm uppercase tracking-wide">{audit.action.replace(/_/g, ' ')}</p>
                       <p className="text-xs text-[#888] mt-0.5">
-                        <span className="text-[#AAA] font-medium">{audit.actor?.fullName || 'Système'}</span> sur {audit.entityType}
+                        <span className="text-[#AAA] font-medium">{audit.actor?.fullName || 'SystÃ¨me'}</span> sur {audit.entityType}
                       </p>
                     </div>
                   </div>
@@ -177,7 +177,7 @@ export default function AdminDashboardPage() {
             <Button className="w-full justify-start bg-[#1C1C1C] hover:bg-[#2A2A2A] text-white border border-[#333] h-12" asChild>
               <Link href="/admin/reports">
                 <ShieldAlert className="w-4 h-4 mr-3 text-red-500" />
-                Gérer les signalements ({kpis.openReports})
+                GÃ©rer les signalements ({kpis.openReports})
               </Link>
             </Button>
             <Button className="w-full justify-start bg-[#1C1C1C] hover:bg-[#2A2A2A] text-white border border-[#333] h-12" asChild>
@@ -189,7 +189,7 @@ export default function AdminDashboardPage() {
             <Button className="w-full justify-start bg-[#1C1C1C] hover:bg-[#2A2A2A] text-white border border-[#333] h-12" asChild>
               <Link href="/admin/episodes">
                 <Radio className="w-4 h-4 mr-3 text-green-500" />
-                Réviser les épisodes ({data.pendingReview.episodes})
+                RÃ©viser les Ã©pisodes ({data.pendingReview.episodes})
               </Link>
             </Button>
           </div>
@@ -198,3 +198,4 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+

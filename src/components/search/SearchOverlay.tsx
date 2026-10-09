@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { API_BASE_URL } from "@/lib/api";
 
 import React, { useState, useEffect } from "react";
@@ -65,12 +65,12 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
       <div className="w-full max-w-2xl bg-[#161B22] border border-[#30363D] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Search Input Bar */}
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-3 px-4 py-3.5 border-b border-[#21262D]">
-          <span className="text-[#8B949E] text-lg">🔍</span>
+          <span className="text-[#8B949E] text-lg">ðŸ”</span>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher un podcast, un épisode, une personne, un sujet..."
+            placeholder="Rechercher un podcast, un Ã©pisode, une personne, un sujet..."
             className="flex-1 bg-transparent text-[#F0F6FC] placeholder-[#6E7681] text-base outline-none"
             autoFocus
           />
@@ -90,7 +90,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
             <div className="space-y-3">
               <h4 className="text-xs font-semibold text-[#8B949E] uppercase tracking-wider">Suggestions rapides</h4>
               <div className="flex flex-wrap gap-2">
-                {["Entrepreneuriat Mali", "Culture & Société", "Tech & Innovation", "Musique Bambara"].map((s) => (
+                {["Entrepreneuriat Mali", "Culture & SociÃ©tÃ©", "Tech & Innovation", "Musique Bambara"].map((s) => (
                   <button
                     key={s}
                     onClick={() => {
@@ -132,3 +132,4 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
     </div>
   );
 };
+

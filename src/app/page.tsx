@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, Suspense, useRef } from "react";
 import Link from "next/link";
@@ -63,7 +63,7 @@ function CarouselSection({ title, podcasts }: { title: string, podcasts: any[] }
                   {podcast.name}
                 </h3>
                 <p className="text-xs text-white/80 drop-shadow-md mt-1">
-                  {podcast._count?.episodes || 0} épisodes
+                  {podcast._count?.episodes || 0} Ã©pisodes
                 </p>
               </div>
             </div>
@@ -131,7 +131,7 @@ function HomeContent() {
                   onClick={() => playEpisode(heroEpisode)}
                   className="px-6 md:px-8 py-2 md:py-3 rounded bg-white hover:bg-white/80 text-black font-bold text-sm md:text-lg transition-colors flex items-center justify-center gap-2"
                 >
-                  <span className="text-xl md:text-2xl leading-none">{isPlaying && currentEpisode?.id === heroEpisode.id ? "⏸" : "▶"}</span>
+                  <span className="text-xl md:text-2xl leading-none">{isPlaying && currentEpisode?.id === heroEpisode.id ? "â¸" : "â–¶"}</span>
                   Lecture
                 </button>
                 <Link
@@ -156,7 +156,7 @@ function HomeContent() {
         {latestEpisodes && latestEpisodes.length > 0 && (
           <section className="space-y-3 relative group">
             <h2 className="text-xl md:text-2xl font-bold text-[#E5E5E5] px-4 md:px-12 transition-colors hover:text-white">
-              Nouveautés
+              NouveautÃ©s
             </h2>
             <div className="flex gap-2 md:gap-4 overflow-x-auto px-4 md:px-12 pb-8 pt-2 scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {latestEpisodes.map((ep: any) => (
@@ -170,7 +170,7 @@ function HomeContent() {
                       className="object-cover" 
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center">
-                       <span className="text-4xl text-white drop-shadow-lg">▶</span>
+                       <span className="text-4xl text-white drop-shadow-lg">â–¶</span>
                     </div>
                   </div>
                   <div className="mt-2">
@@ -204,4 +204,5 @@ export default function HomePage() {
     </Suspense>
   );
 }
+
 

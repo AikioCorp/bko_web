@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import {
   Library, Tags, ShieldAlert, BadgeCheck, FileDown, 
   BarChart3, Settings, Database, Activity, Shield, 
   ChevronLeft, ChevronRight, LogOut, ArrowLeft, CreditCard,
-  Sparkles, Loader2, LogIn, Lock
+  Star, Loader2, LogIn, Lock
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { UserDropdown } from "../UserDropdown";
@@ -73,23 +73,23 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       label: "Gestion",
       items: [
         { name: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard },
-        { name: "Émissions", href: "/admin/podcasts", icon: Podcast },
-        { name: "Épisodes", href: "/admin/episodes", icon: Mic2 },
-        { name: "Prototype Écrans", href: "/admin/prototype", icon: Sparkles },
-        { name: "Créateurs", href: "/admin/creators", icon: UserCog },
+        { name: "Ã‰missions", href: "/admin/podcasts", icon: Podcast },
+        { name: "Ã‰pisodes", href: "/admin/episodes", icon: Mic2 },
+        { name: "Prototype Ã‰crans", href: "/admin/prototype", icon: Star },
+        { name: "CrÃ©ateurs", href: "/admin/creators", icon: UserCog },
         { name: "Utilisateurs", href: "/admin/users", icon: Users },
         { name: "Tarifs Studio", href: "/admin/tarifs", icon: CreditCard },
       ]
     },
     {
-      label: "Éditorial",
+      label: "Ã‰ditorial",
       items: [
-        { name: "Sélections et collections", href: "/admin/editorial", icon: Library },
-        { name: "Catégories et langues", href: "/admin/categories", icon: Tags },
+        { name: "SÃ©lections et collections", href: "/admin/editorial", icon: Library },
+        { name: "CatÃ©gories et langues", href: "/admin/categories", icon: Tags },
       ]
     },
     {
-      label: "Modération",
+      label: "ModÃ©ration",
       items: [
         { name: "Signalements", href: "/admin/reports", icon: ShieldAlert },
         { name: "Revendications", href: "/admin/claims", icon: BadgeCheck },
@@ -98,7 +98,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     {
       label: "Suivi",
       items: [
-        { name: "Imports et médias", href: "/admin/media", icon: FileDown },
+        { name: "Imports et mÃ©dias", href: "/admin/media", icon: FileDown },
         { name: "Statistiques", href: "/admin/analytics", icon: BarChart3 },
       ]
     }
@@ -107,10 +107,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const superAdminGroup = {
     label: "Super Admin",
     items: [
-      { name: "Administrateurs et rôles", href: "/admin/roles", icon: Shield },
-      { name: "Paramètres", href: "/admin/settings", icon: Settings },
+      { name: "Administrateurs et rÃ´les", href: "/admin/roles", icon: Shield },
+      { name: "ParamÃ¨tres", href: "/admin/settings", icon: Settings },
       { name: "Journal des actions", href: "/admin/audit", icon: Activity },
-      { name: "État du système", href: "/admin/system", icon: Database },
+      { name: "Ã‰tat du systÃ¨me", href: "/admin/system", icon: Database },
     ]
   };
 
@@ -216,7 +216,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             className={`flex items-center gap-3 w-full h-9 px-2 rounded-md hover:bg-[#1C1C1C] transition-colors text-red-500 hover:text-red-400 ${isSidebarOpen ? "" : "justify-center"}`}
           >
             <LogOut className="w-5 h-5 shrink-0" />
-            {isSidebarOpen && <span className="text-sm font-medium">Déconnexion</span>}
+            {isSidebarOpen && <span className="text-sm font-medium">DÃ©connexion</span>}
           </button>
         </div>
       </div>
@@ -244,7 +244,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             ) : isLoading ? (
               <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
                 <Loader2 className="w-8 h-8 text-[#FFBF00] animate-spin" />
-                <span className="text-sm text-[#888888] font-medium">Vérification de la session administrateur...</span>
+                <span className="text-sm text-[#888888] font-medium">VÃ©rification de la session administrateur...</span>
               </div>
             ) : !isAuthenticated ? (
               <div className="max-w-xl mx-auto my-8 bg-[#171717] border border-[#2A2A2A] rounded-2xl p-8 text-center shadow-2xl">
@@ -253,13 +253,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-2">Session Administrateur Requise</h2>
                 <p className="text-sm text-[#999999] mb-6 leading-relaxed">
-                  L’accès aux données réelles de l’administration nécessite une session active avec le rôle Administrateur ou Super Admin.
+                  Lâ€™accÃ¨s aux donnÃ©es rÃ©elles de lâ€™administration nÃ©cessite une session active avec le rÃ´le Administrateur ou Super Admin.
                 </p>
 
                 <div className="bg-[#101010] border border-[#262626] rounded-xl p-4 mb-6 text-left space-y-2">
                   <div className="text-xs font-semibold uppercase tracking-wider text-[#FFBF00] flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5" />
-                    Compte Démo Administrateur
+                    Compte DÃ©mo Administrateur
                   </div>
                   <div className="text-xs text-[#CCCCCC] font-mono flex items-center justify-between">
                     <span className="text-[#888888]">Identifiant :</span>
@@ -300,8 +300,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     href="/admin/prototype"
                     className="px-5 py-3 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] border border-[#333333] text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
                   >
-                    <Sparkles className="w-4 h-4 text-[#FFBF00]" />
-                    Prototype (12 Écrans)
+                    <Star className="w-4 h-4 text-[#FFBF00]" />
+                    Prototype (12 Ã‰crans)
                   </Link>
                 </div>
 
@@ -320,9 +320,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <div className="w-14 h-14 rounded-2xl bg-red-950/60 border border-red-800/60 flex items-center justify-center mx-auto mb-4 text-red-400">
                   <ShieldAlert className="w-7 h-7" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">Accès Non Autorisé</h2>
+                <h2 className="text-xl font-bold text-white mb-2">AccÃ¨s Non AutorisÃ©</h2>
                 <p className="text-sm text-[#A0A0A0] mb-6 leading-relaxed">
-                  Vous êtes actuellement connecté avec le compte <strong className="text-white">{user?.email}</strong>. Ce compte ne possède pas les privilèges requis (Administrateur ou Super Admin).
+                  Vous Ãªtes actuellement connectÃ© avec le compte <strong className="text-white">{user?.email}</strong>. Ce compte ne possÃ¨de pas les privilÃ¨ges requis (Administrateur ou Super Admin).
                 </p>
                 <div className="flex flex-col gap-3">
                   <button
@@ -338,7 +338,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     href="/"
                     className="w-full py-2.5 rounded-xl bg-[#222222] border border-[#333333] text-white font-medium text-sm hover:bg-[#2A2A2A] transition-colors text-center"
                   >
-                    Retour à l’accueil public
+                    Retour Ã  lâ€™accueil public
                   </Link>
                 </div>
               </div>
@@ -351,3 +351,4 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+

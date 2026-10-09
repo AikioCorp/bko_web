@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 
@@ -60,14 +60,14 @@ export function ErrorBanner({ message, onRetry }: { message: string; onRetry?: (
       <span>{message}</span>
       {onRetry && (
         <Btn onClick={onRetry} variant="ghost">
-          Réessayer
+          RÃ©essayer
         </Btn>
       )}
     </div>
   );
 }
 
-export function Loading({ label = "Chargement…" }: { label?: string }) {
+export function Loading({ label = "Chargementâ€¦" }: { label?: string }) {
   return <div className="p-10 text-center text-sm text-gray-500">{label}</div>;
 }
 
@@ -75,7 +75,7 @@ export function Empty({ children }: { children: React.ReactNode }) {
   return <div className="p-10 text-center text-sm text-gray-500">{children}</div>;
 }
 
-/** Fenêtre de confirmation avec saisie d'un motif (obligatoire ou non). */
+/** FenÃªtre de confirmation avec saisie d'un motif (obligatoire ou non). */
 export function ReasonDialog({
   title,
   description,
@@ -127,10 +127,11 @@ export function ReasonDialog({
             Annuler
           </Btn>
           <Btn variant={danger ? "danger" : "primary"} onClick={submit} disabled={busy || (required && !reason.trim())}>
-            {busy ? "…" : confirmLabel}
+            {busy ? "â€¦" : confirmLabel}
           </Btn>
         </div>
       </Card>
     </div>
   );
 }
+

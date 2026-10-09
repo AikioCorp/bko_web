@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -55,7 +55,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({ mediaType, episode
 
       const sessionJson = await sessionRes.json();
       if (!sessionJson.success) {
-        setErrorMsg(sessionJson.error?.message || "Échec de création de la session d'upload");
+        setErrorMsg(sessionJson.error?.message || "Ã‰chec de crÃ©ation de la session d'upload");
         setStatus("ERROR");
         return;
       }
@@ -83,7 +83,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({ mediaType, episode
           }
         };
 
-        xhr.onerror = () => reject(new Error("Erreur réseau pendant l'upload direct"));
+        xhr.onerror = () => reject(new Error("Erreur rÃ©seau pendant l'upload direct"));
         xhr.send(selectedFile);
       });
 
@@ -124,10 +124,10 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({ mediaType, episode
       >
         <UploadCloud className="w-10 h-10 text-[#E5A93C]" />
         <span className="font-bold text-white text-xs">
-          Glissez-déposez votre fichier {mediaType === "AUDIO" ? "Audio (MP3, WAV, M4A)" : "Vidéo (MP4)"}
+          Glissez-dÃ©posez votre fichier {mediaType === "AUDIO" ? "Audio (MP3, WAV, M4A)" : "VidÃ©o (MP4)"}
         </span>
         <span className="text-[10px] text-gray-400">
-          Max : {mediaType === "AUDIO" ? "250 Mo" : "2 Go"} • Transfert direct sécurisé R2
+          Max : {mediaType === "AUDIO" ? "250 Mo" : "2 Go"} â€¢ Transfert direct sÃ©curisÃ© R2
         </span>
       </label>
 
@@ -147,14 +147,14 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({ mediaType, episode
       {status === "PROCESSING" && (
         <div className="flex items-center justify-center space-x-2 text-xs text-[#E5A93C] font-bold">
           <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Vérification et analyse FFprobe en cours...</span>
+          <span>VÃ©rification et analyse FFprobe en cours...</span>
         </div>
       )}
 
       {status === "SUCCESS" && (
         <div className="flex items-center justify-center space-x-2 text-xs text-green-400 font-bold bg-green-500/10 p-3 rounded-lg border border-green-500/20">
           <CheckCircle className="w-4 h-4" />
-          <span>Fichier uploadé et rattaché avec succès !</span>
+          <span>Fichier uploadÃ© et rattachÃ© avec succÃ¨s !</span>
         </div>
       )}
 
@@ -167,3 +167,4 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({ mediaType, episode
     </div>
   );
 };
+

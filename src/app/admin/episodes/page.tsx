@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
@@ -13,10 +13,10 @@ const fetcher = (url: string) => adminApi(url);
 
 const StatusBadge = ({ status }: { status: string }) => {
   switch (status) {
-    case "PUBLISHED": return <span className="bg-[#FFBF00]/10 text-[#FFBF00] border border-[#FFBF00]/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Publié</span>;
+    case "PUBLISHED": return <span className="bg-[#FFBF00]/10 text-[#FFBF00] border border-[#FFBF00]/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">PubliÃ©</span>;
     case "DRAFT": return <span className="bg-[#2A2A2A] text-[#B8B8B8] border border-[#3A3A3A] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Brouillon</span>;
-    case "SCHEDULED": return <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Planifié</span>;
-    case "ARCHIVED": return <span className="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Archivé</span>;
+    case "SCHEDULED": return <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">PlanifiÃ©</span>;
+    case "ARCHIVED": return <span className="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">ArchivÃ©</span>;
     default: return <span className="bg-[#2A2A2A] text-[#B8B8B8] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{status}</span>;
   }
 };
@@ -52,7 +52,7 @@ export default function AdminEpisodesPage() {
   
   const handleBulkPublish = async () => {
     if (selected.length === 0) return;
-    if (!confirm(`Voulez-vous vraiment publier ces ${selected.length} épisodes ?`)) return;
+    if (!confirm(`Voulez-vous vraiment publier ces ${selected.length} Ã©pisodes ?`)) return;
     
     setIsPublishing(true);
     try {
@@ -61,7 +61,7 @@ export default function AdminEpisodesPage() {
         body: JSON.stringify({ ids: selected }),
       });
       if (res.success) {
-        alert(res.message || "Opération terminée.");
+        alert(res.message || "OpÃ©ration terminÃ©e.");
         setSelected([]);
         void mutate();
       } else {
@@ -95,8 +95,8 @@ export default function AdminEpisodesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Épisodes</h1>
-          <p className="text-sm text-[#888888] mt-1">Gérez tous les épisodes de la plateforme.</p>
+          <h1 className="text-2xl font-extrabold text-white">Ã‰pisodes</h1>
+          <p className="text-sm text-[#888888] mt-1">GÃ©rez tous les Ã©pisodes de la plateforme.</p>
         </div>
         <div className="flex items-center gap-3">
           {selected.length > 0 && (
@@ -112,7 +112,7 @@ export default function AdminEpisodesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#757575]" />
             <input 
               type="text" 
-              placeholder="Rechercher un épisode..." 
+              placeholder="Rechercher un Ã©pisode..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="bg-[#1C1C1C] border border-[#2A2A2A] text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-[#FFBF00] w-64"
@@ -132,20 +132,20 @@ export default function AdminEpisodesPage() {
                   </button>
                 </th>
                 <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider w-10 text-center">#</th>
-                <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider">Épisode</th>
+                <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider">Ã‰pisode</th>
                 <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider">Podcast</th>
                 <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider">Statut</th>
-                <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider text-center">Écoutes</th>
+                <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider text-center">Ã‰coutes</th>
                 <th className="p-4 text-xs font-bold text-[#757575] uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#2A2A2A]">
               {isLoading && !displayed.length ? (
-                <tr><td colSpan={6} className="p-8 text-center text-[#757575]">Chargement des épisodes...</td></tr>
+                <tr><td colSpan={6} className="p-8 text-center text-[#757575]">Chargement des Ã©pisodes...</td></tr>
               ) : error ? (
                 <tr><td colSpan={6} className="p-8 text-center text-red-400">Erreur lors du chargement.</td></tr>
               ) : displayed.length === 0 ? (
-                <tr><td colSpan={6} className="p-8 text-center text-[#757575]">Aucun épisode trouvé.</td></tr>
+                <tr><td colSpan={6} className="p-8 text-center text-[#757575]">Aucun Ã©pisode trouvÃ©.</td></tr>
               ) : (
                 displayed.map((ep, idx) => (
                   <tr 
@@ -169,14 +169,14 @@ export default function AdminEpisodesPage() {
                           </p>
                           <p className="text-xs text-[#757575] flex items-center gap-1.5 mt-0.5">
                             <span className="opacity-70">{new Date(ep.createdAt).toLocaleDateString('fr-FR')}</span>
-                            <span className="opacity-40">•</span>
+                            <span className="opacity-40">â€¢</span>
                             <span>{Math.round((ep.durationSeconds || 0) / 60)} min</span>
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="p-4 text-sm text-[#B8B8B8]">
-                      {ep.podcast?.name || "—"}
+                      {ep.podcast?.name || "â€”"}
                     </td>
                     <td className="p-4">
                       <StatusBadge status={ep.status} />
@@ -206,7 +206,7 @@ export default function AdminEpisodesPage() {
 
         <div className="p-4 border-t border-[#2A2A2A] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#757575]">
           <div>
-            <span>{displayed.length > 0 ? (page - 1) * limit + 1 : 0} — {Math.min(page * limit, totalItems)} sur {totalItems}</span>
+            <span>{displayed.length > 0 ? (page - 1) * limit + 1 : 0} â€” {Math.min(page * limit, totalItems)} sur {totalItems}</span>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -216,7 +216,7 @@ export default function AdminEpisodesPage() {
               onClick={() => setPage(p => Math.max(p - 1, 1))}
               className="h-8 text-xs bg-[#171717] border-[#2A2A2A] text-white hover:bg-[#262626] disabled:opacity-40"
             >
-              <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Précédent
+              <ChevronLeft className="w-3.5 h-3.5 mr-1" /> PrÃ©cÃ©dent
             </Button>
             <span className="text-white px-2">Page {page} / {Math.max(totalPages, 1)}</span>
             <Button
@@ -234,3 +234,4 @@ export default function AdminEpisodesPage() {
     </div>
   );
 }
+

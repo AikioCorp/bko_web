@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -65,7 +65,7 @@ export default function AdminReportsPage() {
             <AlertTriangle className="w-6 h-6 text-red-500" />
             Signalements
           </h1>
-          <p className="text-[#888888]">Gérez les signalements de contenus abusifs ou inappropriés.</p>
+          <p className="text-[#888888]">GÃ©rez les signalements de contenus abusifs ou inappropriÃ©s.</p>
         </div>
         <select
           value={statusFilter}
@@ -75,8 +75,8 @@ export default function AdminReportsPage() {
           <option value="">Tous les statuts</option>
           <option value="OPEN">Ouverts</option>
           <option value="IN_REVIEW">En cours d'examen</option>
-          <option value="RESOLVED">Résolus (Sanctionnés)</option>
-          <option value="DISMISSED">Classés sans suite</option>
+          <option value="RESOLVED">RÃ©solus (SanctionnÃ©s)</option>
+          <option value="DISMISSED">ClassÃ©s sans suite</option>
         </select>
       </div>
 
@@ -89,7 +89,7 @@ export default function AdminReportsPage() {
           <div className="p-12 text-center text-[#888]">
             <CheckCircle className="w-12 h-12 mx-auto mb-4 text-[#333]" />
             <h3 className="text-lg font-medium text-white mb-1">Tout est calme</h3>
-            <p>Aucun signalement ne correspond à vos filtres.</p>
+            <p>Aucun signalement ne correspond Ã  vos filtres.</p>
           </div>
         ) : (
           <div className="divide-y divide-[#222]">
@@ -107,11 +107,11 @@ export default function AdminReportsPage() {
                         </div>
                         {report.target ? (
                           <div className="bg-[#0A0A0A] border border-[#222] p-3 rounded-lg mb-2">
-                            <div className="font-bold text-white">{report.target.name || report.target.title || report.target.fullName || "Contenu ciblé"}</div>
+                            <div className="font-bold text-white">{report.target.name || report.target.title || report.target.fullName || "Contenu ciblÃ©"}</div>
                             <div className="text-xs text-[#888] font-mono mt-1">ID: {report.target.id}</div>
                           </div>
                         ) : (
-                          <div className="text-sm text-[#888] italic mb-2">Cible introuvable ou déjà supprimée (ID: {report.targetId})</div>
+                          <div className="text-sm text-[#888] italic mb-2">Cible introuvable ou dÃ©jÃ  supprimÃ©e (ID: {report.targetId})</div>
                         )}
                       </div>
                     </div>
@@ -122,11 +122,11 @@ export default function AdminReportsPage() {
                     <div>
                       <div className="text-xs text-[#888] font-bold mb-2 uppercase tracking-wider">Message du plaignant</div>
                       <p className="text-sm text-[#ccc] bg-[#0A0A0A] border border-[#222] p-3 rounded-lg leading-relaxed whitespace-pre-wrap">
-                        {report.description || "Aucun détail fourni."}
+                        {report.description || "Aucun dÃ©tail fourni."}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-[#888]">
-                      Signalé par : <span className="font-semibold text-white">{report.reporter?.fullName || "Anonyme"}</span> 
+                      SignalÃ© par : <span className="font-semibold text-white">{report.reporter?.fullName || "Anonyme"}</span> 
                       {report.reporter && <span className="font-mono">({report.reporter.id})</span>}
                     </div>
                   </div>
@@ -142,12 +142,12 @@ export default function AdminReportsPage() {
                       )}
                       {report.status === "RESOLVED" && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-semibold bg-green-500/10 text-green-500 mb-4">
-                          <CheckCircle className="w-4 h-4" /> Résolu
+                          <CheckCircle className="w-4 h-4" /> RÃ©solu
                         </span>
                       )}
                       {report.status === "DISMISSED" && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-semibold bg-[#222] text-[#888] mb-4">
-                          <Ban className="w-4 h-4" /> Ignoré
+                          <Ban className="w-4 h-4" /> IgnorÃ©
                         </span>
                       )}
                     </div>
@@ -190,7 +190,7 @@ export default function AdminReportsPage() {
             </span>
             <div className="flex gap-2">
               <Button size="sm" variant="ghost" disabled={page === 1} onClick={() => setPage(page - 1)}>
-                Précédent
+                PrÃ©cÃ©dent
               </Button>
               <Button size="sm" variant="ghost" disabled={page * limit >= reportsData.total} onClick={() => setPage(page + 1)}>
                 Suivant
@@ -202,3 +202,4 @@ export default function AdminReportsPage() {
     </div>
   );
 }
+

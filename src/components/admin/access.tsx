@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { createContext, useContext } from "react";
 
@@ -14,8 +14,9 @@ export function AccessProvider({ value, children }: { value: AdminAccess; childr
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-/** `can("moderation.edit")` : l'interface masque ce que le serveur refuserait de toute façon. */
+/** `can("moderation.edit")` : l'interface masque ce que le serveur refuserait de toute faÃ§on. */
 export function useAccess() {
   const a = useContext(Ctx);
   return { ...a, can: (perm: string) => a.permissions.includes(perm) };
 }
+

@@ -21,7 +21,7 @@ import {
   Building2,
   UserCheck,
   Globe,
-  Sparkles,
+  Star,
   ArrowRight,
   Eye,
   Info

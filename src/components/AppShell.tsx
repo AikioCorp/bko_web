@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { usePathname } from "next/navigation";
@@ -41,3 +41,4 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+

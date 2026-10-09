@@ -22,7 +22,7 @@ import {
   Trash2,
   Eye,
   Calendar,
-  Sparkles,
+  Star,
   Info,
   Radio,
   FileAudio,
@@ -804,7 +804,7 @@ export default function NewEpisodeWizard() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#FFBF00]" />
+                  <Star />
                   {selectedFormat === "AUDIO" 
                     ? "Ajouter aussi une version vidéo" 
                     : "Ajouter aussi une version audio"}
