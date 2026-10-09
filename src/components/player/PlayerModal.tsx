@@ -14,9 +14,10 @@ interface PlayerModalProps {
 
 export function PlayerModal({ isOpen, onClose }: PlayerModalProps) {
   const {
-    currentEpisode, isPlaying, progressPercent, currentTime, totalTime,
+    currentEpisode, isPlaying, currentTime, duration: totalTime,
     togglePlay, seek
   } = usePlayerStore();
+  const progressPercent = totalTime > 0 ? Math.min(100, (currentTime / totalTime) * 100) : 0;
   
   const scrubberRef = useRef<HTMLDivElement>(null);
 
