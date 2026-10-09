@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Bookmark, Radio, Smartphone, ShieldCheck, Sparkles, Download, ArrowRight, Mic } from "lucide-react";
+import { Home, Compass, Bookmark, Radio, Smartphone, ShieldCheck, Sparkles, Download, ArrowRight, Mic, Clock } from "lucide-react";
 import { useConsoleAccess } from "@/hooks/useConsoleAccess";
 import { AppDownloadModal } from "./modals/AppDownloadModal";
 
@@ -44,14 +44,20 @@ export const Sidebar: React.FC = () => {
       icon: Compass,
       exact: false,
     },
-    {
-      label: "Bibliothèque",
-      href: "/library",
-      icon: Bookmark,
-      exact: false,
-    },
-    {
-      label: "Notre Studio (Tarifs)",
+          {
+        label: "Bibliothèque",
+        href: "/library",
+        icon: Bookmark,
+        exact: false,
+      },
+      ...(isAuthenticated ? [{
+        label: "Historique",
+        href: "/library?tab=history",
+        icon: Clock,
+        exact: false,
+      }] : []),
+      {
+        label: "Notre Studio (Tarifs)",
       href: "/tarifs",
       icon: Mic,
       exact: false,

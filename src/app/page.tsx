@@ -77,7 +77,7 @@ function HomeContent() {
 
   const fetcher = (url: string) => fetchApi(url).then((json) => json.data);
   const { data: historyData } = useSWR(
-    user ? `${API_BASE_URL}/me/history` : null,
+    user ? '/me/continue-listening' : null,
     fetcher,
   );
   const { data, isLoading } = useSWR(
@@ -156,7 +156,7 @@ function HomeContent() {
               p.primaryLanguage?.code === langFilter ||
               p.language?.code === langFilter,
             ),
-            shelf.slug
+            entry[1][0]?.categories?.[0]?.category?.slug
           ])
           .filter((entry: any) => entry[1].length > 0)
         .sort((a, b) => b[1].length - a[1].length);
@@ -240,7 +240,7 @@ function HomeContent() {
                 Historique de lecture
               </h2>
               <Link
-                href="/history"
+                href="/library"
                 className="text-xs font-bold text-[#808080] hover:text-white transition-colors"
               >
                 Voir l'historique
@@ -605,7 +605,7 @@ function HomeContent() {
               </div>
             </div>
             <Link
-              href="/studio/podcasts/new"
+              href="/become-creator"
               className="shrink-0 bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold px-8 py-4 rounded-full transition-colors shadow-lg active:scale-95 w-full md:w-auto text-center"
             >
               Créer / Proposer mon émission

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from 'swr';
 import {
   Bookmark, Clock, Play, Trash2, Radio, CheckCircle2,
@@ -13,14 +13,18 @@ import { usePlayerStore, PlayerEpisode } from '../../store/playerStore';
 import { useAuthStore } from '../../store/authStore';
 import { fetchApi } from '@/lib/api';
 import { AppDownloadModal } from '@/components/modals/AppDownloadModal';
+import { CreatePlaylistModal } from '@/components/modals/CreatePlaylistModal';
 
 const fetcher = (url: string) => fetchApi(url).then(res => res.data);
 
-export default function LibraryPage() {
+function LibraryContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const { playEpisode } = usePlayerStore();
-  const [activeTab, setActiveTab] = useState<'saved' | 'following' | 'history' | 'playlists'>('saved');
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as 'saved' | 'following' | 'history' | 'playlists';
+  const [activeTab, setActiveTab] = useState<'saved' | 'following' | 'history' | 'playlists'>(tabParam || 'saved');
+  useEffect(() => { if (tabParam) setActiveTab(tabParam); }, [tabParam]);
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
 
   // Queries
@@ -144,21 +148,21 @@ export default function LibraryPage() {
             savedEpisodes.map((se: any) => (
               <div key={se.id} className="group flex items-center justify-between p-3 rounded-2xl hover:bg-[#141414] transition-all border border-transparent hover:border-[#222222]">
                 <div className="flex items-center gap-4">
-                  <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#282828] cursor-pointer" onClick={() => handlePlay(se.episode)}>
-                    <Image unoptimized src={se.episode?.cover || se.episode?.podcast?.cover || '/images/default-cover.jpg'} alt={se.episode?.title || ''} fill className="object-cover" />
+                  <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#282828] cursor-pointer" onClick={() => handlePlay(se)}>
+                    <Image unoptimized src={se?.cover || se?.podcast?.cover || '/images/default-cover.jpg'} alt={se?.title || ''} fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Play className="w-5 h-5 fill-white text-white" />
                     </div>
                   </div>
                   <div className="flex flex-col">
-                    <h4 className="text-sm font-bold text-white group-hover:text-[#FFBF00] transition-colors cursor-pointer" onClick={() => handlePlay(se.episode)}>
-                      {se.episode?.title}
+                    <h4 className="text-sm font-bold text-white group-hover:text-[#FFBF00] transition-colors cursor-pointer" onClick={() => handlePlay(se)}>
+                      {se?.title}
                     </h4>
-                    <span className="text-xs text-[#888888]">{se.episode?.podcast?.name}</span>
+                    <span className="text-xs text-[#888888]">{se?.podcast?.name}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <button onClick={() => unsaveEpisode(se.episodeId)} className="text-xs text-[#FFBF00] hover:text-white transition-colors">Retirer</button>
+                  <button onClick={() => unsaveEpisode(se.id)} className="text-xs text-[#FFBF00] hover:text-white transition-colors">Retirer</button>
                 </div>
               </div>
             ))
@@ -272,5 +276,14 @@ export default function LibraryPage() {
 
       <AppDownloadModal isOpen={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} />
     </div>
+  );
+}
+
+
+export default function LibraryPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-white">Chargement...</div>}>
+      <LibraryContent />
+    </Suspense>
   );
 }

@@ -53,7 +53,7 @@ export function PlayerModal({ isOpen, onClose }: PlayerModalProps) {
       
       {/* Background blurred cover */}
       <div 
-        className="absolute inset-0 opacity-40 blur-3xl scale-110 pointer-events-none"
+        className={"absolute inset-0 opacity-50 blur-[100px] scale-[1.5] pointer-events-none " + (isPlaying ? 'animate-[spin_40s_linear_infinite]' : '')}
         style={{ 
           backgroundImage: `url(${currentEpisode.cover || currentEpisode.podcast?.cover})`,
           backgroundSize: 'cover',
@@ -67,7 +67,19 @@ export function PlayerModal({ isOpen, onClose }: PlayerModalProps) {
         <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
           <X className="w-6 h-6" />
         </button>
-        <span className="text-xs font-bold text-white/50 uppercase tracking-widest">En lecture</span>
+        <div className="flex items-center gap-3">
+          {isPlaying && (
+            <div className="flex items-end gap-[2px] h-3">
+              <div className="w-1 bg-[#FFBF00] rounded-full animate-[pulse_0.8s_ease-in-out_infinite] h-full"></div>
+              <div className="w-1 bg-[#FFBF00] rounded-full animate-[pulse_1.2s_ease-in-out_infinite_0.2s] h-2/3"></div>
+              <div className="w-1 bg-[#FFBF00] rounded-full animate-[pulse_0.9s_ease-in-out_infinite_0.4s] h-full"></div>
+              <div className="w-1 bg-[#FFBF00] rounded-full animate-[pulse_1.5s_ease-in-out_infinite_0.1s] h-1/2"></div>
+            </div>
+          )}
+          <span className="text-xs font-bold text-white/50 uppercase tracking-widest">
+            {isPlaying ? 'En lecture' : 'En pause'}
+          </span>
+        </div>
         <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white transition-colors">
           <Share className="w-5 h-5" />
         </button>
@@ -77,11 +89,11 @@ export function PlayerModal({ isOpen, onClose }: PlayerModalProps) {
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 md:p-12 max-w-2xl mx-auto w-full gap-8">
         
         {/* Cover Art (Giant) */}
-        <div className="w-full max-w-[300px] md:max-w-[400px] aspect-square rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-[#1A1A1A]">
+        <div className={"w-full max-w-[300px] md:max-w-[400px] aspect-square rounded-[2rem] overflow-hidden border border-white/10 bg-[#1A1A1A] transition-all duration-1000 " + (isPlaying ? 'shadow-[0_0_80px_rgba(255,191,0,0.15)] scale-[1.02]' : 'shadow-2xl scale-100')}>
           <img 
             src={currentEpisode.cover || currentEpisode.podcast?.cover} 
             alt={currentEpisode.title} 
-            className="w-full h-full object-cover"
+            className={"w-full h-full object-cover transition-transform duration-[20s] ease-linear " + (isPlaying ? 'scale-110' : 'scale-100')}
           />
         </div>
 

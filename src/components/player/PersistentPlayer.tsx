@@ -242,7 +242,9 @@ export const PersistentPlayer = () => {
       </div>
 
       {isExpanded && (
-        <div className="fixed inset-0 z-[60] bg-[#0B0B0B] flex flex-col animate-in slide-in-from-bottom-8 duration-300">
+        <div className="fixed inset-0 z-[60] bg-[#0B0B0B] flex flex-col animate-in slide-in-from-bottom-8 duration-300 overflow-hidden">
+          <div className={"absolute inset-0 opacity-50 blur-[100px] scale-[1.5] pointer-events-none " + (isPlaying ? 'animate-[spin_40s_linear_infinite]' : '')} style={{ backgroundImage: `url(${currentEpisode.cover || currentEpisode.podcast.cover})`, backgroundSize: 'cover' }} />
+          <div className="absolute inset-0 bg-[#0B0B0B]/70 pointer-events-none" />
           <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-lg mx-auto w-full relative">
             <button onClick={() => setIsExpanded(false)} className="absolute top-8 left-0 text-white/70 hover:text-white transition-colors p-2">
               <Minimize2 className="w-6 h-6" />
@@ -251,23 +253,25 @@ export const PersistentPlayer = () => {
               <Volume2 className="w-4 h-4 text-white/70" />
               <input type="range" min={0} max={1} step={0.05} value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-24 h-1 bg-[#282828] accent-white rounded-full cursor-pointer" />
             </div>
-            <div className="w-full aspect-square bg-[#1C1C1E] rounded-3xl shadow-2xl overflow-hidden mt-8 mb-12">
-              <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-full h-full object-cover" />
+            <div className={"w-full aspect-square bg-[#1C1C1E] rounded-[2rem] overflow-hidden mt-8 mb-12 transition-all duration-1000 " + (isPlaying ? 'shadow-[0_0_80px_rgba(255,191,0,0.15)] scale-[1.02]' : 'shadow-2xl scale-100')}>
+              <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className={"w-full h-full object-cover transition-transform duration-[20s] ease-linear " + (isPlaying ? 'scale-110' : 'scale-100')} />
             </div>
             <div className="w-full mb-8 flex items-center justify-between">
               <div className="min-w-0 flex-1 pr-4">
                 <p className="text-xs text-white/50 mb-1">{currentEpisode.podcast.name}</p>
                 <h2 className="text-2xl font-bold text-white truncate">{currentEpisode.title}</h2>
               </div>
-              <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors shrink-0 relative">
-                <MoreHorizontal className="w-4 h-4" />
+              <div className="relative shrink-0">
+                <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
                 {showOptionsMenu && (
                   <div className="absolute bottom-full right-0 mb-2 w-48 bg-[#2C2C2E] rounded-xl shadow-2xl border border-white/10 overflow-hidden py-1 z-50">
                     <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10" onClick={() => { navigator.clipboard.writeText(window.location.href); setShowOptionsMenu(false); }}>Copier le lien <Share className="w-4 h-4" /></button>
-                    <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10 border-t border-white/10" onClick={() => setShowOptionsMenu(false)}>Intégrer - Épisode... <Code className="w-4 h-4" /></button>
+                    <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10 border-t border-white/10" onClick={() => setShowOptionsMenu(false)}>Partager <Code className="w-4 h-4" /></button>
                   </div>
                 )}
-              </button>
+              </div>
             </div>
             <div className="w-full mb-10">
               <input type="range" min={0} max={total} value={Math.min(currentTime, total)} onChange={(e) => seek(parseFloat(e.target.value))} className="w-full h-1.5 bg-white/20 rounded-full cursor-pointer appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full" />
@@ -336,15 +340,16 @@ export const PersistentPlayer = () => {
             </div>
           </div>
           <div className="flex items-center gap-3 border-l border-white/10 pl-4 relative">
-            <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="hover:text-[#FFBF00] transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
-            {showOptionsMenu && (
-              <div className="absolute bottom-full right-0 mb-4 w-48 bg-[#2C2C2E] rounded-xl shadow-2xl border border-white/10 overflow-hidden py-1 z-50">
-                <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10" onClick={() => { navigator.clipboard.writeText(window.location.href); setShowOptionsMenu(false); }}>Copier le lien <Share className="w-4 h-4" /></button>
-                <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10 border-t border-white/10" onClick={() => setShowOptionsMenu(false)}>Intégrer - Épisode... <Code className="w-4 h-4" /></button>
-              </div>
-            )}
+            <div className="relative">
+              <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="hover:text-[#FFBF00] transition-colors flex items-center justify-center">
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+              {showOptionsMenu && (
+                <div className="absolute bottom-full right-0 mb-4 w-48 bg-[#2C2C2E] rounded-xl shadow-2xl border border-white/10 overflow-hidden py-1 z-50">
+                  <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-white/10" onClick={() => { navigator.clipboard.writeText(window.location.href); setShowOptionsMenu(false); }}>Copier le lien <Share className="w-4 h-4" /></button>
+                </div>
+              )}
+            </div>
             <button className="w-5 h-5 rounded-full border border-white flex items-center justify-center text-[10px] font-bold hover:bg-white hover:text-black transition-colors">i</button>
             <button onClick={toggleRightPanel} className="hover:text-[#FFBF00] transition-colors relative">
               <ListMusic className="w-5 h-5" />
@@ -356,7 +361,7 @@ export const PersistentPlayer = () => {
           </div>
         </div>
         {showRightPanel && (
-          <div className="absolute bottom-full right-0 mb-4 w-80 max-h-96 bg-[#1A1A1A]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col overflow-hidden z-50">
+          <div className={`absolute bottom-full right-0 mb-4 w-80 max-h-96 bg-[#1A1A1A]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col overflow-hidden ${isExpanded ? 'z-[70]' : 'z-50'}`}>
             <div className="p-3 border-b border-white/10 flex items-center justify-between">
               <h3 className="text-sm font-bold text-white">File d\'attente</h3>
               <button onClick={toggleRightPanel} className="text-white/50 hover:text-white">
