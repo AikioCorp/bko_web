@@ -1,0 +1,31 @@
+.container {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.scrolling {
+  animation: title-scroll var(--title-duration) linear infinite alternate;
+}
+
+.container:hover .scrolling,
+.container:focus-within .scrolling,
+:global(button:focus-visible) .scrolling {
+  animation-play-state: paused;
+}
+
+@keyframes title-scroll {
+  0%, 20% { transform: translateX(0); }
+  80%, 100% { transform: translateX(var(--title-distance)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrolling { animation: none; }
+  .text { display: block; overflow: hidden; text-overflow: ellipsis; }
+}
