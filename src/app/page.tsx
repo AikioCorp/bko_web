@@ -1,475 +1,623 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import Link from "next/link";
-import Image from "@/components/media/PodcastCover";
 import useSWR from "swr";
+import { API_BASE_URL, fetchApi } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
-import { API_BASE_URL } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
+import { usePlayerStore } from "@/store/playerStore";
+import { HeroBanner } from "@/components/home/HeroBanner";
+import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 import {
   Play,
+  Pause,
   Bookmark,
   Share2,
   Clock,
   Download,
-  MoreVertical,
   ListPlus,
-  SlidersHorizontal,
   Mic,
-  ArrowRight,
   Info,
-  Check,
+  Briefcase,
+  Users,
+  Globe,
+  Cpu,
+  BookOpen,
+  Music,
+  Newspaper,
+  TrendingUp,
+  Radio,
   Smartphone,
+  ChevronRight,
+  SlidersHorizontal,
+  ChevronLeft,
+  Headphones,
 } from "lucide-react";
-import { usePlayerStore, PlayerEpisode } from "../store/playerStore";
-import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
-import { DownloadAppSection } from "@/components/ui/DownloadAppSection";
 
 function HomeSkeleton() {
   return (
-    <div className="p-4 md:p-8 w-full space-y-8 animate-pulse select-none bg-[#0B0B0B] min-h-screen">
-      {/* Alert Banner Skeleton */}
-      <div className="bg-[#141414] border border-[#242424] rounded-xl h-12 w-full"></div>
-      
-      {/* Hero Card Skeleton */}
-      <div className="rounded-2xl bg-[#141414] border border-[#242424] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 h-[300px]">
-        <div className="space-y-4 w-full max-w-xl">
-          <div className="h-4 bg-[#2A2A2A] rounded w-24"></div>
-          <div className="h-8 bg-[#2A2A2A] rounded w-3/4"></div>
-          <div className="h-4 bg-[#2A2A2A] rounded w-full"></div>
-          <div className="h-4 bg-[#2A2A2A] rounded w-5/6"></div>
-          <div className="flex gap-3 pt-4">
-            <div className="h-10 bg-[#2A2A2A] rounded-full w-32"></div>
-            <div className="h-10 bg-[#2A2A2A] rounded-full w-32"></div>
-          </div>
-        </div>
-        <div className="w-48 h-48 bg-[#2A2A2A] rounded-xl hidden md:block shrink-0"></div>
-      </div>
-
-      {/* Filter Bar Skeleton */}
-      <div className="flex gap-2 pb-2 overflow-hidden">
-        <div className="h-8 bg-[#141414] border border-[#242424] rounded-full w-24"></div>
-        <div className="h-8 bg-[#141414] border border-[#242424] rounded-full w-20"></div>
-        <div className="h-8 bg-[#141414] border border-[#242424] rounded-full w-32"></div>
-        <div className="h-8 bg-[#141414] border border-[#242424] rounded-full w-24"></div>
-      </div>
-
-      {/* Sections Skeleton */}
-      <div className="space-y-4">
-        <div className="h-6 bg-[#2A2A2A] rounded w-48 mb-4"></div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 lg:gap-5">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="flex flex-col gap-2">
-              <div className="aspect-square bg-[#141414] border border-[#242424] rounded-xl w-full"></div>
-              <div className="h-3 bg-[#2A2A2A] rounded w-3/4 mt-1"></div>
-              <div className="h-3 bg-[#2A2A2A] rounded w-1/2"></div>
+    <div className="animate-pulse space-y-12 pb-32 bg-[#0B0B0B] min-h-screen">
+      <div className="h-[60vh] bg-[#141414] w-full" />
+      <div className="px-4 md:px-12 space-y-8">
+        {[1, 2, 3].map((row) => (
+          <div key={row} className="space-y-4">
+            <div className="h-6 bg-[#2A2A2A] rounded w-48 mb-4"></div>
+            <div className="flex gap-4 overflow-x-auto pb-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="min-w-[280px] h-[160px] bg-[#1A1A1A] rounded-xl"
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 function HomeContent() {
-  const { playEpisode } = usePlayerStore();
   const searchParams = useSearchParams();
-  const [selectedFilter, setSelectedFilter] = useState("Toutes les langues");
+  const langFilter = searchParams.get("lang") || "ALL";
+  const { user } = useAuthStore();
+  const { playEpisode, currentEpisode, isPlaying, addToQueue, togglePlay } =
+    usePlayerStore();
+
+  const handlePlay = (ep: any) => {
+    if (currentEpisode?.id === ep.id) {
+      togglePlay();
+    } else {
+      playEpisode(ep);
+    }
+  };
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const handleSave = () => setIsSaved(!isSaved);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const handleShare = () => { navigator.clipboard.writeText(window.location.href); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2000); };
+  const [filterMode, setFilterMode] = useState("ALL");
 
-  useEffect(() => {
-    const langParam = searchParams.get("lang");
-    if (langParam === "bm") setSelectedFilter("• Bamanankan");
-    else if (langParam === "fr") setSelectedFilter("Français");
-    else if (langParam === "ALL") setSelectedFilter("Toutes les langues");
-  }, [searchParams]);
+  const fetcher = (url: string) => fetchApi(url).then((json) => json.data);
+  const { data: historyData } = useSWR(
+    user ? `${API_BASE_URL}/interactions/history` : null,
+    fetcher,
+  );
+  const { data, isLoading } = useSWR(
+    `${API_BASE_URL}/home?country=all&u=${user ? (user as any).id : "guest"}`,
+    fetcher,
+  );
+  const { data: catData } = useSWR(`${API_BASE_URL}/categories`, fetcher);
 
-  const filters = [
-    "Toutes les langues",
-    "Français",
-    "• Bamanankan",
-    "Soninké",
-    "Peul (Fulfulde)",
-    "Société & Récits",
-    "Économie & Tech",
-    "Culture & Arts",
-  ];
+  if (isLoading || !data) return <HomeSkeleton />;
 
+  const { heroEpisode, trending } = data;
+  const latestEpisodes = (data.latestEpisodes || []).filter(
+    (ep: any) =>
+      langFilter === "ALL" ||
+      ep.language?.code === langFilter ||
+      ep.podcast?.primaryLanguage?.code === langFilter,
+  );
+  const categoriesList = catData || [];
 
-  const fetcher = (url: string) => fetch(url).then((res) => res.json()).then((json) => json.data);
-  const { data, isLoading } = useSWR(`${API_BASE_URL}/home?country=all`, fetcher);
+  const heroSlides =
+    data.heroSlides && data.heroSlides.length > 0
+      ? data.heroSlides
+      : [heroEpisode, ...(latestEpisodes || [])]
+          .filter(Boolean)
+          .map((episode: any) => ({
+            kind: "new",
+            label: "Nouveauté",
+            episode,
+          }));
 
-  const heroEpisode = data?.heroEpisode || null;
-  const recommendedPodcasts = data?.trending || [];
-  const latestEpisodes = data?.latestEpisodes || [];
-  const resumeEpisodes: any[] = [];
+  // Personnalisation
+  const userName =
+    (user as any)?.firstName ||
+    (user as any)?.name ||
+    (user as any)?.username ||
+    "";
+  const isPersonalized = !!user;
 
-  const filteredPodcasts = recommendedPodcasts.map((p: any) => ({
-    ...p,
-    title: p.name,
-    author: "Créateur",
-    badge: p.categories?.[0]?.category?.name || "Podcast",
-    episodesCount: p._count?.episodes || 0,
-    lang: p.primaryLanguage?.name || "FR",
-    cover: p.cover || "/images/placeholder.jpg",
-  }));
-  const filteredEpisodes = latestEpisodes.map((ep: any) => ({
-    ...ep,
-    timeAgo: new Date(ep.publishedAt).toLocaleDateString(),
-    durationStr: Math.floor(ep.durationSeconds / 60) + " min",
-    podcast: ep.podcast || { name: "Podcast inconnu", cover: "/images/placeholder.jpg" }
-  }));
-
-  if (isLoading) {
-    return <HomeSkeleton />;
+  // Grouper les podcasts pour les "Shelves"
+  const groupedByCategory: Record<string, any[]> = {};
+  if (trending) {
+    trending.forEach((podcast: any) => {
+      const catName = podcast.categories?.[0]?.category?.name || "Général";
+      if (!groupedByCategory[catName]) groupedByCategory[catName] = [];
+      groupedByCategory[catName].push(podcast);
+    });
   }
+  const resumeItems =
+    user && historyData?.length > 0
+      ? historyData.map((h: any) => ({
+          ...h.episode,
+          positionSeconds: h.positionSeconds,
+          completed: h.completed,
+        }))
+      : latestEpisodes;
+
+  const categoryEntries = data.categoryShelves
+    ? data.categoryShelves
+        .map((shelf: any) => [
+          shelf.name,
+          shelf.podcasts.filter(
+            (p: any) =>
+              langFilter === "ALL" ||
+              p.primaryLanguage?.code === langFilter ||
+              p.language?.code === langFilter,
+          ),
+        ])
+        .filter((entry: any) => entry[1].length > 0)
+    : Object.entries(groupedByCategory)
+        .map((entry: any) => [
+          entry[0],
+          entry[1].filter(
+            (p: any) =>
+              langFilter === "ALL" ||
+              p.primaryLanguage?.code === langFilter ||
+              p.language?.code === langFilter,
+          ),
+        ])
+        .filter((entry: any) => entry[1].length > 0)
+        .sort((a, b) => b[1].length - a[1].length);
+
+  const filteredEpisodes =
+    latestEpisodes?.filter((ep: any) => {
+      if (filterMode === "ALL") return true;
+      const hasAudio = ep.mediaSources?.some((s: any) => s.type === "AUDIO");
+      const hasVideo = ep.mediaSources?.some((s: any) => s.type === "VIDEO");
+      if (filterMode === "AUDIO") return hasAudio || !hasVideo; // Fallback
+      if (filterMode === "VIDEO") return hasVideo;
+      return true;
+    }) || [];
+
+  const getCategoryIcon = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes("business")) return <Briefcase className="w-4 h-4" />;
+    if (n.includes("culture") || n.includes("société"))
+      return <Users className="w-4 h-4" />;
+    if (n.includes("diaspora")) return <Globe className="w-4 h-4" />;
+    if (n.includes("tech") || n.includes("innov"))
+      return <Cpu className="w-4 h-4" />;
+    if (n.includes("tradition") || n.includes("histoire"))
+      return <BookOpen className="w-4 h-4" />;
+    if (n.includes("musique")) return <Music className="w-4 h-4" />;
+    if (n.includes("actualité")) return <Newspaper className="w-4 h-4" />;
+    return <Radio className="w-4 h-4" />;
+  };
 
   return (
-    <div className="p-4 md:p-8 w-full space-y-8 animate-fade-in text-white select-none">
-      {/* 1. Alert Banner (Image 1) */}
-      <div className="bg-[#141414] border border-[#242424] rounded-xl px-4 py-2.5 flex items-center justify-between gap-4 text-xs text-[#B8B8B8]">
-        <div className="flex items-center gap-2.5">
-          <span className="w-5 h-5 rounded-full bg-[#1C180E] border border-[#FFBF00]/30 flex items-center justify-center text-[#FFBF00] shrink-0">
-            <Info className="w-3 h-3" />
-          </span>
-          <p className="leading-snug">
-            <span className="text-white font-semibold">Écoute libre et fluide</span> — Accessible sans inscription obligatoire • Les voix phares et récits du Mandé en accès illimité.
-          </p>
-        </div>
-        <button
-          onClick={() => setIsAppModalOpen(true)}
-          className="hidden sm:inline-flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] text-xs font-extrabold transition-all shadow-sm"
-        >
-          <Smartphone className="w-3.5 h-3.5" />
-          <span>Télécharger l'App</span>
-        </button>
-      </div>
+    <div className="pb-32 bg-[#0B0B0B] min-h-screen text-[#B8B8B8] font-sans overflow-x-hidden">
+      <HeroBanner
+        slides={heroSlides}
+        onPlay={handlePlay}
+        currentId={currentEpisode?.id}
+        isPlaying={isPlaying}
+      />
 
-      {/* 2. Hero Featured Card (Image 1) */}
-      <div className="relative rounded-2xl bg-[#141414] border border-[#242424] overflow-hidden p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8">
-        {/* Solid sleek dark layout with image on the right */}
-        <div className="space-y-4 max-w-xl z-10">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="bg-[#FFBF00] text-[#0B0B0B] text-[10px] font-extrabold uppercase px-2 py-0.5 rounded tracking-wide">
-              ÉDITION SPÉCIALE
-            </span>
-            <span className="bg-[#1C1C1C] border border-[#2E2E2E] text-[#B8B8B8] text-[11px] font-medium px-2.5 py-0.5 rounded-full">
-              Français & Bamanankan
-            </span>
-            <span className="text-[#757575] text-xs">• Parution hebdo</span>
-          </div>
-
-          <p className="text-[#FFBF00] text-xs font-bold uppercase tracking-wider">
-            LES VOIX DE BAMAKO • ÉP. 34
-          </p>
-
-          <h1 className="text-2xl md:text-4xl font-headline font-extrabold text-white leading-tight">
-            Une nouvelle génération de musiciens maliens
-          </h1>
-
-          <p className="text-xs md:text-sm text-[#B8B8B8] leading-relaxed">
-            Fatoumata Diawara et des artistes émergents de Badalabougou explorent la réinvention du son mandingue, entre rythmes afro-électro et instruments traditionnels...
-          </p>
-
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => playEpisode(heroEpisode)}
-              className="px-5 py-2.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] text-xs font-extrabold flex items-center gap-2 transition-all shadow-md active:scale-95"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Écouter maintenant (42 min)</span>
-            </button>
-
-            <button
-              onClick={handleSave}
-              className={`px-4 py-2.5 rounded-full hover:bg-[#252525] border border-[#2E2E2E] text-xs font-semibold flex items-center gap-2 transition-colors ${
-                isSaved ? "bg-[#252525] text-[#FFBF00]" : "bg-[#1C1C1C] text-white"
-              }`}
-            >
-              <Bookmark className={`w-3.5 h-3.5 ${isSaved ? "fill-current text-[#FFBF00]" : "text-[#B8B8B8]"}`} />
-              <span>{isSaved ? "Ajouté à la bibliothèque" : "Ajouter à la bibliothèque"}</span>
-            </button>
-
-            <button
-              onClick={() => usePlayerStore.getState().addToQueue(heroEpisode)}
-              className="p-2.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-[#B8B8B8] hover:text-white transition-colors"
-              title="Ajouter à la file d'attente"
-            >
-              <ListPlus className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleShare}
-              className="p-2.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-[#B8B8B8] hover:text-white transition-colors"
-              title="Partager l'épisode"
-            >
-              {copiedLink ? <Check className="w-4 h-4 text-[#FFBF00]" /> : <Share2 className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Hero Visual on the right */}
-        <div className="relative w-full md:w-80 h-52 md:h-64 rounded-xl overflow-hidden shrink-0 border border-[#262626] bg-[#0E0E0E]">
-          <Image
-            src="/images/cover-musique.jpg"
-            alt="Une nouvelle génération de musiciens maliens"
-            fill
-            className="object-cover"
-            priority
-          />
-        </div>
-      </div>
-
-      {/* 3. Filter Bar (Image 1) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-bold tracking-wider uppercase text-[#B8B8B8]">
-            FILTRER L'ÉCOUTE
-          </span>
-          <span className="text-[#FFBF00] font-medium">64 séries disponibles</span>
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {filters.map((f) => {
-            const isActive = selectedFilter === f;
-            return (
-              <button
-                key={f}
-                onClick={() => setSelectedFilter(f)}
-                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                  isActive
-                    ? "bg-[#FFBF00] text-[#0B0B0B]"
-                    : "bg-[#141414] hover:bg-[#1E1E1E] text-[#B8B8B8] hover:text-white border border-[#242424]"
-                }`}
-              >
-                {f}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 4. Continuer l'écoute (Image 1 & 2) */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-white font-headline font-bold text-lg">
-            <Clock className="w-4 h-4 text-[#FFBF00]" />
-            <h2>Continuer l'écoute</h2>
-          </div>
-          <Link
-            href="/library"
-            className="text-xs text-[#B8B8B8] hover:text-[#FFBF00] transition-colors"
-          >
-            Voir l'historique
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {resumeEpisodes.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => playEpisode(item)}
-              className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#333333] rounded-xl p-3.5 flex items-center gap-4 transition-all cursor-pointer group"
-            >
-              <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-[#282828]">
-                <Image src={item.cover || "/images/cover-entreprendre.jpg"} alt={item.title} fill className="object-cover" />
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Play className="w-6 h-6 fill-white text-white drop-shadow" />
-                </div>
-              </div>
-
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-[#FFBF00] uppercase tracking-wide truncate">
-                    {item.podcast.name}
-                  </span>
-                  <span className="bg-[#1E1E1E] px-2 py-0.5 rounded text-[#B8B8B8] border border-[#2A2A2A]">
-                    {item.langBadge}
-                  </span>
-                </div>
-
-                <h3 className="text-xs font-bold text-white truncate group-hover:text-[#FFBF00] transition-colors">
-                  {item.title}
-                </h3>
-
-                <div className="space-y-1 pt-1">
-                  <div className="flex items-center justify-between text-[10px] text-[#757575] font-mono">
-                    <span>Reprendre à {item.resumeTime}</span>
-                    <span>{Math.round(item.durationSeconds / 60)} min</span>
-                  </div>
-                  <div className="w-full h-1 bg-[#262626] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#FFBF00]"
-                      style={{ width: `${item.progressPercent}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 5. Podcasts recommandés (Image 1 & 2) */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg md:text-xl font-headline font-bold text-white">
-              Podcasts recommandés
+      {/* Main Content Container */}
+      <div className="px-4 md:px-10 space-y-16 pt-10">
+        {/* 2. Filtres Rapides */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <SlidersHorizontal className="w-5 h-5 text-[#FFBF00]" />
+              Filtres Rapides par Thématique
             </h2>
-            <p className="text-xs text-[#B8B8B8]">
-              Sélection éditoriale des productions phares du Mali et de la diaspora
-            </p>
+            <span className="text-xs font-bold text-[#808080] hidden md:inline-block">
+              {categoriesList.length || 18} thématiques certifiées
+            </span>
           </div>
-          <Link
-            href="/explore"
-            className="text-xs font-semibold text-[#FFBF00] hover:underline"
-          >
-            Tout explorer
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {filteredPodcasts.map((podcast: any) => (
-            <Link
-              key={podcast.slug}
-              href={`/podcasts/${podcast.slug}`}
-              className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#383838] rounded-xl p-3 flex flex-col gap-2.5 transition-all group"
-            >
-              <div className="relative aspect-square w-full rounded-lg overflow-hidden border border-[#282828] bg-[#0E0E0E]">
-                <Image src={podcast.cover} alt={podcast.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
-                <span className="absolute top-2 left-2 bg-[#0B0B0B]/90 backdrop-blur-sm text-[10px] font-semibold text-white px-2 py-0.5 rounded border border-[#333333]">
-                  {podcast.badge}
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+            <button className="shrink-0 bg-[#FFBF00] text-black font-extrabold px-5 py-2 rounded-full text-xs flex items-center gap-2">
+              Tout explorer{" "}
+              <span className="bg-black/20 px-1.5 rounded">
+                {trending?.length || 20}
+              </span>
+            </button>
+            {categoryEntries.map(([catName, pods]: [string, any[]]) => (
+              <button
+                key={catName}
+                className="shrink-0 bg-[#141414] hover:bg-[#1A1A1A] text-[#B8B8B8] hover:text-white border border-[#242424] font-bold px-5 py-2 rounded-full text-xs flex items-center gap-2 transition-colors"
+              >
+                {getCategoryIcon(catName)}
+                {catName}
+                <span className="bg-[#2A2A2A] px-1.5 rounded text-white">
+                  {pods.length}
                 </span>
-              </div>
+              </button>
+            ))}
+          </div>
+        </section>
 
-              <div className="space-y-0.5">
-                <h3 className="text-xs font-bold text-white truncate group-hover:text-[#FFBF00] transition-colors">
-                  {podcast.title}
-                </h3>
-                <p className="text-[11px] text-[#757575] truncate">{podcast.author}</p>
-                <p className="text-[10px] text-[#B8B8B8] pt-1">
-                  {podcast.episodesCount} épisodes • {podcast.lang}
+        {/* 3. Reprendre la lecture */}
+        {latestEpisodes && latestEpisodes.length > 0 && (
+          <section className="space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Play className="w-5 h-5 text-[#FFBF00] fill-current" />
+                Historique de lecture
+              </h2>
+              <Link
+                href="/history"
+                className="text-xs font-bold text-[#808080] hover:text-white transition-colors"
+              >
+                Voir l'historique
+              </Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x">
+              {resumeItems?.slice(0, 4).map((ep: any) => {
+                const duration = ep.durationSeconds || 1800;
+                // Use real progress if available, otherwise fake it deterministically for UI preview
+                const pos =
+                  ep.positionSeconds !== undefined
+                    ? ep.positionSeconds
+                    : ((String(ep.id).charCodeAt(0) % 60) + 10) *
+                      (duration / 100);
+                const restMins = Math.max(0, Math.floor((duration - pos) / 60));
+                const percent = Math.min(
+                  100,
+                  Math.max(0, (pos / duration) * 100),
+                );
+
+                return (
+                  <div
+                    key={ep.id}
+                    onClick={() => handlePlay(ep)}
+                    className="snap-start shrink-0 w-[320px] bg-[#141414] hover:bg-[#1A1A1A] rounded-xl p-3 border border-[#242424] hover:border-[#333] cursor-pointer transition-colors group"
+                  >
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-[#0B0B0B] relative">
+                        <img
+                          src={
+                            ep.cover ||
+                            ep.podcast?.cover ||
+                            "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"
+                          }
+                          alt={ep.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          {currentEpisode?.id === ep.id && isPlaying ? (
+                            <Pause className="w-5 h-5 text-white fill-current" />
+                          ) : (
+                            <Play className="w-5 h-5 text-white fill-current" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-0.5">
+                          <span className="text-[10px] font-black text-[#FFBF00] uppercase tracking-wider truncate mr-2">
+                            {ep.category?.name || "ÉPISODE"}
+                          </span>
+                          {pos > 0 ? (
+                            <span className="text-[10px] font-bold text-[#808080] whitespace-nowrap">
+                              Reste {restMins}m
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-[#808080] whitespace-nowrap">
+                              {Math.floor(duration / 60)} min
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-bold text-white truncate leading-tight">
+                          {ep.title}
+                        </h4>
+                        <p className="text-xs text-[#808080] truncate">
+                          {ep.podcast?.name}
+                        </p>
+                      </div>
+                    </div>
+                    {pos > 0 ? (
+                      <div className="w-full bg-[#2A2A2A] h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-[#FFBF00] h-full rounded-full"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full bg-transparent h-1.5" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 4. Fraîchement publiés (Le retour des cartes épisodes) */}
+        {latestEpisodes && latestEpisodes.length > 0 && (
+          <section className="space-y-6 pt-4">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#242424] pb-4">
+              <div>
+                <h2 className="text-3xl font-black text-white tracking-tight">
+                  Fraîchement publiés
+                </h2>
+                <p className="text-sm text-[#B8B8B8] mt-1 max-w-2xl">
+                  Les derniers épisodes à écouter ou à regarder.
                 </p>
               </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* 6. Derniers épisodes parus (Image 1 & 2) */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg md:text-xl font-headline font-bold text-white">
-              Derniers épisodes parus
-            </h2>
-            <p className="text-xs text-[#B8B8B8]">
-              Fraîchement enregistrés dans nos studios partenaires
-            </p>
-          </div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] border border-[#242424] hover:border-[#333333] text-xs font-medium text-[#B8B8B8] hover:text-white transition-colors">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#FFBF00]" />
-            <span>Trier par récence</span>
-          </button>
-        </div>
-
-        <div className="space-y-2">
-          {filteredEpisodes.map((ep: any) => (
-            <div
-              key={ep.id}
-              className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#333333] rounded-xl px-4 py-3 flex items-center justify-between gap-4 transition-colors group"
-            >
-              <div className="flex items-center gap-3.5 min-w-0">
+              <div className="flex bg-[#141414] border border-[#242424] rounded-full p-1 shrink-0">
                 <button
-                  onClick={() => playEpisode(ep)}
-                  className="w-8 h-8 rounded-full bg-[#1E1E1E] group-hover:bg-[#FFBF00] text-[#B8B8B8] group-hover:text-[#0B0B0B] flex items-center justify-center shrink-0 transition-colors shadow-sm"
-                  aria-label="Écouter"
+                  onClick={() => setFilterMode("ALL")}
+                  className={`px-5 py-2 text-xs font-bold rounded-full transition-colors ${filterMode === "ALL" ? "bg-[#2A2A2A] text-white" : "text-[#808080] hover:text-white"}`}
                 >
-                  <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                </button>
-
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-[11px]">
-                    <span className="text-[#FFBF00] font-semibold">{ep.podcast.name}</span>
-                    {ep.langBadge && (
-                      <span className="bg-[#1E1E1E] text-[#B8B8B8] px-1.5 py-0.2 rounded text-[10px] border border-[#2A2A2A]">
-                        {ep.langBadge}
-                      </span>
-                    )}
-                    <span className="text-[#757575]">• {ep.timeAgo}</span>
-                  </div>
-                  <h3
-                    onClick={() => playEpisode(ep)}
-                    className="text-xs font-bold text-white truncate cursor-pointer hover:underline"
-                  >
-                    {ep.title}
-                  </h3>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 shrink-0 text-xs text-[#757575]">
-                <span className="font-mono text-[#B8B8B8]">{ep.durationStr}</span>
-                <button
-                  className="p-1.5 hover:text-white transition-colors"
-                  title="Télécharger l'épisode"
-                >
-                  <Download className="w-4 h-4" />
+                  Tous
                 </button>
                 <button
-                  onClick={() => usePlayerStore.getState().addToQueue(ep)}
-                  className="p-1.5 hover:text-white transition-colors"
-                  title="Ajouter à la file d'attente"
+                  onClick={() => setFilterMode("AUDIO")}
+                  className={`px-5 py-2 text-xs font-bold rounded-full transition-colors ${filterMode === "AUDIO" ? "bg-[#2A2A2A] text-white" : "text-[#808080] hover:text-white"}`}
                 >
-                  <ListPlus className="w-4 h-4" />
+                  Audio
+                </button>
+                <button
+                  onClick={() => setFilterMode("VIDEO")}
+                  className={`px-5 py-2 text-xs font-bold rounded-full transition-colors ${filterMode === "VIDEO" ? "bg-[#2A2A2A] text-white" : "text-[#808080] hover:text-white"}`}
+                >
+                  Vidéo
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* 7. CTA Créateurs Studio (Image 2) */}
-      <div className="bg-[#141414] border border-[#242424] rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#FFBF00] text-[#0B0B0B] flex items-center justify-center shrink-0 shadow-lg">
-            <Mic className="w-6 h-6" />
-          </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {filteredEpisodes.slice(0, 8).map((ep: any) => (
+                <div
+                  key={ep.id}
+                  className="group hover:bg-[#141414] p-2 -mx-2 rounded-xl flex flex-row items-center gap-4 transition-colors cursor-pointer border border-transparent hover:border-[#242424]"
+                  onClick={() => handlePlay(ep)}
+                >
+                  {/* Image carrée ou avec bouton play superposé */}
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0 relative bg-[#0B0B0B] border border-[#2A2A2A]">
+                    <img
+                      src={
+                        ep.cover ||
+                        ep.podcast?.cover ||
+                        "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"
+                      }
+                      alt={ep.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <div className="w-10 h-10 rounded-full bg-[#FFBF00] flex items-center justify-center shadow-lg">
+                        {currentEpisode?.id === ep.id && isPlaying ? (
+                          <Pause className="w-5 h-5 text-black fill-current" />
+                        ) : (
+                          <Play className="w-5 h-5 text-black fill-current ml-1" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contenu */}
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate mb-1">
+                      {ep.podcast?.name}
+                    </p>
+                    <h4 className="text-sm md:text-base font-bold text-white leading-tight line-clamp-2 mb-2 group-hover:text-[#FFBF00] transition-colors">
+                      {ep.title}
+                    </h4>
+                    <p className="text-xs text-[#808080] flex items-center gap-2 font-medium">
+                      <span className="flex items-center gap-1">
+                        <Headphones className="w-3 h-3" />
+                        {Math.floor((ep.durationSeconds || 1800) / 60)} min
+                      </span>
+                      <span>•</span>
+                      <span>
+                        {ep.publishedAt
+                          ? new Date(ep.publishedAt).toLocaleDateString(
+                              "fr-FR",
+                              { day: "numeric", month: "short" },
+                            )
+                          : "Récemment"}
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* Action Bookmark */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToQueue(ep);
+                    }}
+                    className="p-3 text-[#808080] hover:text-white bg-[#2A2A2A]/50 hover:bg-[#2A2A2A] rounded-full transition-colors shrink-0"
+                    title="Ajouter à la file d'attente"
+                  >
+                    <ListPlus className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 5. Étagères Horizontales (Shelves par Catégorie) avec images 16:9 */}
+        <div className="space-y-12 pt-8">
+          {categoryEntries.map(
+            ([catName, podcasts]: [string, any[]], idx: number) => (
+              <section key={catName} className="space-y-4">
+                <div className="flex items-end justify-between px-1">
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
+                      {catName}
+                    </h2>
+                    <p className="text-xs text-[#808080] mt-1">
+                      {podcasts.length} séries actives
+                    </p>
+                  </div>
+                  <div className="hidden sm:flex gap-2">
+                    <button className="w-9 h-9 rounded-full border border-[#242424] bg-[#141414] flex items-center justify-center hover:bg-[#2A2A2A] text-white transition-colors">
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button className="w-9 h-9 rounded-full border border-[#242424] bg-[#141414] flex items-center justify-center hover:bg-[#2A2A2A] text-white transition-colors">
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide pb-4 snap-x">
+                  {podcasts.map((podcast: any) => (
+                    <Link
+                      key={podcast.id}
+                      href={`/podcasts/${podcast.slug}`}
+                      className="snap-start shrink-0 w-[260px] md:w-[300px] group block"
+                    >
+                      <div className="aspect-video rounded-xl overflow-hidden relative mb-3 bg-[#141414] border border-[#242424] group-hover:border-[#FFBF00]/50 transition-colors">
+                        <img
+                          src={
+                            podcast.cover ||
+                            "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400&auto=format&fit=crop"
+                          }
+                          alt={podcast.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                        {/* Badge Langue optionnel en haut à gauche */}
+                        <div className="absolute top-2 left-2 bg-[#E5E5E5] text-[#0B0B0B] text-[9px] font-black px-2 py-1 rounded-sm uppercase tracking-wider shadow-sm">
+                          {podcast.primaryLanguage?.name || "FRANÇAIS"}
+                        </div>
+
+                        {/* Play Button Overlay */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <div className="w-12 h-12 rounded-full bg-[#FFBF00] flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-transform">
+                            <Play className="w-6 h-6 text-black fill-current ml-1" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="px-1">
+                        <h3 className="text-sm font-bold text-white mb-1 leading-tight truncate group-hover:text-[#FFBF00] transition-colors">
+                          {podcast.name}
+                        </h3>
+                        <p className="text-xs text-[#808080] truncate font-medium">
+                          {(podcast.author?.name ||
+                            podcast.organization?.name) &&
+                            `Par ${podcast.author?.name || podcast.organization?.name}`}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ),
+          )}
+        </div>
+
+        {/* 6. Toutes les Catégories Officielles */}
+        <section className="space-y-6 pt-12 border-t border-[#242424]">
           <div>
-            <h3 className="text-sm md:text-base font-headline font-bold text-white">
-              Vous racontez des histoires à Bamako ?
-            </h3>
-            <p className="text-xs text-[#B8B8B8] max-w-xl">
-              Rejoignez le collectif des créateurs sonores de Bamako Podcast. Accédez à nos studios, formations au montage et monétisation directe.
+            <div className="flex items-center gap-2 mb-2">
+              <BookOpen className="w-4 h-4 text-[#FFBF00]" />
+              <span className="text-[10px] font-black text-[#FFBF00] uppercase tracking-widest">
+                INDEX EXHAUSTIF
+              </span>
+            </div>
+            <h2 className="text-3xl font-black text-white tracking-tight">
+              Toutes les Catégories Officielles
+            </h2>
+            <p className="text-sm text-[#B8B8B8] mt-1 max-w-2xl">
+              Explorez l'intégralité du répertoire des thématiques audio avec
+              leurs quotas de podcasts associés.
             </p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3 shrink-0 w-full md:w-auto">
-          <Link
-            href="/studio"
-            className="flex-1 md:flex-none text-center px-5 py-2.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] text-xs font-extrabold transition-all shadow-md"
-          >
-            Ouvrir mon studio
-          </Link>
-          <Link
-            href="/studio"
-            className="text-xs font-semibold text-[#B8B8B8] hover:text-white px-3 py-2 transition-colors"
-          >
-            En savoir plus
-          </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {(categoriesList.length > 0
+              ? categoriesList
+              : [
+                  {
+                    name: "Actualité & Médias",
+                    description: "Analyses géopolitiques et presse.",
+                  },
+                  {
+                    name: "Agriculture & Environnement",
+                    description: "Agribusiness et enjeux climatiques.",
+                  },
+                  {
+                    name: "Arts, Cinéma & Littérature",
+                    description: "Critiques de films et livres.",
+                  },
+                  {
+                    name: "Business & Entrepreneuriat",
+                    description: "Économie, PME, startups.",
+                  },
+                  {
+                    name: "Culture & Société",
+                    description: "Traditions et récits de vie.",
+                  },
+                  {
+                    name: "Diaspora & Immersion",
+                    description: "Expériences de la diaspora.",
+                  },
+                  {
+                    name: "Histoire & Patrimoine",
+                    description: "Récits historiques du Mali.",
+                  },
+                  {
+                    name: "Innovation & Tech",
+                    description: "Digital et intelligence artificielle.",
+                  },
+                  {
+                    name: "Santé & Bien-être",
+                    description: "Médecine et nutrition.",
+                  },
+                  {
+                    name: "Sport & Jeunesse",
+                    description: "Football et culture sportive.",
+                  },
+                ]
+            ).map((cat: any, i: number) => (
+              <Link
+                key={i}
+                href={`/search?category=${cat.id}`}
+                className="block bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#FFBF00]/50 rounded-2xl p-5 transition-all group"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#2A2A2A] group-hover:bg-[#FFBF00] text-[#808080] group-hover:text-[#0B0B0B] flex items-center justify-center transition-colors">
+                    {getCategoryIcon(cat.name)}
+                  </div>
+                  <span className="bg-[#2A2A2A] text-[#B8B8B8] text-[10px] font-black px-2 py-0.5 rounded-sm">
+                    {(String(cat.id || cat.name).charCodeAt(0) % 10) + 1}
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-white mb-2 leading-tight">
+                  {cat.name}
+                </h4>
+                <p className="text-xs text-[#808080] line-clamp-2 leading-relaxed">
+                  {cat.description ||
+                    "Explorez les contenus liés à cette catégorie passionnante."}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* 7. Footer CTA */}
+        <div className="mt-20 mb-10">
+          <div className="bg-[#141414] border border-[#242424] rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl">
+            <div className="flex items-start md:items-center gap-6">
+              <div className="w-16 h-16 shrink-0 rounded-2xl bg-[#FFBF00] text-[#0B0B0B] flex items-center justify-center shadow-lg">
+                <Mic className="w-8 h-8" />
+              </div>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">
+                  Vous animez un podcast au Mali ou en Diaspora ?
+                </h2>
+                <p className="text-[#B8B8B8] text-sm md:text-base max-w-2xl">
+                  Intégrez le catalogue officiel Bamako Podcast et touchez des
+                  centaines de milliers d'auditeurs en Bamanankan et Français.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/studio/podcasts/new"
+              className="shrink-0 bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold px-8 py-4 rounded-full transition-colors shadow-lg active:scale-95 w-full md:w-auto text-center"
+            >
+              Créer / Proposer mon émission
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* 9. Mobile App Promotion Section */}
-      <DownloadAppSection />
-
-      {/* App Download Modal */}
-      <AppDownloadModal isOpen={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} />
+      <AppDownloadModal
+        isOpen={isAppModalOpen}
+        onClose={() => setIsAppModalOpen(false)}
+      />
     </div>
   );
 }
@@ -478,9 +626,7 @@ export default function HomePage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  if (!mounted) {
-    return <HomeSkeleton />;
-  }
+  if (!mounted) return <HomeSkeleton />;
 
   return (
     <Suspense fallback={<HomeSkeleton />}>

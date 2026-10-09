@@ -132,10 +132,9 @@ export default function RssImportPage() {
       const res = await adminApi("/admin/rss/imports", {
         method: "POST",
         body: JSON.stringify({
-          podcastId: undefined, // Or use formData logic
-          podcastName: formData.name,
-          feedUrl: url,
-          settings: { importAsDraft: true }
+          ...formData, // This should contain name, description, cover, etc.
+          url: url.trim(),
+          importSettings: { importAsDraft: true, mode: settings.mode, downloadMedia: settings.downloadMedia, includeVideo: settings.includeVideo, autoPublish: settings.autoPublish }
         }),
       });
 

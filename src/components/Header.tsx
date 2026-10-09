@@ -63,11 +63,13 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const apiLangs = json.data.map((l: any) => ({
-            code: l.code || l.id,
-            name: l.nativeName || l.name,
-          }));
-          setLanguages([{ code: "ALL", name: "Tous" }, ...apiLangs.slice(0, 3)]);
+          const activeLangs = json.data.filter((l: any) => l._count?.primaryPodcasts > 0);
+            const sortedLangs = activeLangs.sort((a: any, b: any) => (b._count?.primaryPodcasts || 0) - (a._count?.primaryPodcasts || 0));
+            const apiLangs = sortedLangs.map((l: any) => ({
+              code: l.code || l.id,
+              name: l.nativeName || l.name,
+            }));
+            setLanguages([{ code: "ALL", name: "Tous" }, ...apiLangs.slice(0, 3)]);
         }
       })
       .catch(() => {
@@ -105,11 +107,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
     if (!currentQuery && typeof window !== "undefined") {
       currentQuery = new URLSearchParams(window.location.search).get("q") || "";
     }
-    if (pathname === "/explore" || pathname === "/podcasts") {
-      router.push(`${pathname}?${currentQuery ? `q=${encodeURIComponent(currentQuery)}&` : ""}lang=${code}`);
-    } else {
-      router.push(`/explore?${currentQuery ? `q=${encodeURIComponent(currentQuery)}&` : ""}lang=${code}`);
-    }
+    router.push(`${pathname}?${currentQuery ? `q=${encodeURIComponent(currentQuery)}&` : ""}lang=${code}`);
   };
 
   const handleMouseEnterUser = () => {
