@@ -180,6 +180,28 @@ export default function AdminPodcastDetailsPage() {
     }
   };
 
+  const handleBulkPublish = async () => {
+    if (!episodes) return;
+    const drafts = episodes.filter((ep: any) => ep.status === "DRAFT");
+    const ids = drafts.map((ep: any) => ep.id);
+    if (ids.length === 0) return;
+    
+    setIsBulkPublishing(true);
+    try {
+      const res = await adminApi(/admin/episodes/bulk-publish, {
+        method: "POST",
+        body: JSON.stringify({ ids }),
+      });
+      if (res.success) {
+        mutateEpisodes();
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsBulkPublishing(false);
+    }
+  };
+
   const handleCreateEmptyDraft = async () => {
     try {
       const res = await adminApi(`/admin/podcasts/${id}/episodes`, {

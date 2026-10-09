@@ -27,6 +27,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.r2.dev',
       },
+      {
+        protocol: 'https',
+        hostname: 'media.rss.com',
+      },
       // You can add more domains if needed
     ],
   },
