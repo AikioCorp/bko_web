@@ -591,7 +591,7 @@ export default function AdminPodcastsPage() {
                             size="sm" 
                             variant="ghost" 
                             className="h-8 px-2 text-xs text-[#B8B8B8] hover:text-[#FFBF00] hover:bg-[#2A2A2A]" 
-                            onClick={() => router.push(`/admin/podcasts/${p.id}/edit`)} 
+                            onClick={() => router.push(`/admin/podcasts/${p.slug || p.id}/edit`)} 
                             title="Modifier les informations"
                           >
                             <Edit2 className="w-3.5 h-3.5 mr-1" /> Modifier
