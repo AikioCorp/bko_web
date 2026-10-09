@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
@@ -10,6 +10,33 @@ import { AdminShell } from "./admin/AdminShell";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const saved = sessionStorage.getItem(`scroll-${pathname}`);
+    if (saved) {
+      container.scrollTop = parseInt(saved, 10);
+    } else {
+      container.scrollTop = 0;
+    }
+
+    let timeoutId: NodeJS.Timeout;
+    const handleScroll = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        sessionStorage.setItem(`scroll-${pathname}`, container.scrollTop.toString());
+      }, 100);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      clearTimeout(timeoutId);
+      container.removeEventListener("scroll", handleScroll);
+    };
+  }, [pathname]);
   
   if (pathname.startsWith("/admin") || pathname.startsWith("/studio")) {
     return <>{children}</>;
@@ -28,7 +55,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#0B0B0B]">
           <Header />
 
-          <div className="flex-1 overflow-y-auto relative scrollbar-thin scrollbar-thumb-[#262626] scrollbar-track-transparent">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto relative scrollbar-thin scrollbar-thumb-[#262626] scrollbar-track-transparent">
             <main className="min-h-full pb-28 md:pb-24">
               {children}
             </main>

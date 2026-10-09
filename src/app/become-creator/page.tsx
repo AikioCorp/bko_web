@@ -49,7 +49,7 @@ export default function BecomeCreatorPage() {
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
           {mounted && isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">{isUpgrading ? "Activation..." : "Activer mon espace Studio"}<ArrowRight className="w-4 h-4" /></button> : mounted ? <Link href="/login?tab=register" className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">Créer mon podcast gratuitement<ArrowRight className="w-4 h-4" /></Link> : null}
-          <Link href="/tarifs" className="px-8 py-3.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-white font-semibold text-sm transition-all w-full sm:w-auto justify-center">
+          <Link href="#studios" className="px-8 py-3.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-white font-semibold text-sm transition-all w-full sm:w-auto justify-center">
             Voir notre Studio Physique
           </Link>
         </div>

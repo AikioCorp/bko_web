@@ -1,131 +1,166 @@
-"use client";
-import { getAccessToken } from "@/lib/token";
-import { API_BASE_URL } from "@/lib/api";
-
-import React, { useState } from "react";
+﻿"use client";
 import { useAuthStore } from "../../store/authStore";
-import { User, Shield, Laptop, LogOut, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { 
+  User, Shield, Laptop, LogOut, Settings, Bell, 
+  Library, Lock, LifeBuoy, FileText, ChevronRight, 
+  Mic, Crown, CreditCard, PenLine, BadgeCheck 
+} from "lucide-react";
 
 export default function ProfilePage() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const router = useRouter();
 
-  const [fullName, setFullName] = useState(user?.fullName || "");
-  const [avatar, setAvatar] = useState(user?.avatar || "");
-  const [msg, setMsg] = useState("");
-
   if (!isAuthenticated || !user) {
     return (
-      <div className="max-w-md mx-auto py-16 text-center space-y-4">
-        <p className="text-gray-400 text-sm">Veuillez vous connecter pour accéder à votre profil.</p>
-        <a href="/login" className="inline-block bg-[#E5A93C] text-black px-6 py-2.5 rounded-full font-bold text-xs">
-          SE CONNECTER
-        </a>
+      <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4">
+        <div className="text-center space-y-6 max-w-sm">
+          <div className="w-16 h-16 bg-[#141414] border border-[#262626] rounded-2xl flex items-center justify-center mx-auto shadow-xl">
+            <Shield className="w-6 h-6 text-[#757575]" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-white font-extrabold text-xl">Accès restreint</h1>
+            <p className="text-[#888888] text-sm">Veuillez vous connecter pour accéder à votre profil.</p>
+          </div>
+          <Link href="/login" className="block w-full bg-white text-black font-bold py-3 rounded-xl text-sm transition-colors hover:bg-gray-200">
+            Se connecter
+          </Link>
+        </div>
       </div>
     );
   }
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMsg("");
-    const token = getAccessToken();
-    if (!token) return;
+  const isCreator = user.roles.includes("CREATOR");
+  const isAdmin = user.roles.includes("ADMIN");
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/me`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ fullName, avatar }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setMsg("Profil mis à jour avec succès !");
-      }
-    } catch (e) {
-      setMsg("Erreur lors de la mise à jour");
-    }
+  const MenuRow = ({ href, icon: Icon, label, color = "text-white" }: { href: string, icon: any, label: string, color?: string }) => {
+    const iconClass = "w-5 h-5 transition-colors " + (color === "text-white" ? "text-[#888888] group-hover:text-white" : color);
+    const textClass = "text-sm font-semibold transition-colors " + color;
+    
+    return (
+      <Link href={href} className="flex items-center justify-between p-4 hover:bg-[#1A1A1A] transition-colors group border-b border-[#262626] last:border-0">
+        <div className="flex items-center gap-4">
+          <Icon className={iconClass} />
+          <span className={textClass}>{label}</span>
+        </div>
+        <ChevronRight className="w-4 h-4 text-[#444444] group-hover:text-white transition-colors" />
+      </Link>
+    );
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-      <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-6">
-        <div className="flex items-center space-x-4 border-b border-[#1E2638] pb-6">
-          <div className="w-16 h-16 bg-[#E5A93C] rounded-full flex items-center justify-center font-black text-black text-2xl">
-            {user.fullName[0]}
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-white">{user.fullName}</h1>
-            <p className="text-xs text-gray-400">{user.email}</p>
-            <div className="flex items-center space-x-2 mt-2">
-              {user.roles.map((r) => (
-                <span key={r} className="bg-[#E5A93C]/10 text-[#E5A93C] border border-[#E5A93C]/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {r}
-                </span>
-              ))}
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#0B0B0B] text-white pb-12">
+      {/* Header */}
+      <header className="border-b border-[#262626] bg-[#0B0B0B]/80 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+          <h1 className="text-lg font-bold">Mon Profil</h1>
         </div>
+      </header>
 
-        {msg && <div className="bg-[#E5A93C]/10 text-[#E5A93C] p-3 rounded-xl text-xs font-bold text-center">{msg}</div>}
-
-        <form onSubmit={handleUpdate} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-300 mb-1">Nom complet</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full bg-[#0A0D14] border border-[#1E2638] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-[#E5A93C]"
-            />
+      <main className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+        
+        {/* Top Section : Avatar & Infos */}
+        <section className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
+          <div className="w-24 h-24 bg-[#141414] border border-[#262626] rounded-full flex items-center justify-center font-black text-[#555555] text-3xl shadow-xl shrink-0 overflow-hidden">
+            {user.avatar ? (
+              <img src={user.avatar} alt={user.fullName} className="w-full h-full object-cover" />
+            ) : (
+              <span className="uppercase">{user.fullName.charAt(0)}</span>
+            )}
           </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-300 mb-1">URL Avatar (Photo de profil)</label>
-            <input
-              type="text"
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-              placeholder="https://..."
-              className="w-full bg-[#0A0D14] border border-[#1E2638] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-[#E5A93C]"
-            />
-          </div>
-
-          <div className="flex justify-between items-center pt-4">
-            <a
-              href="/settings/devices"
-              className="text-xs text-gray-400 hover:text-[#E5A93C] flex items-center space-x-1"
+          
+          <div className="space-y-3 flex-1">
+            <div>
+              <h2 className="text-2xl font-extrabold tracking-tight flex items-center justify-center sm:justify-start gap-2">
+                {user.fullName}
+              </h2>
+              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-sm text-[#888888] mt-1">
+                <span>{user.email}</span>
+                <BadgeCheck className="w-4 h-4 text-[#238636]" />
+              </div>
+            </div>
+            
+            <Link 
+              href="/profile/personal-info" 
+              className="inline-flex items-center justify-center gap-2 bg-[#141414] hover:bg-[#1A1A1A] border border-[#262626] text-white px-5 py-2 rounded-xl text-xs font-bold transition-colors"
             >
-              <Laptop className="w-4 h-4" />
-              <span>Gérer mes appareils</span>
-            </a>
-
-            <button
-              type="submit"
-              className="bg-[#E5A93C] text-black font-extrabold px-6 py-2.5 rounded-full text-xs hover:bg-[#F5B82E] transition flex items-center space-x-1.5 shadow"
-            >
-              <Save className="w-4 h-4" />
-              <span>ENREGISTRER</span>
-            </button>
+              <PenLine className="w-3.5 h-3.5" />
+              Modifier mon profil
+            </Link>
           </div>
-        </form>
+        </section>
 
-        <div className="pt-6 border-t border-[#1E2638]">
+        {/* Group 1 : Mon expérience */}
+        <section className="space-y-3">
+          <h3 className="text-xs font-bold text-[#888888] uppercase tracking-wider px-2">Mon expérience</h3>
+          <div className="bg-[#141414] border border-[#262626] rounded-2xl overflow-hidden">
+            <MenuRow href="/library" icon={Library} label="Ma bibliothèque" />
+            <MenuRow href="/profile/preferences" icon={Settings} label="Préférences" />
+            <MenuRow href="/profile/notifications" icon={Bell} label="Notifications" />
+          </div>
+        </section>
+
+        {/* Group 2 : Mon compte */}
+        <section className="space-y-3">
+          <h3 className="text-xs font-bold text-[#888888] uppercase tracking-wider px-2">Mon compte</h3>
+          <div className="bg-[#141414] border border-[#262626] rounded-2xl overflow-hidden">
+            <MenuRow href="/profile/personal-info" icon={User} label="Informations personnelles" />
+            <MenuRow href="/profile/security" icon={Lock} label="Sécurité et appareils" />
+            <MenuRow href="/profile/privacy" icon={Shield} label="Confidentialité et données" />
+          </div>
+        </section>
+
+        {/* Group 3 : Espace Créateur */}
+        <section className="space-y-3">
+          <h3 className="text-xs font-bold text-[#FFBF00] uppercase tracking-wider px-2">Studio & Création</h3>
+          <div className="bg-[#141414] border border-[#262626] rounded-2xl overflow-hidden">
+            {isCreator ? (
+              <>
+                <MenuRow href="/studio" icon={Mic} label="Ouvrir mon studio" color="text-[#FFBF00]" />
+                <MenuRow href="/studio/profile" icon={User} label="Mon profil créateur" />
+                <MenuRow href="/studio/pricing" icon={CreditCard} label="Abonnement Studio" />
+              </>
+            ) : (
+              <MenuRow href="/studio/onboarding" icon={Mic} label="Devenir créateur" color="text-[#FFBF00]" />
+            )}
+          </div>
+        </section>
+
+        {/* Group 4 : Administration (If Admin) */}
+        {isAdmin && (
+          <section className="space-y-3">
+            <h3 className="text-xs font-bold text-red-500 uppercase tracking-wider px-2">Administration</h3>
+            <div className="bg-[#141414] border border-[#262626] rounded-2xl overflow-hidden">
+              <MenuRow href="/admin" icon={Crown} label="Console d'administration" color="text-red-500" />
+            </div>
+          </section>
+        )}
+
+        {/* Group 5 : Assistance */}
+        <section className="space-y-3">
+          <h3 className="text-xs font-bold text-[#888888] uppercase tracking-wider px-2">Assistance</h3>
+          <div className="bg-[#141414] border border-[#262626] rounded-2xl overflow-hidden">
+            <MenuRow href="/help" icon={LifeBuoy} label="Aide et assistance" />
+            <MenuRow href="/terms" icon={FileText} label="Conditions d'utilisation" />
+          </div>
+        </section>
+
+        {/* Déconnexion */}
+        <div className="pt-4">
           <button
             onClick={() => {
               logout();
               router.push("/");
             }}
-            className="w-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 py-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2"
+            className="w-full flex items-center justify-center gap-2 bg-transparent hover:bg-[#1A1A1A] border border-[#262626] text-red-500 font-bold py-4 rounded-2xl text-sm transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            <span>SE DÉCONNECTER</span>
+            <span>Se déconnecter</span>
           </button>
         </div>
-      </div>
+
+      </main>
     </div>
   );
 }

@@ -1,214 +1,146 @@
-"use client";
+﻿"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
+import useSWR from "swr";
+import { ArrowRight, Check, Compass, Radio } from "lucide-react";
+import { fetchApi } from "@/lib/api";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Compass, Check, ArrowRight, SkipForward } from "lucide-react";
-
-export const dynamic = "force-dynamic";
+const fetcher = (url: string) => fetchApi(url).then(res => res.data);
 
 export default function OnboardingPage() {
-  const [step, setStep] = useState(1);
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["fr", "bm"]);
-  const [selectedTopics, setSelectedTopics] = useState<string[]>(["entrepreneuriat-mali"]);
-  const [selectedCountries, setSelectedCountries] = useState<string[]>(["ML"]);
-
   const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { data: catData } = useSWR("/categories", fetcher);
+  const categoriesList = catData || [];
 
   const handleFinish = async () => {
+    setIsSaving(true);
     const token = getAccessToken();
     if (token) {
       try {
-        await fetch(`${API_BASE_URL}/me/preferences`, {
+        await fetch(API_BASE_URL + "/me", {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: "Bearer " + token,
           },
           body: JSON.stringify({
-            languageCodes: selectedLanguages,
             topicIds: selectedTopics,
-            countryIds: selectedCountries,
           }),
         });
-      } catch (e) {}
+      } catch (e) {
+        console.error(e);
+      }
     }
     router.push("/");
   };
 
-  const toggleLanguage = (code: string) => {
-    setSelectedLanguages((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
-    );
-  };
-
-  const toggleTopic = (slug: string) => {
+  const toggleTopic = (id: string) => {
     setSelectedTopics((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
-    );
-  };
-
-  const toggleCountry = (id: string) => {
-    setSelectedCountries((prev) =>
-      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
   };
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-12">
-      <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-6 shadow-2xl">
-        <div className="flex justify-between items-center text-xs text-gray-400">
-          <span>Étape {step} sur 4</span>
-          <button onClick={handleFinish} className="flex items-center space-x-1 hover:text-[#E5A93C] transition">
-            <span>Passer</span>
-            <SkipForward className="w-3.5 h-3.5" />
-          </button>
+    <div className="min-h-screen bg-[#0B0B0B] flex flex-col justify-center items-center px-4 py-12">
+      <div className="w-full max-w-lg bg-[#141414] border border-[#262626] rounded-2xl p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+        
+        <div className="absolute top-0 left-0 h-1 bg-[#262626] w-full">
+          <div 
+            className="h-full bg-[#FFBF00] transition-all duration-500 ease-in-out"
+            style={{ width: ((step / 2) * 100) + '%' }}
+          />
         </div>
 
-        {/* Étape 1 : Bienvenue */}
         {step === 1 && (
-          <div className="space-y-6 text-center py-4">
-            <div className="w-16 h-16 bg-[#E5A93C] rounded-2xl flex items-center justify-center font-bold text-black text-3xl mx-auto shadow-lg">
-              🎙️
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black text-white">Bienvenue sur Bamako Podcast</h2>
-              <p className="text-xs text-gray-300 max-w-md mx-auto">
-                La plateforme de référence pour découvrir, écouter et suivre les voies du Mali et de l'Afrique.
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-4">
+              <div className="w-14 h-14 bg-[#FFBF00]/10 border border-[#FFBF00]/20 rounded-xl flex items-center justify-center mb-6">
+                <Radio className="w-6 h-6 text-[#FFBF00]" />
+              </div>
+              <h1 className="text-3xl font-extrabold text-white tracking-tight">Bienvenue sur Bamako Podcast</h1>
+              <p className="text-[#888888] text-sm leading-relaxed">
+                La plateforme de référence pour découvrir, écouter et soutenir les voix du Mali et de l'Afrique. 
+                Configurez votre profil pour obtenir des recommandations personnalisées.
               </p>
             </div>
+            
             <button
               onClick={() => setStep(2)}
-              className="bg-[#E5A93C] text-black font-extrabold px-8 py-3 rounded-full text-xs hover:bg-[#F5B82E] transition shadow-lg inline-flex items-center space-x-2"
+              className="w-full bg-white hover:bg-gray-100 text-black font-bold py-3.5 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 group"
             >
-              <span>COMMENCER LA PERSONNALISATION</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Continuer</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         )}
 
-        {/* Étape 2 : Langues */}
         {step === 2 && (
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <h2 className="text-xl font-extrabold text-white">Quelles langues souhaitez-vous écouter ?</h2>
-              <p className="text-xs text-gray-400">Sélectionnez vos langues de prédilection.</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <h1 className="text-xl font-bold text-white tracking-tight">Quels sujets vous intéressent ?</h1>
+                <button onClick={handleFinish} className="text-[#666666] hover:text-white text-xs font-semibold transition-colors">
+                  Passer
+                </button>
+              </div>
+              <p className="text-[#888888] text-xs">
+                Sélectionnez vos thématiques préférées pour affiner vos recommandations.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
-              {[
-                { code: "bm", name: "Bamanankan (Bambara)", desc: "Émissions et contes en bambara" },
-                { code: "fr", name: "Français", desc: "Podcasts business, culture et actualités" },
-                { code: "en", name: "English", desc: "Podcasts internationaux et régionaux" },
-              ].map((lang) => {
-                const isSelected = selectedLanguages.includes(lang.code);
-                return (
-                  <div
-                    key={lang.code}
-                    onClick={() => toggleLanguage(lang.code)}
-                    className={`p-4 rounded-xl border cursor-pointer transition flex items-center justify-between ${
-                      isSelected ? "border-[#E5A93C] bg-[#E5A93C]/10 text-white" : "border-[#1E2638] bg-[#0A0D14] text-gray-300"
-                    }`}
-                  >
-                    <div>
-                      <h4 className="font-bold text-sm">{lang.name}</h4>
-                      <p className="text-xs text-gray-400">{lang.desc}</p>
-                    </div>
-                    {isSelected && <Check className="w-5 h-5 text-[#E5A93C]" />}
-                  </div>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => setStep(3)}
-              className="w-full bg-[#E5A93C] text-black font-extrabold py-3 rounded-xl text-xs hover:bg-[#F5B82E] transition shadow-lg"
-            >
-              CONTINUER
-            </button>
-          </div>
-        )}
-
-        {/* Étape 3 : Sujets */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <h2 className="text-xl font-extrabold text-white">Quels thèmes vous passionnent ?</h2>
-              <p className="text-xs text-gray-400">Choisissez les sujets pour votre recommandation.</p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {[
-                { slug: "entrepreneuriat-mali", label: "Entrepreneuriat" },
-                { slug: "culture-mandingue", label: "Culture & Mandé" },
-                { slug: "agrobusiness-sahel", label: "Agrobusiness" },
-                { slug: "fintech-afrique", label: "Fintech & Tech" },
-              ].map((t) => {
-                const isSelected = selectedTopics.includes(t.slug);
-                return (
-                  <button
-                    key={t.slug}
-                    onClick={() => toggleTopic(t.slug)}
-                    className={`px-4 py-2 rounded-full text-xs font-bold transition flex items-center space-x-2 ${
-                      isSelected ? "bg-[#E5A93C] text-black" : "bg-[#0A0D14] border border-[#1E2638] text-gray-300"
-                    }`}
-                  >
-                    <span>{t.label}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5" />}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => setStep(4)}
-              className="w-full bg-[#E5A93C] text-black font-extrabold py-3 rounded-xl text-xs hover:bg-[#F5B82E] transition shadow-lg"
-            >
-              CONTINUER
-            </button>
-          </div>
-        )}
-
-        {/* Étape 4 : Pays & Fin */}
-        {step === 4 && (
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <h2 className="text-xl font-extrabold text-white">Quels pays souhaitez-vous suivre ?</h2>
-              <p className="text-xs text-gray-400">Le Mali est sélectionné par défaut.</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { id: "ML", flag: "🇲🇱", name: "Mali" },
-                { id: "SN", flag: "🇸🇳", name: "Sénégal" },
-                { id: "CI", flag: "🇨🇮", name: "Côte d'Ivoire" },
-                { id: "BF", flag: "🇧🇫", name: "Burkina Faso" },
-              ].map((c) => {
-                const isSelected = selectedCountries.includes(c.id);
-                return (
-                  <div
-                    key={c.id}
-                    onClick={() => toggleCountry(c.id)}
-                    className={`p-3 rounded-xl border cursor-pointer transition flex items-center justify-between ${
-                      isSelected ? "border-[#E5A93C] bg-[#E5A93C]/10 text-white" : "border-[#1E2638] bg-[#0A0D14] text-gray-300"
-                    }`}
-                  >
-                    <span className="text-sm font-bold">{c.flag} {c.name}</span>
-                    {isSelected && <Check className="w-4 h-4 text-[#E5A93C]" />}
-                  </div>
-                );
-              })}
+            <div className="flex flex-wrap gap-2.5 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+              {categoriesList.length === 0 ? (
+                <div className="w-full py-8 text-center text-[#666666] text-xs">
+                  Chargement des catégories...
+                </div>
+              ) : (
+                categoriesList.map((cat: any) => {
+                  const isSelected = selectedTopics.includes(cat.id);
+                  let btnClass = "px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2 ";
+                  if (isSelected) {
+                    btnClass += "bg-[#FFBF00] border-[#FFBF00] text-black shadow-sm";
+                  } else {
+                    btnClass += "bg-[#0E0E0E] border-[#262626] text-[#A0A0A0] hover:border-[#404040] hover:text-white";
+                  }
+                  
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => toggleTopic(cat.id)}
+                      className={btnClass}
+                    >
+                      <span>{cat.name}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                  );
+                })
+              )}
             </div>
 
             <button
               onClick={handleFinish}
-              className="w-full bg-[#E5A93C] text-black font-extrabold py-3 rounded-xl text-xs hover:bg-[#F5B82E] transition shadow-lg"
+              disabled={isSaving}
+              className="w-full bg-[#FFBF00] hover:bg-[#E5AB00] text-black font-bold py-3.5 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              COMMENCER À ÉCOUTER 🎧
+              {isSaving ? (
+                <span className="animate-pulse">Enregistrement...</span>
+              ) : (
+                <>
+                  <span>Commencer à écouter</span>
+                  <Compass className="w-4 h-4" />
+                </>
+              )}
             </button>
           </div>
         )}
+
       </div>
     </div>
   );
