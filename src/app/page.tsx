@@ -77,7 +77,7 @@ function HomeContent() {
 
   const fetcher = (url: string) => fetchApi(url).then((json) => json.data);
   const { data: historyData } = useSWR(
-    user ? `${API_BASE_URL}/interactions/history` : null,
+    user ? `${API_BASE_URL}/me/history` : null,
     fetcher,
   );
   const { data, isLoading } = useSWR(
@@ -137,15 +137,16 @@ function HomeContent() {
   const categoryEntries = data.categoryShelves
     ? data.categoryShelves
         .map((shelf: any) => [
-          shelf.name,
-          shelf.podcasts.filter(
+            shelf.name,
+            shelf.podcasts.filter(
             (p: any) =>
               langFilter === "ALL" ||
               p.primaryLanguage?.code === langFilter ||
               p.language?.code === langFilter,
-          ),
-        ])
-        .filter((entry: any) => entry[1].length > 0)
+            ),
+            shelf.slug
+          ])
+          .filter((entry: any) => entry[1].length > 0)
     : Object.entries(groupedByCategory)
         .map((entry: any) => [
           entry[0],
@@ -154,9 +155,10 @@ function HomeContent() {
               langFilter === "ALL" ||
               p.primaryLanguage?.code === langFilter ||
               p.language?.code === langFilter,
-          ),
-        ])
-        .filter((entry: any) => entry[1].length > 0)
+            ),
+            shelf.slug
+          ])
+          .filter((entry: any) => entry[1].length > 0)
         .sort((a, b) => b[1].length - a[1].length);
 
   const filteredEpisodes =
@@ -213,8 +215,9 @@ function HomeContent() {
                 {trending?.length || 20}
               </span>
             </button>
-            {categoryEntries.map(([catName, pods]: [string, any[]]) => (
-              <button
+            {categoryEntries.map(([catName, pods, slug]: [string, any[], string?]) => (
+              <Link
+                href={`/categories/${slug || catName.toLowerCase().replace(/\s+/g, '-')}`}
                 key={catName}
                 className="shrink-0 bg-[#141414] hover:bg-[#1A1A1A] text-[#B8B8B8] hover:text-white border border-[#242424] font-bold px-5 py-2 rounded-full text-xs flex items-center gap-2 transition-colors"
               >
@@ -223,8 +226,8 @@ function HomeContent() {
                 <span className="bg-[#2A2A2A] px-1.5 rounded text-white">
                   {pods.length}
                 </span>
-              </button>
-            ))}
+              </Link>
+              ))}
           </div>
         </section>
 

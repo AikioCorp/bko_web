@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from "next/navigation";
 import useSWR from 'swr';
 import {
   Bookmark, Clock, Play, Trash2, Radio, CheckCircle2,
@@ -16,6 +17,7 @@ import { AppDownloadModal } from '@/components/modals/AppDownloadModal';
 const fetcher = (url: string) => fetchApi(url).then(res => res.data);
 
 export default function LibraryPage() {
+  const router = useRouter();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const { playEpisode } = usePlayerStore();
   const [activeTab, setActiveTab] = useState<'saved' | 'following' | 'history' | 'playlists'>('saved');
@@ -92,18 +94,10 @@ export default function LibraryPage() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 text-center pb-32">
-        <Bookmark className="w-16 h-16 text-[#333333] mb-6" />
-        <h1 className="text-2xl font-bold text-white mb-2">Votre Bibliothèque Personnelle</h1>
-        <p className="text-[#B8B8B8] max-w-md mb-8 text-sm">
-          Connectez-vous pour retrouver vos épisodes enregistrés, vos émissions suivies, votre historique d'écoute et créer vos propres playlists.
-        </p>
-        <Link href="/login?redirect=/library" className="px-6 py-3 bg-[#FFBF00] text-[#0B0B0B] font-bold rounded-full hover:bg-[#E5AB00] transition-colors">
-          Se connecter
-        </Link>
-      </div>
-    );
+    if (typeof window !== "undefined") {
+      router.replace("/login?redirect=/library");
+    }
+    return <div className="p-8 text-[#757575]">Redirection vers la connexion...</div>;
   }
 
   return (
@@ -151,7 +145,7 @@ export default function LibraryPage() {
               <div key={se.id} className="group flex items-center justify-between p-3 rounded-2xl hover:bg-[#141414] transition-all border border-transparent hover:border-[#222222]">
                 <div className="flex items-center gap-4">
                   <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#282828] cursor-pointer" onClick={() => handlePlay(se.episode)}>
-                    <Image unoptimized src={se.episode?.cover || '/images/default-cover.jpg'} alt={se.episode?.title || ''} fill className="object-cover" />
+                    <Image unoptimized src={se.episode?.cover || se.episode?.podcast?.cover || '/images/default-cover.jpg'} alt={se.episode?.title || ''} fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Play className="w-5 h-5 fill-white text-white" />
                     </div>
@@ -223,7 +217,7 @@ export default function LibraryPage() {
                   <div key={h.id} className="group flex flex-col bg-[#141414] border border-[#262626] rounded-2xl p-3 hover:border-[#FFBF00]/40 transition-colors cursor-pointer" onClick={() => handlePlay(ep)}>
                     <div className="flex items-center gap-3 mb-3">
                       <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#282828] shrink-0">
-                        <Image unoptimized src={ep?.cover || '/images/default-cover.jpg'} alt={ep?.title || ''} fill className="object-cover" />
+                        <Image unoptimized src={ep?.cover || ep?.podcast?.cover || '/images/default-cover.jpg'} alt={ep?.title || ''} fill className="object-cover" />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <Play className="w-4 h-4 fill-white text-white" />
                         </div>

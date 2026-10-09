@@ -141,7 +141,7 @@ function ExploreContent() {
       id: ep.id,
       slug: ep.slug || ep.id,
       title: ep.title,
-      cover: ep.cover || '/images/default-cover.jpg',
+      cover: ep.cover || ep.podcast?.cover || '/images/default-cover.jpg',
       durationSeconds: ep.durationSeconds || 1800,
       podcast: {
         slug: ep.podcast?.slug || 'podcast',
@@ -262,21 +262,28 @@ function ExploreContent() {
                 <span>Parcourir par catégorie</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {activeCategories.map((cat: any) => (
-                  <div 
-                    key={cat.slug} 
-                    onClick={() => setSelectedCat(cat.slug)} 
-                    className="cursor-pointer group relative overflow-hidden rounded-xl bg-[#141414] border border-[#242424] h-[100px] flex items-end p-4 hover:border-[#FFBF00]/50 hover:bg-[#1A1A1A] hover:-translate-y-1 transition-all shadow-sm"
-                  >
-                    <div className="absolute top-3 right-3 text-[#333333] group-hover:text-[#FFBF00]/20 transition-colors">
-                      <Radio className="w-8 h-8" />
-                    </div>
-                    <span className="relative z-10 font-bold text-sm text-white group-hover:text-[#FFBF00] transition-colors leading-tight">{cat.name}</span>
-                  </div>
-                ))}
+                  {activeCategories.map((cat: any) => (
+                    <Link 
+                      key={cat.slug} 
+                      href={`/categories/${cat.slug}`}
+                      className="group relative overflow-hidden rounded-2xl bg-[#141414] border border-[#222222] p-4 flex flex-col justify-between aspect-video hover:border-[#FFBF00] hover:bg-[#1c1c1c] transition-all duration-300"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="p-2 bg-[#222222] rounded-lg group-hover:bg-[#FFBF00]/10 transition-colors">
+                          <Radio className="w-5 h-5 text-[#888888] group-hover:text-[#FFBF00] transition-colors" />
+                        </div>
+                        <span className="text-xs font-bold text-[#555555] group-hover:text-[#FFBF00]/70 transition-colors">
+                          {cat._count?.podcasts || 0}
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-sm text-white group-hover:text-[#FFBF00] transition-colors line-clamp-2 mt-2 leading-tight">
+                        {cat.name}
+                      </h3>
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       )}
 
