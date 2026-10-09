@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -20,7 +20,7 @@ import {
   Building2,
   RefreshCw,
   ArrowRight,
-  Star,
+  Sparkles,
   ExternalLink,
   ShieldCheck,
   RotateCcw
@@ -32,8 +32,8 @@ export default function RssImportPage() {
   
   // 4 Steps strictly following specifications:
   // 1: Adresse du flux
-  // 2: PrÃ©visualisation
-  // 3: VÃ©rification et rÃ©glages
+  // 2: Prévisualisation
+  // 3: Vérification et réglages
   // 4: Import et confirmation
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -64,7 +64,7 @@ export default function RssImportPage() {
   // Step 4: Import Progress & Status
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
-  const [importStage, setImportStage] = useState<string>("PrÃªt pour le dÃ©marrage");
+  const [importStage, setImportStage] = useState<string>("Prêt pour le démarrage");
   const [importResult, setImportResult] = useState<{
     successCount: number;
     errorCount: number;
@@ -80,7 +80,7 @@ export default function RssImportPage() {
   const languages = (langData || []).filter((l: any) => l.isActive);
   const organizations = Array.isArray(orgsData) ? orgsData : (orgsData?.items || []);
 
-  // Ã‰tape 1 : Analyser le flux RSS
+  // Étape 1 : Analyser le flux RSS
   const handleAnalyze = async () => {
     if (!url.trim()) {
       setError("Veuillez saisir l'adresse URL du flux RSS.");
@@ -99,7 +99,7 @@ export default function RssImportPage() {
 
       setPreviewData(res.data);
       
-      // PrÃ©remplissage des rÃ©glages pour l'Ã©tape 3
+      // Préremplissage des réglages pour l'étape 3
       if (!res.data.existingPodcast) {
         setFormData(prev => ({
           ...prev,
@@ -118,7 +118,7 @@ export default function RssImportPage() {
     }
   };
 
-  // Ã‰tape 4 : Lancer l'import rÃ©el
+  // Étape 4 : Lancer l'import réel
   const [operationId, setOperationId] = useState<string | null>(null);
   const [createdPodcastId, setCreatedPodcastId] = useState<string | null>(null);
 
@@ -126,41 +126,35 @@ export default function RssImportPage() {
     setIsImporting(true);
     setError(null);
     setImportProgress(10);
-    setImportStage("1/4 â€” Initialisation de l'import dans la file d'attente...");
+    setImportStage("1/4 — Initialisation de l'import...");
 
     try {
-      // 1. Appel API backend
       const res = await adminApi("/admin/rss/imports", {
         method: "POST",
         body: JSON.stringify({
-          ...formData,
-          url: url.trim(),
-          importSettings: {
-            importScope: formData.importScope,
-            newEpisodesTreatment: formData.newEpisodesTreatment,
-            keepManualEdits: formData.keepManualEdits,
-          }
-        })
+          podcastId: undefined, // Or use formData logic
+          podcastName: formData.name,
+          feedUrl: url,
+          settings: { importAsDraft: true }
+        }),
       });
 
-      if (!res.success) throw new Error(res.error || res.message || "Ã‰chec de l'initialisation de l'import.");
+      if (!res.success) throw new Error(res.message || "Échec de l'initialisation.");
 
-      const createdId = res.data?.podcastId;
-      setCreatedPodcastId(createdId);
-      setOperationId(res.data?.operationId);
-      setImportStage("2/4 â€” En attente du traitement en arriÃ¨re-plan...");
+      setOperationId(res.data.id);
+      setCreatedPodcastId(res.data.podcastId);
 
     } catch (err: any) {
       setIsImporting(false);
       setImportResult({
         successCount: 0,
         errorCount: 1,
-        errors: [err.message || "Erreur rÃ©seau pendant l'import."],
+        errors: [err.message || "Erreur réseau."],
+        createdPodcastId: "imported"
       });
     }
   };
 
-  // Polling du statut rÃ©el de l'import
   useEffect(() => {
     let interval: any;
     if (isImporting && operationId && !importResult) {
@@ -170,13 +164,13 @@ export default function RssImportPage() {
           if (res.success && res.data) {
             const { status, errorMessage, metrics } = res.data;
             if (status === "SYNCING") {
-               setImportStage(`3/4 â€” Importation en cours... (DÃ©couverts : ${metrics?.episodesDiscovered || 0}, ImportÃ©s : ${metrics?.episodesImported || 0})`);
+               setImportStage(`3/4 — Importation en cours... (Découverts : ${metrics?.episodesDiscovered || 0}, Importés : ${metrics?.episodesImported || 0})`);
                const total = previewData?.preview?.episodesCount || metrics?.episodesDiscovered || 1;
-                 const current = (metrics?.episodesImported || 0) + (metrics?.episodesFailed || 0);
-                 const percentage = Math.min(99, Math.floor((current / total) * 100));
-                 setImportProgress(percentage);
+               const current = (metrics?.episodesImported || 0) + (metrics?.episodesFailed || 0);
+               const percentage = Math.min(99, Math.floor((current / total) * 100));
+               setImportProgress(percentage);
             } else if (status === "SUCCESS" || status === "IDLE") {
-               setImportStage(metrics?.episodesFailed > 0 ? "4/4 â€” Import terminÃ© avec des erreurs" : "4/4 â€” Import terminÃ© avec succÃ¨s !");
+               setImportStage(metrics?.episodesFailed > 0 ? "4/4 — Import terminé avec des erreurs" : "4/4 — Import terminé avec succès !");
                setImportProgress(100);
                setIsImporting(false);
                setImportResult({
@@ -197,13 +191,12 @@ export default function RssImportPage() {
                clearInterval(interval);
             }
           }
-        } catch (e) {
-          console.error("Erreur polling", e);
-        }
+        } catch (e) {}
       }, 2000);
     }
     return () => clearInterval(interval);
   }, [isImporting, operationId, importResult, createdPodcastId]);
+
 
   const handleCategoryToggle = (id: string) => {
     setFormData(prev => ({
@@ -217,35 +210,35 @@ export default function RssImportPage() {
   return (
     <div className="w-full max-w-4xl mx-auto py-4 pb-32 text-white space-y-8 animate-in fade-in">
       
-      {/* En-tÃªte & Fil d'Ariane */}
+      {/* En-tête & Fil d'Ariane */}
       <div className="space-y-3">
         <Link 
           href="/admin/podcasts" 
           className="inline-flex items-center text-xs font-semibold text-[#888888] hover:text-[#FFBF00] transition-colors"
         >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Retour aux Ã©missions
+          <ChevronLeft className="w-4 h-4 mr-1" /> Retour aux émissions
         </Link>
         <div className="flex items-center gap-2 text-xs font-bold text-[#FFBF00] uppercase tracking-wider">
           <span>Assistant d'importation RSS</span>
-          <span>â€¢</span>
-          <span>Ã‰tape {currentStep} sur 4</span>
+          <span>•</span>
+          <span>Étape {currentStep} sur 4</span>
         </div>
         <h1 className="text-2xl md:text-3xl font-extrabold text-white flex items-center gap-3">
-          <Rss className="w-7 h-7 text-[#FFBF00]" /> Importer une Ã©mission via RSS
+          <Rss className="w-7 h-7 text-[#FFBF00]" /> Importer une émission via RSS
         </h1>
         <p className="text-sm text-[#888888]">
-          Connectez un flux RSS externe pour crÃ©er l'Ã©mission et importer ses Ã©pisodes en continu.
+          Connectez un flux RSS externe pour créer l'émission et importer ses épisodes en continu.
         </p>
       </div>
 
-      {/* Barre de progression des 4 Ã©tapes */}
+      {/* Barre de progression des 4 étapes */}
       <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-3">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
             { id: 1, title: "1. Adresse", desc: "URL du flux" },
-            { id: 2, title: "2. PrÃ©visualisation", desc: "Inspection des mÃ©tadonnÃ©es" },
-            { id: 3, title: "3. RÃ©glages", desc: "Classification & droits" },
-            { id: 4, title: "4. Import", desc: "Traitement des Ã©pisodes" },
+            { id: 2, title: "2. Prévisualisation", desc: "Inspection des métadonnées" },
+            { id: 3, title: "3. Réglages", desc: "Classification & droits" },
+            { id: 4, title: "4. Import", desc: "Traitement des épisodes" },
           ].map(s => {
             const isActive = currentStep === s.id;
             const isDone = currentStep > s.id;
@@ -281,14 +274,14 @@ export default function RssImportPage() {
       )}
 
       {/* ========================================================= */}
-      {/* Ã‰CRAN 8 â€” Ã‰TAPE 1 : ADRESSE DU FLUX                        */}
+      {/* ÉCRAN 8 — ÉTAPE 1 : ADRESSE DU FLUX                        */}
       {/* ========================================================= */}
       {currentStep === 1 && (
         <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6 animate-in fade-in">
           <div>
             <h2 className="text-base font-bold text-white mb-1">Indiquez l'adresse URL du flux RSS</h2>
             <p className="text-xs text-[#888888]">
-              Le lien doit Ãªtre une adresse de flux XML/RSS valide fournie par votre hÃ©bergeur (Acast, Anchor, Libsyn, Buzzsprout, etc.).
+              Le lien doit être une adresse de flux XML/RSS valide fournie par votre hébergeur (Acast, Anchor, Libsyn, Buzzsprout, etc.).
             </p>
           </div>
 
@@ -330,39 +323,39 @@ export default function RssImportPage() {
       )}
 
       {/* ========================================================= */}
-      {/* Ã‰CRAN 9 â€” Ã‰TAPE 2 : PRÃ‰VISUALISATION                       */}
+      {/* ÉCRAN 9 — ÉTAPE 2 : PRÉVISUALISATION                       */}
       {/* ========================================================= */}
       {currentStep === 2 && previewData && (
         <div className="space-y-6 animate-in fade-in">
           
-          {/* Cas particulier : Flux dÃ©jÃ  connectÃ© en base */}
+          {/* Cas particulier : Flux déjà connecté en base */}
           {previewData.existingPodcast ? (
             <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-8 text-center space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto">
                 <AlertCircle className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Ce flux RSS est dÃ©jÃ  connectÃ©</h3>
+                <h3 className="text-lg font-bold text-white">Ce flux RSS est déjà connecté</h3>
                 <p className="text-xs text-[#888888] mt-1 max-w-md mx-auto">
-                  L'Ã©mission Â« <strong>{previewData.existingPodcast.name}</strong> Â» utilise dÃ©jÃ  cette adresse RSS. Vous pouvez ouvrir sa fiche pour gÃ©rer sa synchronisation.
+                  L'émission « <strong>{previewData.existingPodcast.name}</strong> » utilise déjà cette adresse RSS. Vous pouvez ouvrir sa fiche pour gérer sa synchronisation.
                 </p>
               </div>
               <div className="pt-2">
                 <Link href={`/admin/podcasts/${previewData.existingPodcast.id}`}>
                   <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-10 px-6">
-                    Ouvrir l'Ã©mission existante
+                    Ouvrir l'émission existante
                   </Button>
                 </Link>
               </div>
             </div>
           ) : (
             <>
-              {/* Carte des mÃ©tadonnÃ©es dÃ©tectÃ©es */}
+              {/* Carte des métadonnées détectées */}
               <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
                 <div className="flex flex-col sm:flex-row gap-5 items-start">
                   <div className="w-28 h-28 rounded-xl bg-[#0B0B0B] border border-[#2A2A2A] overflow-hidden shrink-0">
                     {previewData.preview?.image ? (
-                      <img src={previewData.preview.image} alt="Pochette dÃ©tectÃ©e" className="w-full h-full object-cover" />
+                      <img src={previewData.preview.image} alt="Pochette détectée" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-[#222222]">
                         <ImageIcon className="w-8 h-8 text-[#555555]" />
@@ -374,26 +367,26 @@ export default function RssImportPage() {
                       Flux RSS Valide
                     </span>
                     <h3 className="text-xl font-bold text-white leading-tight">
-                      {previewData.preview?.title || "Ã‰mission sans titre"}
+                      {previewData.preview?.title || "Émission sans titre"}
                     </h3>
                     <p className="text-xs text-[#888888] line-clamp-2">
                       {previewData.preview?.description || "Aucune description fournie dans le flux."}
                     </p>
                     <div className="flex items-center gap-3 text-xs text-[#757575] pt-1">
-                      <span>Auteur : <strong className="text-white">{previewData.preview?.author || "Non spÃ©cifiÃ©"}</strong></span>
-                      <span>â€¢</span>
+                      <span>Auteur : <strong className="text-white">{previewData.preview?.author || "Non spécifié"}</strong></span>
+                      <span>•</span>
                       <span>Langue : <strong className="text-white uppercase">{previewData.preview?.language || "FR"}</strong></span>
-                      <span>â€¢</span>
-                      <span>Ã‰pisodes : <strong className="text-[#FFBF00]">{previewData.preview?.episodesCount || 0}</strong></span>
+                      <span>•</span>
+                      <span>Épisodes : <strong className="text-[#FFBF00]">{previewData.preview?.episodesCount || 0}</strong></span>
                     </div>
                   </div>
                 </div>
 
-                {/* Liste d'exemples d'Ã©pisodes dÃ©tectÃ©s */}
+                {/* Liste d'exemples d'épisodes détectés */}
                 <div className="space-y-3 pt-4 border-t border-[#2A2A2A]">
                   <h4 className="text-xs font-bold text-[#888888] uppercase tracking-wider flex items-center justify-between">
-                    <span>Exemples d'Ã©pisodes dÃ©tectÃ©s ({previewData.preview?.episodes?.length || 0})</span>
-                    <span className="text-[11px] text-[#757575] font-normal">AperÃ§u sans crÃ©ation</span>
+                    <span>Exemples d'épisodes détectés ({previewData.preview?.episodes?.length || 0})</span>
+                    <span className="text-[11px] text-[#757575] font-normal">Aperçu sans création</span>
                   </h4>
 
                   <div className="border border-[#2A2A2A] rounded-xl overflow-hidden divide-y divide-[#2A2A2A] bg-[#0B0B0B]">
@@ -414,11 +407,11 @@ export default function RssImportPage() {
                           <div className="shrink-0 flex items-center gap-2">
                             {hasMedia ? (
                               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#7DD3FC] bg-[#15232D] px-2 py-0.5 rounded border border-[#1E3A4C]">
-                                <Headphones className="w-3 h-3" /> MÃ©dia prÃªt
+                                <Headphones className="w-3 h-3" /> Média prêt
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                                <AlertCircle className="w-3 h-3" /> Sans mÃ©dia direct
+                                <AlertCircle className="w-3 h-3" /> Sans média direct
                               </span>
                             )}
                           </div>
@@ -428,12 +421,12 @@ export default function RssImportPage() {
                   </div>
 
                   <p className="text-[11px] text-[#757575] italic">
-                    Note : L'analyse seule ne crÃ©e ni ne publie aucun contenu sur Bamako Podcast.
+                    Note : L'analyse seule ne crée ni ne publie aucun contenu sur Bamako Podcast.
                   </p>
                 </div>
               </div>
 
-              {/* Navigation Ã©tape 2 âž” 3 */}
+              {/* Navigation étape 2 ➔ 3 */}
               <div className="flex items-center justify-between pt-2">
                 <Button
                   variant="outline"
@@ -446,7 +439,7 @@ export default function RssImportPage() {
                   onClick={() => setCurrentStep(3)}
                   className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-11 px-6"
                 >
-                  VÃ©rifier et rÃ©gler l'import <ChevronRight className="w-4 h-4 ml-1" />
+                  Vérifier et régler l'import <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
             </>
@@ -456,14 +449,14 @@ export default function RssImportPage() {
       )}
 
       {/* ========================================================= */}
-      {/* Ã‰CRAN 10 â€” Ã‰TAPE 3 : VÃ‰RIFICATION ET RÃ‰GLAGES              */}
+      {/* ÉCRAN 10 — ÉTAPE 3 : VÉRIFICATION ET RÉGLAGES              */}
       {/* ========================================================= */}
       {currentStep === 3 && (
         <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-8 animate-in fade-in">
           <div className="border-b border-[#2A2A2A] pb-4">
-            <h2 className="text-base font-bold text-white">VÃ©rification des informations et rÃ©glages de synchronisation</h2>
+            <h2 className="text-base font-bold text-white">Vérification des informations et réglages de synchronisation</h2>
             <p className="text-xs text-[#888888] mt-0.5">
-              Ajustez les mÃ©tadonnÃ©es et configurez le comportement lors des prochaines synchronisations.
+              Ajustez les métadonnées et configurez le comportement lors des prochaines synchronisations.
             </p>
           </div>
 
@@ -472,7 +465,7 @@ export default function RssImportPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-1.5">
-                  Nom de l'Ã©mission dans Bamako Podcast <span className="text-[#FFBF00]">*</span>
+                  Nom de l'émission dans Bamako Podcast <span className="text-[#FFBF00]">*</span>
                 </label>
                 <input
                   type="text"
@@ -484,7 +477,7 @@ export default function RssImportPage() {
 
               <div>
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-1.5">
-                  Description modifiÃ©e
+                  Description modifiée
                 </label>
                 <textarea
                   rows={3}
@@ -514,14 +507,14 @@ export default function RssImportPage() {
 
               <div>
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-1.5">
-                  Organisation ou CrÃ©ateur responsable
+                  Organisation ou Créateur responsable
                 </label>
                 <select
                   value={formData.organizationId}
                   onChange={(e) => setFormData({...formData, organizationId: e.target.value})}
                   className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm text-white outline-none"
                 >
-                  <option value="">Aucune (PropriÃ©taire non revendiquÃ©)</option>
+                  <option value="">Aucune (Propriétaire non revendiqué)</option>
                   {organizations.map((o: any) => (
                     <option key={o.id} value={o.id}>{o.name}</option>
                   ))}
@@ -529,16 +522,16 @@ export default function RssImportPage() {
               </div>
             </div>
 
-            {/* PÃ©rimÃ¨tre d'import */}
+            {/* Périmètre d'import */}
             <div className="space-y-3 pt-4 border-t border-[#2A2A2A]">
               <label className="block text-xs font-bold text-[#888888] uppercase">
-                PÃ©rimÃ¨tre des Ã©pisodes Ã  importer
+                Périmètre des épisodes à importer
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { id: "ALL", label: "Tous les Ã©pisodes", desc: "Importe l'intÃ©gralitÃ© du catalogue" },
-                  { id: "LAST_10", label: "Les 10 derniers", desc: "Pour les Ã©missions trÃ¨s volumineuses" },
-                  
+                  { id: "ALL", label: "Tous les épisodes", desc: "Importe l'intégralité du catalogue" },
+                  { id: "LAST_10", label: "Les 10 derniers", desc: "Pour les émissions très volumineuses" },
+                  { id: "SELECT", label: "Sélection manuelle", desc: "Choisir un par un après import" },
                 ].map(opt => (
                   <label 
                     key={opt.id} 
@@ -562,14 +555,51 @@ export default function RssImportPage() {
               </div>
             </div>
 
-            {/* RÃ¨gles de synchronisation future */}
+            {/* Règles de synchronisation future */}
             <div className="space-y-3 pt-4 border-t border-[#2A2A2A]">
               <label className="block text-xs font-bold text-[#888888] uppercase mb-1">
                 Comportement lors des prochaines synchronisations
               </label>
 
               <div className="space-y-2.5">
-                
+                <label className="flex items-center gap-3 p-3 bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.syncEnabled}
+                    onChange={(e) => setFormData({...formData, syncEnabled: e.target.checked})}
+                    className="w-4 h-4 rounded accent-[#FFBF00]"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold text-white">Activer la scrutation automatique du flux RSS</p>
+                    <p className="text-[11px] text-[#757575]">Récupère automatiquement les nouveaux épisodes publiés.</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.keepManualEdits}
+                    onChange={(e) => setFormData({...formData, keepManualEdits: e.target.checked})}
+                    className="w-4 h-4 rounded accent-[#FFBF00]"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold text-white">Conserver les modifications manuelles sur Bamako Podcast</p>
+                    <p className="text-[11px] text-[#757575]">Les titres, résumés ou pochettes retouchés ne seront pas écrasés.</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.flagRemovedEpisodes}
+                    onChange={(e) => setFormData({...formData, flagRemovedEpisodes: e.target.checked})}
+                    className="w-4 h-4 rounded accent-[#FFBF00]"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold text-white">Signaler un épisode retiré du flux d'origine sans le supprimer</p>
+                    <p className="text-[11px] text-[#757575]">Évite les pertes accidentelles d'historique et de commentaires.</p>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
@@ -580,20 +610,20 @@ export default function RssImportPage() {
               onClick={() => setCurrentStep(2)}
               className="bg-[#171717] border-[#2A2A2A] text-white hover:bg-[#222222] text-xs h-11 px-5"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" /> Retour Ã  la prÃ©visualisation
+              <ChevronLeft className="w-4 h-4 mr-1" /> Retour à la prévisualisation
             </Button>
             <Button
               onClick={() => setCurrentStep(4)}
               className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-11 px-6"
             >
-              Confirmer et passer Ã  l'import <ChevronRight className="w-4 h-4 ml-1" />
+              Confirmer et passer à l'import <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         </div>
       )}
 
       {/* ========================================================= */}
-      {/* Ã‰CRAN 11 â€” Ã‰TAPE 4 : IMPORT & PROGRESSION                  */}
+      {/* ÉCRAN 11 — ÉTAPE 4 : IMPORT & PROGRESSION                  */}
       {/* ========================================================= */}
       {currentStep === 4 && (
         <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6 animate-in fade-in">
@@ -601,15 +631,15 @@ export default function RssImportPage() {
           {!importResult && !isImporting && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-base font-bold text-white">RÃ©capitulatif avant import</h2>
+                <h2 className="text-base font-bold text-white">Récapitulatif avant import</h2>
                 <p className="text-xs text-[#888888] mt-0.5">
-                  VÃ©rifiez les paramÃ¨tres d'importation. Les Ã©pisodes seront crÃ©Ã©s en mode <strong>brouillon</strong> par sÃ©curitÃ©.
+                  Vérifiez les paramètres d'importation. Les épisodes seront créés en mode <strong>brouillon</strong> par sécurité.
                 </p>
               </div>
 
               <div className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-5 space-y-3 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-[#757575]">Ã‰mission</span>
+                  <span className="text-[#757575]">Émission</span>
                   <span className="font-bold text-white">{formData.name}</span>
                 </div>
                 <div className="flex justify-between">
@@ -617,8 +647,8 @@ export default function RssImportPage() {
                   <span className="font-mono text-white truncate max-w-xs">{url}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#757575]">Nombre d'Ã©pisodes dÃ©tectÃ©s</span>
-                  <span className="font-bold text-[#FFBF00]">{previewData?.preview?.episodesCount || 0} Ã©pisodes</span>
+                  <span className="text-[#757575]">Nombre d'épisodes détectés</span>
+                  <span className="font-bold text-[#FFBF00]">{previewData?.preview?.episodesCount || 0} épisodes</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#757575]">Statut initial</span>
@@ -629,7 +659,7 @@ export default function RssImportPage() {
               <div className="p-4 bg-[#141414] border border-[#2A2A2A] rounded-xl text-xs text-[#888888] flex items-start gap-2.5">
                 <Info className="w-4 h-4 text-[#FFBF00] shrink-0 mt-0.5" />
                 <span>
-                  <strong>Streaming direct :</strong> Les Ã©pisodes importÃ©s utilisent initialement les adresses distantes fournies par le flux RSS. Les fichiers ne sont pas copiÃ©s sur le serveur de stockage Cloudflare R2 de Bamako Podcast Ã  ce stade.
+                  <strong>Streaming direct :</strong> Les épisodes importés utilisent initialement les adresses distantes fournies par le flux RSS. Les fichiers ne sont pas copiés sur le serveur de stockage Cloudflare R2 de Bamako Podcast à ce stade.
                 </span>
               </div>
 
@@ -639,7 +669,7 @@ export default function RssImportPage() {
                   onClick={() => setCurrentStep(3)}
                   className="bg-[#171717] border-[#2A2A2A] text-white hover:bg-[#222222] text-xs h-11 px-5"
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Modifier les rÃ©glages
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Modifier les réglages
                 </Button>
                 <Button
                   onClick={handleStartImport}
@@ -651,7 +681,7 @@ export default function RssImportPage() {
             </div>
           )}
 
-          {/* En cours d'import avec progression rÃ©elle */}
+          {/* En cours d'import avec progression réelle */}
           {isImporting && (
             <div className="py-12 flex flex-col items-center justify-center space-y-5 text-center">
               <Loader2 className="w-10 h-10 animate-spin text-[#FFBF00]" />
@@ -667,26 +697,26 @@ export default function RssImportPage() {
                 />
               </div>
 
-              <span className="text-xs font-mono text-[#757575]">{importProgress}% complÃ©tÃ©</span>
+              <span className="text-xs font-mono text-[#757575]">{importProgress}% complété</span>
             </div>
           )}
 
-          {/* RÃ©sultat d'importation terminÃ© */}
+          {/* Résultat d'importation terminé */}
           {importResult && (
             <div className="space-y-6">
               <div className="p-6 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-start gap-4">
                 <CheckCircle className="w-6 h-6 text-green-400 shrink-0 mt-1" />
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold text-white">{importResult.errorCount > 0 ? "Importation terminÃ©e avec des erreurs" : "Importation terminÃ©e avec succÃ¨s !"}</h3>
+                  <h3 className="text-base font-bold text-white">Importation terminée avec succès !</h3>
                   <p className="text-xs text-[#CCCCCC]">
-                    {importResult.successCount} Ã©pisode(s) ont Ã©tÃ© importÃ©s et rattachÃ©s Ã  votre nouvelle Ã©mission.
+                    {importResult.successCount} épisode(s) ont été importés et rattachés à votre nouvelle émission.
                   </p>
                 </div>
               </div>
 
               {importResult.errorCount > 0 && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl space-y-2">
-                  <p className="text-xs font-bold text-red-400">Erreurs rencontrÃ©es :</p>
+                  <p className="text-xs font-bold text-red-400">Erreurs rencontrées :</p>
                   <ul className="text-xs text-red-300 list-disc pl-4 space-y-1">
                     {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
                   </ul>
@@ -696,7 +726,7 @@ export default function RssImportPage() {
                     onClick={handleStartImport}
                     className="text-xs bg-[#171717] border-red-500/30 text-white mt-2"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> RÃ©essayer les Ã©lÃ©ments en erreur
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> Réessayer les éléments en erreur
                   </Button>
                 </div>
               )}
@@ -704,14 +734,14 @@ export default function RssImportPage() {
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2A2A2A]">
                 <Link href="/admin/podcasts">
                   <Button variant="ghost" className="text-xs text-[#888888] hover:text-white">
-                    Retour Ã  la liste des Ã©missions
+                    Retour à la liste des émissions
                   </Button>
                 </Link>
                 <Button
                   onClick={() => router.push(`/admin/podcasts/${importResult.createdPodcastId || "imported"}`)}
                   className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-11 px-6"
                 >
-                  Ouvrir l'Ã©mission <ArrowRight className="w-4 h-4 ml-2" />
+                  Ouvrir l'émission <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             </div>
@@ -723,4 +753,3 @@ export default function RssImportPage() {
     </div>
   );
 }
-

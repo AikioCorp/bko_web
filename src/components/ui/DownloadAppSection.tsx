@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { Smartphone, Download, Headphones, Bell, CheckCircle2, ArrowRight } from "lucide-react";
@@ -22,11 +22,11 @@ export const DownloadAppSection: React.FC = () => {
             </div>
 
             <h2 className="text-2xl md:text-3xl font-headline font-extrabold text-white leading-tight">
-              Emportez tous les rÃ©cits du Mali et d'Afrique dans votre poche
+              Emportez tous les récits du Mali et d'Afrique dans votre poche
             </h2>
 
             <p className="text-xs md:text-sm text-[#B8B8B8] leading-relaxed">
-              TÃ©lÃ©chargez l'application mobile Bamako Podcast pour profiter d'une Ã©coute 100% hors-ligne dans vos dÃ©placements, de la lecture Ã©cran Ã©teint et de notifications instantanÃ©es Ã  chaque nouvel Ã©pisode.
+              Téléchargez l'application mobile Bamako Podcast pour profiter d'une écoute 100% hors-ligne dans vos déplacements, de la lecture écran éteint et de notifications instantanées à chaque nouvel épisode.
             </p>
 
             {/* Micro Feature Pills */}
@@ -37,7 +37,7 @@ export const DownloadAppSection: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 text-xs text-[#E5E5E5]">
                 <CheckCircle2 className="w-4 h-4 text-[#FFBF00] shrink-0" />
-                <span>Lecture en arriÃ¨re-plan</span>
+                <span>Lecture en arrière-plan</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-[#E5E5E5]">
                 <CheckCircle2 className="w-4 h-4 text-[#FFBF00] shrink-0" />
@@ -63,7 +63,7 @@ export const DownloadAppSection: React.FC = () => {
               className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] hover:border-[#FFBF00]/40 text-white text-xs font-bold transition-all text-center"
             >
               <Download className="w-4 h-4 text-[#FFBF00]" />
-              <span>TÃ©lÃ©charger l'APK (.apk)</span>
+              <span>Télécharger l'APK (.apk)</span>
             </a>
           </div>
         </div>
@@ -73,4 +73,3 @@ export const DownloadAppSection: React.FC = () => {
     </>
   );
 };
-

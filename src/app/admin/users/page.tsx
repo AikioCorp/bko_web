@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -54,7 +54,7 @@ export default function UsersPage() {
         body: JSON.stringify({ roles: userRoles })
       });
       await mutate();
-      alert("RÃ´les mis Ã  jour");
+      alert("Rôles mis à jour");
     } catch (e: any) {
       alert("Erreur: " + e.message);
     } finally {
@@ -101,7 +101,7 @@ export default function UsersPage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Utilisateurs</h1>
-          <p className="text-[#888888]">GÃ©rez les comptes, rÃ´les et accÃ¨s des membres.</p>
+          <p className="text-[#888888]">Gérez les comptes, rôles et accès des membres.</p>
         </div>
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" />
@@ -121,7 +121,7 @@ export default function UsersPage() {
             <tr className="border-b border-[#222] bg-[#0A0A0A]">
               <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">Utilisateur</th>
               <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">Contact</th>
-              <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">RÃ´les</th>
+              <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">Rôles</th>
               <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">Statut</th>
               <th className="px-6 py-4 text-right"></th>
             </tr>
@@ -137,7 +137,7 @@ export default function UsersPage() {
             ) : usersData?.items?.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center text-[#888]">
-                  Aucun utilisateur trouvÃ©.
+                  Aucun utilisateur trouvé.
                 </td>
               </tr>
             ) : (
@@ -208,7 +208,7 @@ export default function UsersPage() {
             </span>
             <div className="flex gap-2">
               <Button size="sm" variant="ghost" disabled={page === 1} onClick={() => setPage(page - 1)}>
-                PrÃ©cÃ©dent
+                Précédent
               </Button>
               <Button size="sm" variant="ghost" disabled={page * limit >= usersData.total} onClick={() => setPage(page + 1)}>
                 Suivant
@@ -251,7 +251,7 @@ export default function UsersPage() {
 
               {/* Roles */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-white uppercase tracking-wide border-b border-[#222] pb-2">RÃ´les</h4>
+                <h4 className="text-sm font-semibold text-white uppercase tracking-wide border-b border-[#222] pb-2">Rôles</h4>
                 <div className="flex flex-col gap-2">
                   {rolesData?.map((role: any) => (
                     <label key={role.name} className="flex items-center gap-3 p-3 rounded-lg border border-[#222] hover:bg-[#161616] cursor-pointer transition-colors">
@@ -272,25 +272,25 @@ export default function UsersPage() {
                   ))}
                   <Button onClick={handleUpdateRoles} disabled={isUpdating} className="mt-2 bg-[#FFBF00] text-black hover:bg-[#E5AB00]">
                     {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Mettre Ã  jour les rÃ´les
+                    Mettre à jour les rôles
                   </Button>
                 </div>
               </div>
 
               {/* Creator Status */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-white uppercase tracking-wide border-b border-[#222] pb-2">VÃ©rification CrÃ©ateur</h4>
+                <h4 className="text-sm font-semibold text-white uppercase tracking-wide border-b border-[#222] pb-2">Vérification Créateur</h4>
                 <div className="p-4 rounded-lg border border-[#222] bg-[#161616]">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-sm font-medium text-white flex items-center gap-2">
                         {isVerified ? (
-                          <><BadgeCheck className="w-4 h-4 text-blue-500" /> CrÃ©ateur VÃ©rifiÃ©</>
+                          <><BadgeCheck className="w-4 h-4 text-blue-500" /> Créateur Vérifié</>
                         ) : (
-                          "Non vÃ©rifiÃ©"
+                          "Non vérifié"
                         )}
                       </div>
-                      <p className="text-xs text-[#888] mt-1 pr-4">Le badge vÃ©rifiÃ© s'affiche publiquement Ã  cÃ´tÃ© de son nom.</p>
+                      <p className="text-xs text-[#888] mt-1 pr-4">Le badge vérifié s'affiche publiquement à côté de son nom.</p>
                     </div>
                     <button
                       onClick={handleUpdateVerification}
@@ -345,4 +345,3 @@ export default function UsersPage() {
     </div>
   );
 }
-

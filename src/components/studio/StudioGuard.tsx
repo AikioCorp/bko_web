@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -18,7 +18,7 @@ export function StudioGuard({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center text-sm text-gray-400">
-        VÃ©rification des accÃ¨s...
+        Vérification des accès...
       </div>
     );
   }
@@ -33,4 +33,3 @@ export function StudioGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-

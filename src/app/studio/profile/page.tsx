@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -18,7 +18,7 @@ export default function ProfilePage() {
   if (!isAuthenticated || !user) {
     return (
       <div className="max-w-md mx-auto py-16 text-center space-y-4">
-        <p className="text-gray-400 text-sm">Veuillez vous connecter pour accÃ©der Ã  votre profil.</p>
+        <p className="text-gray-400 text-sm">Veuillez vous connecter pour accéder à votre profil.</p>
         <a href="/login" className="inline-block bg-[#E5A93C] text-black px-6 py-2.5 rounded-full font-bold text-xs">
           SE CONNECTER
         </a>
@@ -43,10 +43,10 @@ export default function ProfilePage() {
       });
       const json = await res.json();
       if (json.success) {
-        setMsg("Profil mis Ã  jour avec succÃ¨s !");
+        setMsg("Profil mis à jour avec succès !");
       }
     } catch (e) {
-      setMsg("Erreur lors de la mise Ã  jour");
+      setMsg("Erreur lors de la mise à jour");
     }
   };
 
@@ -100,7 +100,7 @@ export default function ProfilePage() {
               className="text-xs text-gray-400 hover:text-[#E5A93C] flex items-center space-x-1"
             >
               <Laptop className="w-4 h-4" />
-              <span>GÃ©rer mes appareils</span>
+              <span>Gérer mes appareils</span>
             </a>
 
             <button
@@ -122,11 +122,10 @@ export default function ProfilePage() {
             className="w-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 py-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2"
           >
             <LogOut className="w-4 h-4" />
-            <span>SE DÃ‰CONNECTER</span>
+            <span>SE DÉCONNECTER</span>
           </button>
         </div>
       </div>
     </div>
   );
 }
-

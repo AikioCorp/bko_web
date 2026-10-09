@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -82,8 +82,8 @@ export const PodcastCardFeatured: React.FC<{ podcast: PodcastItem }> = ({ podcas
           href={`/podcasts/${podcast.slug}`}
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#E6B009] text-[#0B0F17] font-extrabold text-xs rounded-xl hover:bg-[#F5B82E] transition-colors shadow-lg"
         >
-          <span>DÃ©couvrir le podcast</span>
-          <span>â†’</span>
+          <span>Découvrir le podcast</span>
+          <span>→</span>
         </Link>
       </div>
     </div>
@@ -118,10 +118,10 @@ export const EpisodeCardHorizontal: React.FC<{ episode: EpisodeItem; onPlay?: ()
         <button
           onClick={onPlay}
           className="absolute inset-0 bg-[#0B0F17]/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="Ã‰couter"
+          aria-label="Écouter"
         >
           <span className="w-6 h-6 rounded-full bg-[#E6B009] text-[#0B0F17] flex items-center justify-center font-bold text-[10px]">
-            â–¶
+            ▶
           </span>
         </button>
       </div>
@@ -147,7 +147,7 @@ export const EpisodeCardHorizontal: React.FC<{ episode: EpisodeItem; onPlay?: ()
         onClick={onPlay}
         className="w-8 h-8 rounded-full bg-[#161B22] group-hover:bg-[#E6B009] text-[#8B949E] group-hover:text-[#0B0F17] flex items-center justify-center font-bold text-xs transition-colors"
       >
-        â–¶
+        ▶
       </button>
     </div>
   </div>
@@ -183,10 +183,10 @@ export const CategoryCard: React.FC<{ name: string; slug: string; icon?: string;
   >
     <div>
       <h3 className="text-xs font-bold text-[#F0F6FC] group-hover:text-[#E6B009] transition-colors">{name}</h3>
-      {count ? <p className="text-[10px] text-[#8B949E] mt-1">{count} Ã©missions</p> : null}
+      {count ? <p className="text-[10px] text-[#8B949E] mt-1">{count} émissions</p> : null}
     </div>
     <span className="text-[10px] text-[#E6B009] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-      Explorer â†’
+      Explorer →
     </span>
   </Link>
 );
@@ -211,6 +211,3 @@ export const PersonAvatar: React.FC<{ name: string; photo?: string; role?: strin
     </div>
   </div>
 );
-
-
-

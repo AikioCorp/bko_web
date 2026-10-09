@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { X, CheckCircle, Radio } from "lucide-react";
@@ -50,7 +50,7 @@ export default function SuggestModal({ isOpen, onClose }: SuggestModalProps) {
             </div>
             <h2 className="text-2xl font-bold text-white">Merci pour votre suggestion !</h2>
             <p className="text-[#888]">
-              Notre Ã©quipe Ã©ditoriale va Ã©tudier votre proposition pour ajouter cette voix au catalogue.
+              Notre équipe éditoriale va étudier votre proposition pour ajouter cette voix au catalogue.
             </p>
           </div>
         ) : (
@@ -61,20 +61,20 @@ export default function SuggestModal({ isOpen, onClose }: SuggestModalProps) {
                   <div className="w-10 h-10 bg-[#FFBF00]/10 rounded-full flex items-center justify-center border border-[#FFBF00]/20">
                     <Radio className="w-5 h-5 text-[#FFBF00]" />
                   </div>
-                  <DialogTitle className="text-xl font-bold">Proposer une Ã©mission</DialogTitle>
+                  <DialogTitle className="text-xl font-bold">Proposer une émission</DialogTitle>
                 </div>
                 <DialogDescription className="text-[#888] text-left pt-2">
-                  Une voix vous manque sur Bamako Podcast ? Dites-le nous et nous ferons notre possible pour l'ajouter Ã  la plateforme.
+                  Une voix vous manque sur Bamako Podcast ? Dites-le nous et nous ferons notre possible pour l'ajouter à la plateforme.
                 </DialogDescription>
               </DialogHeader>
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[#CCC]">Nom du crÃ©ateur, de la radio ou du podcast *</label>
+                <label className="text-sm font-medium text-[#CCC]">Nom du créateur, de la radio ou du podcast *</label>
                 <Input
                   required
-                  placeholder="Ex: Radio Kledu, Amadou HampÃ¢tÃ© BÃ¢..."
+                  placeholder="Ex: Radio Kledu, Amadou Hampâté Bâ..."
                   className="bg-[#0E0E0E] border-[#333] text-white focus-visible:ring-[#FFBF00]"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -92,9 +92,9 @@ export default function SuggestModal({ isOpen, onClose }: SuggestModalProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[#CCC]">PrÃ©cisions (Optionnel)</label>
+                <label className="text-sm font-medium text-[#CCC]">Précisions (Optionnel)</label>
                 <textarea
-                  placeholder="Dites-nous pourquoi vous aimez ce crÃ©ateur..."
+                  placeholder="Dites-nous pourquoi vous aimez ce créateur..."
                   className="flex w-full rounded-md border border-[#333] bg-[#0E0E0E] px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FFBF00] min-h-[80px] resize-none"
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
@@ -125,4 +125,3 @@ export default function SuggestModal({ isOpen, onClose }: SuggestModalProps) {
     </Dialog>
   );
 }
-

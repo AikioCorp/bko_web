@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -25,13 +25,13 @@ export default function ForgotPasswordPage() {
   return (
     <div className="max-w-md mx-auto px-4 py-20">
       <div className="bg-[#161616] border border-[#262626] rounded-2xl p-8 space-y-5">
-        <h1 className="text-xl font-extrabold text-white">Mot de passe oubliÃ©</h1>
+        <h1 className="text-xl font-extrabold text-white">Mot de passe oublié</h1>
         {state === "done" ? (
           <>
             <p className="text-sm text-emerald-400">
-              Si un compte correspond Ã  cette adresse, un email contenant un lien de rÃ©initialisation vient d&apos;Ãªtre envoyÃ©. Le lien est valable 1 heure.
+              Si un compte correspond à cette adresse, un email contenant un lien de réinitialisation vient d&apos;être envoyé. Le lien est valable 1 heure.
             </p>
-            <Link href="/login" className="inline-block text-[#FFBF00] text-sm font-bold">Retour Ã  la connexion</Link>
+            <Link href="/login" className="inline-block text-[#FFBF00] text-sm font-bold">Retour à la connexion</Link>
           </>
         ) : (
           <form onSubmit={submit} className="space-y-4">
@@ -49,13 +49,12 @@ export default function ForgotPasswordPage() {
             </label>
             {error && <p className="text-xs text-red-400">{error}</p>}
             <button type="submit" disabled={state === "busy"} className="w-full bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold py-2.5 rounded-lg disabled:opacity-50">
-              {state === "busy" ? "Envoiâ€¦" : "Envoyer le lien"}
+              {state === "busy" ? "Envoi…" : "Envoyer le lien"}
             </button>
-            <Link href="/login" className="block text-center text-xs text-gray-400 hover:text-white">Retour Ã  la connexion</Link>
+            <Link href="/login" className="block text-center text-xs text-gray-400 hover:text-white">Retour à la connexion</Link>
           </form>
         )}
       </div>
     </div>
   );
 }
-

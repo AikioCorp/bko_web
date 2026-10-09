@@ -1,10 +1,10 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Bookmark, Radio, Smartphone, ShieldCheck, Star, Download, ArrowRight, Mic } from "lucide-react";
+import { Home, Compass, Bookmark, Radio, Smartphone, ShieldCheck, Sparkles, Download, ArrowRight, Mic } from "lucide-react";
 import { useConsoleAccess } from "@/hooks/useConsoleAccess";
 import { AppDownloadModal } from "./modals/AppDownloadModal";
 
@@ -45,7 +45,7 @@ export const Sidebar: React.FC = () => {
       exact: false,
     },
     {
-      label: "BibliothÃ¨que",
+      label: "Bibliothèque",
       href: "/library",
       icon: Bookmark,
       exact: false,
@@ -58,10 +58,10 @@ export const Sidebar: React.FC = () => {
     },
     // Creator space or Become a Creator
     ...(isCreator
-      ? [{ label: "Espace CrÃ©ateurs / Studio", href: "/studio", icon: Radio, exact: false }]
-      : [{ label: "Devenir CrÃ©ateur", href: "/become-creator", icon: Star, exact: false }]
+      ? [{ label: "Espace Créateurs / Studio", href: "/studio", icon: Radio, exact: false }]
+      : [{ label: "Devenir Créateur", href: "/become-creator", icon: Sparkles, exact: false }]
     ),
-    // Visible uniquement pour les comptes ayant accÃ¨s Ã  la console d'administration.
+    // Visible uniquement pour les comptes ayant accès à la console d'administration.
     ...(showConsole ? [{ label: "Console d'administration", href: "/admin/dashboard", icon: ShieldCheck, exact: false }] : []),
   ];
 
@@ -126,11 +126,11 @@ export const Sidebar: React.FC = () => {
             <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
           <p className="text-[11px] text-[#888888] leading-tight">
-            Ã‰coutez vos podcasts partout, hors-ligne et sans coupure.
+            Écoutez vos podcasts partout, hors-ligne et sans coupure.
           </p>
           <span className="inline-flex items-center gap-1 text-[11px] text-[#FFBF00] font-bold">
             <Download className="w-3 h-3" />
-            <span>TÃ©lÃ©charger l'App</span>
+            <span>Télécharger l'App</span>
           </span>
         </button>
       </div>
@@ -139,4 +139,3 @@ export const Sidebar: React.FC = () => {
     </aside>
   );
 };
-

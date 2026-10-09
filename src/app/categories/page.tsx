@@ -1,4 +1,4 @@
-﻿import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL } from "@/lib/api";
 import React from "react";
 import Link from "next/link";
 import { LayoutGrid } from "lucide-react";
@@ -23,15 +23,15 @@ export default async function CategoriesIndexPage() {
     <div className="w-full px-4 py-8 space-y-8">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-2">
         <span className="bg-[#E5A93C]/10 text-[#E5A93C] text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#E5A93C]/30 uppercase">
-          EXPLORER PAR THÃˆME
+          EXPLORER PAR THÈME
         </span>
-        <h1 className="text-3xl font-black text-white">CatÃ©gories</h1>
-        <p className="text-xs text-gray-400">Parcourez les podcasts maliens et africains par catÃ©gorie.</p>
+        <h1 className="text-3xl font-black text-white">Catégories</h1>
+        <p className="text-xs text-gray-400">Parcourez les podcasts maliens et africains par catégorie.</p>
       </div>
 
       {categories.length === 0 ? (
         <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-12 text-center text-xs text-gray-400">
-          Aucune catÃ©gorie disponible pour le moment.
+          Aucune catégorie disponible pour le moment.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -56,4 +56,3 @@ export default async function CategoriesIndexPage() {
     </div>
   );
 }
-

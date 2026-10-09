@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { Radio } from "lucide-react";
@@ -20,7 +20,7 @@ export default function SuggestBanner() {
               Vous ne trouvez pas votre voix favorite ?
             </h3>
             <p className="text-[#888888] text-sm">
-              SuggÃ©rez un griot, un animateur radio ou un studio indÃ©pendant de Bamako.
+              Suggérez un griot, un animateur radio ou un studio indépendant de Bamako.
             </p>
           </div>
         </div>
@@ -28,7 +28,7 @@ export default function SuggestBanner() {
           className="shrink-0 bg-[#222222] hover:bg-[#333333] text-white border border-[#444444] rounded-full px-6 py-5 font-medium transition-all hover:scale-105"
           onClick={() => setIsModalOpen(true)}
         >
-          Proposer une Ã©mission
+          Proposer une émission
         </Button>
       </div>
 
@@ -36,4 +36,3 @@ export default function SuggestBanner() {
     </>
   );
 }
-

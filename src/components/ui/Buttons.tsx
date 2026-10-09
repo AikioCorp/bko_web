@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
@@ -104,4 +104,3 @@ export const IconButton: React.FC<ButtonProps> = ({ children, size = "md", class
     </button>
   );
 };
-

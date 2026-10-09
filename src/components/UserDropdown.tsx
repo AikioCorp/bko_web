@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -63,7 +63,7 @@ export function UserDropdown() {
               <div className="px-3 py-2 border-b border-[#222222]">
                 <p className="text-xs font-bold text-white">Bienvenue</p>
                 <p className="text-[10px] text-[#757575]">
-                  AccÃ©dez Ã  vos podcasts et synchronisez vos Ã©coutes.
+                  Accédez à vos podcasts et synchronisez vos écoutes.
                 </p>
               </div>
               <div className="p-1 space-y-1">
@@ -96,7 +96,7 @@ export function UserDropdown() {
                       : isAdmin
                       ? "Admin"
                       : isCreator
-                      ? "CrÃ©ateur"
+                      ? "Créateur"
                       : "Auditeur"}
                   </span>
                 </div>
@@ -121,7 +121,7 @@ export function UserDropdown() {
                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-white hover:bg-[#1E1E1E] transition-colors font-medium"
                   >
                     <Radio className="w-3.5 h-3.5 text-[#FFBF00]" />
-                    <span>Studio CrÃ©ateur</span>
+                    <span>Studio Créateur</span>
                   </Link>
                 )}
                 <Link
@@ -138,7 +138,7 @@ export function UserDropdown() {
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-[#B8B8B8] hover:text-white hover:bg-[#1E1E1E] transition-colors"
                 >
                   <Bookmark className="w-3.5 h-3.5" />
-                  <span>Ma BibliothÃ¨que</span>
+                  <span>Ma Bibliothèque</span>
                 </Link>
               </div>
 
@@ -152,7 +152,7 @@ export function UserDropdown() {
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-red-400 hover:bg-[#1E1E1E] transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Se dÃ©connecter</span>
+                  <span>Se déconnecter</span>
                 </button>
               </div>
             </>
@@ -162,4 +162,3 @@ export function UserDropdown() {
     </div>
   );
 }
-

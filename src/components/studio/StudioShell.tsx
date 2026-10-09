@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -29,9 +29,9 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: "Vue d'ensemble", href: "/studio", icon: LayoutDashboard },
     { name: "Mes Podcasts", href: "/studio/podcasts", icon: Mic2 },
-    { name: "Nouvel Ã‰pisode", href: "/studio/episodes/new", icon: PlusSquare },
+    { name: "Nouvel Épisode", href: "/studio/episodes/new", icon: PlusSquare },
     { name: "Statistiques", href: "/studio/analytics", icon: BarChart3 },
-    { name: "ParamÃ¨tres Studio", href: "/studio/settings", icon: Settings },
+    { name: "Paramètres Studio", href: "/studio/settings", icon: Settings },
   ];
 
   return (
@@ -114,4 +114,3 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-

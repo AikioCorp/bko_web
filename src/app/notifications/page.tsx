@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -41,7 +41,7 @@ export default function NotificationsPage() {
     setUnread((c) => Math.max(0, c - 1));
   };
 
-  if (authLoading) return <div className="p-20 text-center text-sm text-gray-500">Chargementâ€¦</div>;
+  if (authLoading) return <div className="p-20 text-center text-sm text-gray-500">Chargement…</div>;
   if (!isAuthenticated)
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center space-y-3">
@@ -61,7 +61,7 @@ export default function NotificationsPage() {
         )}
       </div>
       {error && <p className="text-sm text-red-300">{error}</p>}
-      {!items && !error && <p className="text-sm text-gray-500">Chargementâ€¦</p>}
+      {!items && !error && <p className="text-sm text-gray-500">Chargement…</p>}
       {items && items.length === 0 && <p className="text-sm text-gray-500 bg-[#161616] border border-[#262626] rounded-xl p-8 text-center">Aucune notification.</p>}
       {items && items.length > 0 && (
         <ul className="border border-[#262626] rounded-2xl overflow-hidden divide-y divide-[#1c1c1c]">
@@ -100,4 +100,3 @@ export default function NotificationsPage() {
     </div>
   );
 }
-

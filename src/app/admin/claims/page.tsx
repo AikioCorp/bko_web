@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -44,7 +44,7 @@ export default function AdminClaimsPage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Revendications</h1>
-          <p className="text-[#888888]">Traitez les demandes de droits d'auteur sur les podcasts importÃ©s.</p>
+          <p className="text-[#888888]">Traitez les demandes de droits d'auteur sur les podcasts importés.</p>
         </div>
         <select
           value={filter}
@@ -54,8 +54,8 @@ export default function AdminClaimsPage() {
           <option value="">Toutes les demandes</option>
           <option value="PENDING">En attente</option>
           <option value="UNDER_REVIEW">En cours d'examen</option>
-          <option value="APPROVED">ApprouvÃ©es</option>
-          <option value="REJECTED">RejetÃ©es</option>
+          <option value="APPROVED">Approuvées</option>
+          <option value="REJECTED">Rejetées</option>
         </select>
       </div>
 
@@ -65,7 +65,7 @@ export default function AdminClaimsPage() {
         ) : claims?.length === 0 ? (
           <div className="p-12 text-center text-[#888]">
             <ShieldAlert className="w-8 h-8 mx-auto mb-4 text-[#333]" />
-            Aucune revendication trouvÃ©e.
+            Aucune revendication trouvée.
           </div>
         ) : (
           <div className="divide-y divide-[#222]">
@@ -81,7 +81,7 @@ export default function AdminClaimsPage() {
                         <div className="w-16 h-16 rounded-lg bg-[#222] border border-[#333]" />
                       )}
                       <div>
-                        <div className="text-xs text-[#FFBF00] font-bold mb-1 uppercase tracking-wider">Podcast ciblÃ©</div>
+                        <div className="text-xs text-[#FFBF00] font-bold mb-1 uppercase tracking-wider">Podcast ciblé</div>
                         <h3 className="text-lg font-bold text-white">{claim.podcast?.name || "Podcast inconnu"}</h3>
                         <p className="text-xs text-[#888] font-mono mt-1">ID: {claim.podcast?.id}</p>
                       </div>
@@ -108,7 +108,7 @@ export default function AdminClaimsPage() {
                   {/* Preuves */}
                   <div className="flex-1 space-y-4">
                     <div>
-                      <div className="text-xs text-[#888] font-bold mb-1 uppercase tracking-wider">MÃ©thode</div>
+                      <div className="text-xs text-[#888] font-bold mb-1 uppercase tracking-wider">Méthode</div>
                       <div className="flex items-center gap-2 text-sm text-white font-medium">
                         {getMethodIcon(claim.verificationMethod)}
                         {claim.verificationMethod}
@@ -132,7 +132,7 @@ export default function AdminClaimsPage() {
                   {/* Actions */}
                   <div className="w-full lg:w-64 border-t lg:border-t-0 lg:border-l border-[#222] pt-4 lg:pt-0 lg:pl-6 flex flex-col justify-between">
                     <div>
-                      <div className="text-xs text-[#888] font-bold mb-3 uppercase tracking-wider">Statut & DÃ©cision</div>
+                      <div className="text-xs text-[#888] font-bold mb-3 uppercase tracking-wider">Statut & Décision</div>
                       {claim.status === "PENDING" && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-semibold bg-yellow-500/10 text-yellow-500 mb-4">
                           <Clock className="w-4 h-4" /> En attente
@@ -145,12 +145,12 @@ export default function AdminClaimsPage() {
                       )}
                       {claim.status === "APPROVED" && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-semibold bg-green-500/10 text-green-500 mb-4">
-                          <CheckCircle className="w-4 h-4" /> ApprouvÃ©e
+                          <CheckCircle className="w-4 h-4" /> Approuvée
                         </span>
                       )}
                       {claim.status === "REJECTED" && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-semibold bg-red-500/10 text-red-500 mb-4">
-                          <XCircle className="w-4 h-4" /> RejetÃ©e
+                          <XCircle className="w-4 h-4" /> Rejetée
                         </span>
                       )}
                       
@@ -208,4 +208,3 @@ export default function AdminClaimsPage() {
     </div>
   );
 }
-

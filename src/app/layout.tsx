@@ -1,20 +1,20 @@
-﻿import React from "react";
+import React from "react";
 import { AuthInitializer } from "../components/AuthInitializer";
 import { AppShell } from "../components/AppShell";
 import "./globals.css";
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://bamakopodcast.studio"),
-  title: "Bamako Podcast â€” La voix du Mali et du MandÃ©",
-  description: "Plateforme sonore de rÃ©fÃ©rence : podcasts d'actualitÃ©, de culture, d'entrepreneuriat et contes traditionnels de Bamako et du Mali.",
+  title: "Bamako Podcast — La voix du Mali et du Mandé",
+  description: "Plateforme sonore de référence : podcasts d'actualité, de culture, d'entrepreneuriat et contes traditionnels de Bamako et du Mali.",
   icons: {
     icon: "/brand/favicon.png",
     shortcut: "/brand/favicon.png",
     apple: "/brand/app-icon.png",
   },
   openGraph: {
-    title: "Bamako Podcast â€” La voix du Mali et du MandÃ©",
-    description: "Ã‰coutez les podcasts phares de Bamako en franÃ§ais et en bamanankan.",
+    title: "Bamako Podcast — La voix du Mali et du Mandé",
+    description: "Écoutez les podcasts phares de Bamako en français et en bamanankan.",
     images: ["/brand/app-icon.png"],
     siteName: "Bamako Podcast",
     locale: "fr_FR",
@@ -42,4 +42,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

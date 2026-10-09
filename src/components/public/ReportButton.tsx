@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -8,15 +8,15 @@ import { useAuthStore } from "@/store/authStore";
 
 const REASONS: [string, string][] = [
   ["COPYRIGHT", "Droits d'auteur"],
-  ["INAPPROPRIATE", "Contenu inappropriÃ©"],
+  ["INAPPROPRIATE", "Contenu inapproprié"],
   ["SPAM", "Spam"],
-  ["IMPERSONATION", "Usurpation d'identitÃ©"],
-  ["MISINFORMATION", "DÃ©sinformation"],
+  ["IMPERSONATION", "Usurpation d'identité"],
+  ["MISINFORMATION", "Désinformation"],
   ["OTHER", "Autre"],
 ];
 
-/** Signaler un podcast ou un Ã©pisode Ã  la modÃ©ration (connexion requise). */
-export function ReportButton({ targetType, targetId }: { targetType: "PODCAST" | "EPISODE" | "COMMENT"; targetId: string }) {
+/** Signaler un podcast ou un épisode à la modération (connexion requise). */
+export function ReportButton({ targetType, targetId }: { targetType: "PODCAST" | "EPISODE"; targetId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -56,7 +56,7 @@ export function ReportButton({ targetType, targetId }: { targetType: "PODCAST" |
             <h2 className="text-lg font-bold text-white">Signaler ce contenu</h2>
             {state === "done" ? (
               <>
-                <p className="text-sm text-emerald-400">Merci : votre signalement a Ã©tÃ© transmis Ã  la modÃ©ration.</p>
+                <p className="text-sm text-emerald-400">Merci : votre signalement a été transmis à la modération.</p>
                 <button onClick={() => { setOpen(false); setState("idle"); setDescription(""); }} className="bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-4 py-2 rounded-lg">
                   Fermer
                 </button>
@@ -72,14 +72,14 @@ export function ReportButton({ targetType, targetId }: { targetType: "PODCAST" |
                   </select>
                 </label>
                 <label className="block space-y-1.5 text-xs font-bold text-gray-300">
-                  PrÃ©cisions (facultatif)
+                  Précisions (facultatif)
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={2000} className="w-full bg-[#0B0B0B] border border-[#262626] rounded-lg px-3 py-2.5 text-sm text-white font-normal" />
                 </label>
                 {error && <p className="text-xs text-red-400">{error}</p>}
                 <div className="flex justify-end gap-2">
                   <button onClick={() => setOpen(false)} className="bg-[#262626] text-white text-xs font-bold px-3 py-2 rounded-lg">Annuler</button>
                   <button onClick={submit} disabled={state === "busy"} className="bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg disabled:opacity-50">
-                    {state === "busy" ? "â€¦" : "Envoyer le signalement"}
+                    {state === "busy" ? "…" : "Envoyer le signalement"}
                   </button>
                 </div>
               </>
@@ -90,4 +90,3 @@ export function ReportButton({ targetType, targetId }: { targetType: "PODCAST" |
     </>
   );
 }
-

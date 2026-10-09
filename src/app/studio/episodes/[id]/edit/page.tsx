@@ -29,7 +29,6 @@ type Episode = {
   seasonId?: string | null;
   episodeNumber?: number | null;
   languageCode?: string | null;
-  allowComments?: boolean;
   durationSeconds: number;
   status: string;
   publishedAt?: string | null;
@@ -47,7 +46,7 @@ export default function EditEpisodePage() {
 
   const [ep, setEp] = useState<Episode | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
-  const [form, setForm] = useState({ title: "", description: "", cover: "", seasonId: "", episodeNumber: "", languageCode: "fr", allowComments: true });
+  const [form, setForm] = useState({ title: "", description: "", cover: "", seasonId: "", episodeNumber: "", languageCode: "fr" });
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -71,7 +70,6 @@ export default function EditEpisodePage() {
         seasonId: e.seasonId ?? "",
         episodeNumber: e.episodeNumber?.toString() ?? "",
         languageCode: e.languageCode ?? "fr",
-        allowComments: e.allowComments ?? true,
       });
       studioApi<Season[]>(`/creator/podcasts/${e.podcastId}/seasons`).then(setSeasons).catch(() => {});
     } catch (err: any) {
@@ -158,20 +156,6 @@ export default function EditEpisodePage() {
       {error && <ErrorBanner message={error} />}
       {msg && <div className="text-sm text-emerald-400">{msg}</div>}
       <ReviewNotice status={status} />
-      <Card className="p-5 space-y-3">
-        <h2 className="font-bold">Commentaires</h2>
-        <label className="flex items-center gap-3 text-sm">
-          <input type="checkbox" checked={form.allowComments} disabled={busy || readOnly}
-            onChange={(event) => {
-              const allowComments = event.target.checked;
-              act(() => studioApi(`/creator/episodes/${id}/comments-settings`, {
-                method: "PATCH", body: { allowComments },
-              }), "Préférence enregistrée.");
-            }} className="h-5 w-5 accent-[#FFBF00]" />
-          Autoriser les nouveaux commentaires
-        </label>
-        <p className="text-xs text-gray-400">Les commentaires existants restent visibles lorsque les nouveaux commentaires sont fermés.</p>
-      </Card>
       {status === "DRAFT" && ep.reviewNote && (
         <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-xl p-4">
           <p className="font-bold">Renvoyé par la modération</p>

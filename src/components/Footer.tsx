@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import Link from "next/link";
 import { BkoLogo } from "./ui/BkoLogo";
 
@@ -11,31 +11,31 @@ export const Footer: React.FC = () => {
           <div className="md:col-span-1 space-y-4">
             <BkoLogo size="md" />
             <p className="text-[#888888] leading-relaxed">
-              La plateforme de rÃ©fÃ©rence pour dÃ©couvrir, Ã©couter et valoriser les podcasts et rÃ©cits du Mali et du MandÃ©.
+              La plateforme de référence pour découvrir, écouter et valoriser les podcasts et récits du Mali et du Mandé.
             </p>
             <p className="text-[11px] text-[#666666]">
-              Â© {new Date().getFullYear()} Bamako Podcast. Tous droits rÃ©servÃ©s.
+              © {new Date().getFullYear()} Bamako Podcast. Tous droits réservés.
             </p>
           </div>
 
-          {/* Column 1: DÃ©couvrir */}
+          {/* Column 1: Découvrir */}
           <div className="space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">DÃ©couvrir</h4>
+            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Découvrir</h4>
             <ul className="space-y-2">
               <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Explorer</Link></li>
               <li><Link href="/podcasts" className="hover:text-[#FFBF00] transition-colors">Podcasts</Link></li>
-              <li><Link href="/categories" className="hover:text-[#FFBF00] transition-colors">CatÃ©gories</Link></li>
-              <li><Link href="/collections" className="hover:text-[#FFBF00] transition-colors">Collections Ã‰ditoriales</Link></li>
-              <li><Link href="/#telecharger-app" className="text-[#FFBF00] hover:underline transition-colors font-semibold">Application Mobile ðŸ“±</Link></li>
+              <li><Link href="/categories" className="hover:text-[#FFBF00] transition-colors">Catégories</Link></li>
+              <li><Link href="/collections" className="hover:text-[#FFBF00] transition-colors">Collections Éditoriales</Link></li>
+              <li><Link href="/#telecharger-app" className="text-[#FFBF00] hover:underline transition-colors font-semibold">Application Mobile 📱</Link></li>
             </ul>
           </div>
 
-          {/* Column 2: CrÃ©ateurs */}
+          {/* Column 2: Créateurs */}
           <div className="space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">CrÃ©ateurs</h4>
+            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Créateurs</h4>
             <ul className="space-y-2">
-              <li><Link href="/studio" className="hover:text-[#FFBF00] transition-colors">Espace CrÃ©ateur</Link></li>
-              <li><Link href="/studio" className="hover:text-[#FFBF00] transition-colors">Devenir crÃ©ateur</Link></li>
+              <li><Link href="/studio" className="hover:text-[#FFBF00] transition-colors">Espace Créateur</Link></li>
+              <li><Link href="/studio" className="hover:text-[#FFBF00] transition-colors">Devenir créateur</Link></li>
               <li><Link href="/podcasts" className="hover:text-[#FFBF00] transition-colors">Revendiquer un podcast</Link></li>
             </ul>
           </div>
@@ -44,7 +44,7 @@ export const Footer: React.FC = () => {
           <div className="space-y-3">
             <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Bamako Podcast</h4>
             <ul className="space-y-2">
-              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Ã€ propos</Link></li>
+              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">À propos</Link></li>
               <li><span className="text-[#666666]">Studio Bamako (Badalabougou)</span></li>
               <li>
                 <a
@@ -53,20 +53,20 @@ export const Footer: React.FC = () => {
                   rel="noopener noreferrer"
                   className="hover:text-[#FFBF00] transition-colors inline-flex items-center gap-1"
                 >
-                  <span>RÃ©server le studio</span>
-                  <span className="text-[10px]">â†—</span>
+                  <span>Réserver le studio</span>
+                  <span className="text-[10px]">↗</span>
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Support & LÃ©gal */}
+          {/* Column 4: Support & Légal */}
           <div className="space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Aide & LÃ©gal</h4>
+            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Aide & Légal</h4>
             <ul className="space-y-2">
               <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Centre d'aide</Link></li>
-              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Signaler un problÃ¨me</Link></li>
-              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">ConfidentialitÃ©</Link></li>
+              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Signaler un problème</Link></li>
+              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Confidentialité</Link></li>
               <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Conditions d'utilisation</Link></li>
             </ul>
           </div>
@@ -74,11 +74,10 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Mention */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#6E7681]">
-          <span>ConÃ§u avec passion pour la culture et les voix du Mali et d'Afrique.</span>
-          <span>Version 1.0.0 â€” Production Readiness</span>
+          <span>Conçu avec passion pour la culture et les voix du Mali et d'Afrique.</span>
+          <span>Version 1.0.0 — Production Readiness</span>
         </div>
       </div>
     </footer>
   );
 };
-

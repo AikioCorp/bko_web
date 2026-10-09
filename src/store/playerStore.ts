@@ -99,19 +99,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     });
   },
 
-  addToQueue: (episode) => set((state) => {
-    if (!state.currentEpisode) {
-      return {
-        currentEpisode: episode,
-        activeSource: episode.mediaSources?.[0] || null,
-        isPlaying: false,
-        currentTime: 0,
-        duration: episode.durationSeconds || 0,
-        queue: []
-      };
-    }
-    return { queue: [...state.queue, episode] };
-  }),
+  addToQueue: (episode) => set((state) => ({ queue: [...state.queue, episode] })),
   
   removeFromQueue: (index) => set((state) => ({ 
     queue: state.queue.filter((_, i) => i !== index) 

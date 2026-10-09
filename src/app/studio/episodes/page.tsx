@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -43,30 +43,30 @@ export default function StudioEpisodesPage() {
   const podcasts = Array.isArray(podcastsData) ? podcastsData : (podcastsData?.items || []);
 
   const statusLabels: Record<string, { label: string; badgeCls: string }> = {
-    PUBLISHED: { label: "PubliÃ©", badgeCls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-    SCHEDULED: { label: "ProgrammÃ©", badgeCls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+    PUBLISHED: { label: "Publié", badgeCls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+    SCHEDULED: { label: "Programmé", badgeCls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
     DRAFT: { label: "Brouillon", badgeCls: "bg-[#262626] text-[#A3A3A3] border-[#333333]" },
     PENDING_REVIEW: { label: "En attente", badgeCls: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-    ARCHIVED: { label: "ArchivÃ©", badgeCls: "bg-red-500/10 text-red-400 border-red-500/20" },
+    ARCHIVED: { label: "Archivé", badgeCls: "bg-red-500/10 text-red-400 border-red-500/20" },
   };
 
   return (
     <div className="space-y-6 w-full pb-16">
-      {/* En-tÃªte */}
+      {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#222222] pb-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
             <Radio className="w-7 h-7 text-[#FFBF00]" />
-            Mes Ã‰pisodes
+            Mes Épisodes
           </h1>
           <p className="text-[#888888]">
-            GÃ©rez vos Ã©pisodes publiÃ©s, vos brouillons en cours et vos programmations.
+            Gérez vos épisodes publiés, vos brouillons en cours et vos programmations.
           </p>
         </div>
         <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" asChild>
           <Link href="/studio/episodes/new">
             <Plus className="w-4 h-4 mr-2" />
-            Nouvel Ã‰pisode
+            Nouvel Épisode
           </Link>
         </Button>
       </div>
@@ -79,7 +79,7 @@ export default function StudioEpisodesPage() {
             <Search className="w-4 h-4 text-[#757575] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Rechercher par titre ou mot-clÃ©..."
+              placeholder="Rechercher par titre ou mot-clé..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:border-[#FFBF00] outline-none"
@@ -105,8 +105,8 @@ export default function StudioEpisodesPage() {
         <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
           {[
             { id: "ALL", label: "Tous" },
-            { id: "PUBLISHED", label: "PubliÃ©s" },
-            { id: "SCHEDULED", label: "ProgrammÃ©s" },
+            { id: "PUBLISHED", label: "Publiés" },
+            { id: "SCHEDULED", label: "Programmés" },
             { id: "DRAFT", label: "Brouillons" },
             { id: "PENDING_REVIEW", label: "En revue" },
           ].map((tab) => (
@@ -129,7 +129,7 @@ export default function StudioEpisodesPage() {
       {isLoadingEpisodes ? (
         <div className="p-16 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 text-[#FFBF00] animate-spin" />
-          <p className="text-sm text-[#757575]">Chargement de vos Ã©pisodes...</p>
+          <p className="text-sm text-[#757575]">Chargement de vos épisodes...</p>
         </div>
       ) : episodes.length === 0 ? (
         <div className="border border-[#262626] rounded-xl p-12 text-center flex flex-col items-center bg-[#141414]">
@@ -138,18 +138,18 @@ export default function StudioEpisodesPage() {
           </div>
           <h3 className="text-xl font-bold text-white mb-2">
             {searchQuery || selectedStatus !== "ALL" || selectedPodcastId !== "ALL"
-              ? "Aucun Ã©pisode ne correspond Ã  vos filtres"
-              : "Aucun Ã©pisode pour le moment"}
+              ? "Aucun épisode ne correspond à vos filtres"
+              : "Aucun épisode pour le moment"}
           </h3>
           <p className="text-[#888888] max-w-md mb-6 text-sm">
             {searchQuery || selectedStatus !== "ALL" || selectedPodcastId !== "ALL"
-              ? "Essayez de modifier votre recherche ou de rÃ©initialiser vos filtres."
-              : "Commencez dÃ¨s aujourd'hui en ajoutant votre premier Ã©pisode dans le Creator Studio."}
+              ? "Essayez de modifier votre recherche ou de réinitialiser vos filtres."
+              : "Commencez dès aujourd'hui en ajoutant votre premier épisode dans le Creator Studio."}
           </p>
           <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" asChild>
             <Link href="/studio/episodes/new">
               <Plus className="w-4 h-4 mr-2" />
-              CrÃ©er un Ã©pisode
+              Créer un épisode
             </Link>
           </Button>
         </div>
@@ -188,7 +188,7 @@ export default function StudioEpisodesPage() {
                       </span>
                       {ep.season && (
                         <span className="text-xs text-[#757575]">
-                          â€¢ S{ep.season.number}{ep.episodeNumber ? `E${ep.episodeNumber}` : ""}
+                          • S{ep.season.number}{ep.episodeNumber ? `E${ep.episodeNumber}` : ""}
                         </span>
                       )}
                       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusConfig.badgeCls}`}>
@@ -221,7 +221,7 @@ export default function StudioEpisodesPage() {
                       </span>
                       {ep.mediaSources?.length > 0 && (
                         <span className="flex items-center gap-1 text-emerald-400">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> MÃ©dia attachÃ©
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Média attaché
                         </span>
                       )}
                     </div>
@@ -267,5 +267,4 @@ export default function StudioEpisodesPage() {
     </div>
   );
 }
-
 

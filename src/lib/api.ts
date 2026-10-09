@@ -18,18 +18,13 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
 
   let res: Response;
   try {
-    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
-      options.body = JSON.stringify(options.body);
-    }
     res = await fetch(url, {
       credentials: "include",
       ...options,
       headers,
     });
   } catch (error: any) {
-    const networkError = new Error("Impossible de joindre le serveur. Vérifiez votre connexion et que le backend est démarré, puis réessayez.");
-    (networkError as any).code = "NETWORK_ERROR";
-    throw networkError;
+    throw new Error(error.message || "Impossible de joindre le serveur.");
   }
 
   let json: any = null;

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
   const [activeLang, setActiveLang] = useState<string>("ALL");
   const [languages, setLanguages] = useState<LanguageItem[]>([
     { code: "ALL", name: "Tous" },
-    { code: "fr", name: "FranÃ§ais" },
+    { code: "fr", name: "Français" },
     { code: "bm", name: "Bamanankan" },
   ]);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -155,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Rechercher un podcast, un Ã©pisode, une personne..."
+          placeholder="Rechercher un podcast, un épisode, une personne..."
           className="w-full bg-transparent text-xs text-white placeholder-[#757575] outline-none"
         />
 
@@ -223,4 +223,3 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
     </header>
   );
 };
-

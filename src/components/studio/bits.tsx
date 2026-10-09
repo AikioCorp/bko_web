@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { Badge } from "@/components/admin/ui";
@@ -6,32 +6,32 @@ import { Badge } from "@/components/admin/ui";
 export const EPISODE_STATUS: Record<string, { label: string; tone: "gray" | "amber" | "red" | "green" | "blue" }> = {
   DRAFT: { label: "Brouillon", tone: "gray" },
   PENDING_REVIEW: { label: "En validation", tone: "amber" },
-  SCHEDULED: { label: "ProgrammÃ©", tone: "blue" },
-  PUBLISHED: { label: "PubliÃ©", tone: "green" },
-  UNLISTED: { label: "Non rÃ©pertoriÃ©", tone: "gray" },
-  ARCHIVED: { label: "ArchivÃ©", tone: "gray" },
+  SCHEDULED: { label: "Programmé", tone: "blue" },
+  PUBLISHED: { label: "Publié", tone: "green" },
+  UNLISTED: { label: "Non répertorié", tone: "gray" },
+  ARCHIVED: { label: "Archivé", tone: "gray" },
   PROCESSING: { label: "Traitement", tone: "amber" },
-  FAILED: { label: "Ã‰chec", tone: "red" },
+  FAILED: { label: "Échec", tone: "red" },
 };
 
 export const PODCAST_STATUS: Record<string, { label: string; tone: "gray" | "amber" | "red" | "green" | "blue" }> = {
   DRAFT: { label: "Brouillon", tone: "gray" },
   PENDING_REVIEW: { label: "En validation", tone: "amber" },
-  PUBLISHED: { label: "PubliÃ©", tone: "green" },
-  UNLISTED: { label: "Non rÃ©pertoriÃ©", tone: "gray" },
-  ARCHIVED: { label: "ArchivÃ©", tone: "gray" },
+  PUBLISHED: { label: "Publié", tone: "green" },
+  UNLISTED: { label: "Non répertorié", tone: "gray" },
+  ARCHIVED: { label: "Archivé", tone: "gray" },
   SUSPENDED: { label: "Suspendu", tone: "red" },
 };
 
 export const ROLE_LABELS: Record<string, string> = {
-  OWNER: "PropriÃ©taire",
+  OWNER: "Propriétaire",
   ADMIN: "Administrateur",
-  EDITOR: "Ã‰diteur",
+  EDITOR: "Éditeur",
   ANALYST: "Analyste",
 };
 
 export const LANGUAGES = [
-  { code: "fr", label: "FranÃ§ais" },
+  { code: "fr", label: "Français" },
   { code: "bm", label: "Bamanankan" },
   { code: "en", label: "Anglais" },
 ];
@@ -91,14 +91,13 @@ export function Tabs({
   );
 }
 
-/** Message d'Ã©tat de la validation, affichÃ© quand la modÃ©ration prÃ©alable est active. */
+/** Message d'état de la validation, affiché quand la modération préalable est active. */
 export function ReviewNotice({ status }: { status: string }) {
   if (status !== "PENDING_REVIEW") return null;
   return (
     <div className="bg-[#FFBF00]/10 border border-[#FFBF00]/30 text-[#FFBF00] text-sm rounded-xl p-4">
-      Ce contenu est en cours de validation par l&apos;Ã©quipe Bamako Podcast. Il sera publiÃ© dÃ¨s son approbation ; vous serez
-      informÃ© ici s&apos;il doit Ãªtre corrigÃ©.
+      Ce contenu est en cours de validation par l&apos;équipe Bamako Podcast. Il sera publié dès son approbation ; vous serez
+      informé ici s&apos;il doit être corrigé.
     </div>
   );
 }
-

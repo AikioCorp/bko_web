@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -41,7 +41,7 @@ export default function AdminAuditPage() {
             <Activity className="w-6 h-6 text-[#FFBF00]" />
             Journal des actions
           </h1>
-          <p className="text-[#888888]">TraÃ§abilitÃ© complÃ¨te des actions critiques effectuÃ©es sur la plateforme.</p>
+          <p className="text-[#888888]">Traçabilité complète des actions critiques effectuées sur la plateforme.</p>
         </div>
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" />
@@ -62,7 +62,7 @@ export default function AdminAuditPage() {
               <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">Date & Heure</th>
               <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">Acteur</th>
               <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">Action</th>
-              <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">EntitÃ© cible</th>
+              <th className="px-6 py-4 text-xs font-semibold text-[#888] uppercase">Entité cible</th>
               <th className="px-6 py-4 text-right"></th>
             </tr>
           </thead>
@@ -73,7 +73,7 @@ export default function AdminAuditPage() {
               </tr>
             ) : filteredLogs?.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-[#888]">Aucun log trouvÃ©.</td>
+                <td colSpan={5} className="px-6 py-12 text-center text-[#888]">Aucun log trouvé.</td>
               </tr>
             ) : (
               filteredLogs?.map((log: any) => (
@@ -91,7 +91,7 @@ export default function AdminAuditPage() {
                         <div className="text-xs text-[#888]">{log.actor.email}</div>
                       </div>
                     ) : (
-                      <span className="text-[#888] italic">SystÃ¨me ou Inconnu</span>
+                      <span className="text-[#888] italic">Système ou Inconnu</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -127,39 +127,39 @@ export default function AdminAuditPage() {
           <div className="relative bg-[#111] border border-[#222] w-full max-w-2xl rounded-2xl shadow-2xl p-6 flex flex-col max-h-[90vh] animate-in zoom-in-95">
             <h2 className="text-xl font-bold text-white mb-2 border-b border-[#222] pb-4 flex items-center gap-2">
               <Activity className="w-5 h-5 text-[#FFBF00]" />
-              DÃ©tails de l'Ã©vÃ©nement
+              Détails de l'événement
             </h2>
             
             <div className="overflow-y-auto pr-2 pb-4 custom-scrollbar flex-1 space-y-6 mt-4">
               <div className="grid grid-cols-2 gap-6 bg-[#0A0A0A] border border-[#222] p-4 rounded-xl">
                 <div>
-                  <div className="text-xs text-[#888] uppercase tracking-wider font-bold mb-1">ID de l'Ã©vÃ©nement</div>
+                  <div className="text-xs text-[#888] uppercase tracking-wider font-bold mb-1">ID de l'événement</div>
                   <div className="font-mono text-sm text-white">{selectedLog.id}</div>
                 </div>
                 <div>
                   <div className="text-xs text-[#888] uppercase tracking-wider font-bold mb-1">Horodatage</div>
-                  <div className="text-sm text-white">{format(new Date(selectedLog.createdAt), "dd MMMM yyyy Ã  HH:mm:ss", { locale: fr })}</div>
+                  <div className="text-sm text-white">{format(new Date(selectedLog.createdAt), "dd MMMM yyyy à HH:mm:ss", { locale: fr })}</div>
                 </div>
                 <div>
                   <div className="text-xs text-[#888] uppercase tracking-wider font-bold mb-1">Adresse IP</div>
-                  <div className="font-mono text-sm text-white">{selectedLog.ipAddress || "Non enregistrÃ©e"}</div>
+                  <div className="font-mono text-sm text-white">{selectedLog.ipAddress || "Non enregistrée"}</div>
                 </div>
                 <div>
                   <div className="text-xs text-[#888] uppercase tracking-wider font-bold mb-1">Acteur</div>
-                  <div className="text-sm text-white">{selectedLog.actor ? `${selectedLog.actor.fullName} (${selectedLog.actor.id})` : "SystÃ¨me"}</div>
+                  <div className="text-sm text-white">{selectedLog.actor ? `${selectedLog.actor.fullName} (${selectedLog.actor.id})` : "Système"}</div>
                 </div>
               </div>
 
               {(selectedLog.previousState || selectedLog.newState) ? (
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Code2 className="w-4 h-4 text-[#888]" /> DiffÃ©rentiel des donnÃ©es (Payload)
+                    <Code2 className="w-4 h-4 text-[#888]" /> Différentiel des données (Payload)
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedLog.previousState && (
                       <div className="bg-[#1A1A1A] border border-[#333] rounded-lg overflow-hidden">
-                        <div className="bg-[#222] px-3 py-2 text-xs font-bold text-[#888] border-b border-[#333]">Ã‰tat prÃ©cÃ©dent</div>
+                        <div className="bg-[#222] px-3 py-2 text-xs font-bold text-[#888] border-b border-[#333]">État précédent</div>
                         <pre className="p-3 text-xs text-[#ccc] font-mono overflow-x-auto">
                           {JSON.stringify(selectedLog.previousState, null, 2)}
                         </pre>
@@ -167,7 +167,7 @@ export default function AdminAuditPage() {
                     )}
                     {selectedLog.newState && (
                       <div className="bg-[#1A1A1A] border border-[#333] rounded-lg overflow-hidden">
-                        <div className="bg-[#222] px-3 py-2 text-xs font-bold text-[#888] border-b border-[#333]">Nouvel Ã©tat</div>
+                        <div className="bg-[#222] px-3 py-2 text-xs font-bold text-[#888] border-b border-[#333]">Nouvel état</div>
                         <pre className="p-3 text-xs text-[#ccc] font-mono overflow-x-auto">
                           {JSON.stringify(selectedLog.newState, null, 2)}
                         </pre>
@@ -177,7 +177,7 @@ export default function AdminAuditPage() {
                 </div>
               ) : (
                 <div className="p-8 text-center bg-[#0A0A0A] border border-[#222] rounded-xl text-[#888]">
-                  Aucun payload (diffÃ©rentiel) enregistrÃ© pour cette action.
+                  Aucun payload (différentiel) enregistré pour cette action.
                 </div>
               )}
             </div>
@@ -193,4 +193,3 @@ export default function AdminAuditPage() {
     </div>
   );
 }
-

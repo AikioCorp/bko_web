@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { BarChart3 } from "lucide-react";
@@ -24,10 +24,9 @@ export default function StudioAnalyticsPage() {
         </div>
         <h3 className="text-xl font-bold text-white mb-2">Statistiques en construction</h3>
         <p className="text-[#888] max-w-md">
-          Cette page vous permettra bientÃ´t de visualiser vos courbes d'Ã©coute, la provenance de vos auditeurs et les performances dÃ©taillÃ©es de vos Ã©pisodes.
+          Cette page vous permettra bientôt de visualiser vos courbes d'écoute, la provenance de vos auditeurs et les performances détaillées de vos épisodes.
         </p>
       </div>
     </div>
   );
 }
-

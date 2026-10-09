@@ -1,15 +1,6 @@
-﻿"use client";
+"use client";
 
-import React, { useState, useEffect } from "react";
-
-function useDebounce(value: string, delay: number) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => { setDebouncedValue(value); }, delay);
-    return () => { clearTimeout(handler); };
-  }, [value, delay]);
-  return debouncedValue;
-}
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -53,7 +44,6 @@ export default function AdminPodcastsPage() {
 
   const [activeTab, setActiveTab] = useState("ALL");
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 500);
   const [langFilter, setLangFilter] = useState("");
   const [catFilter, setCatFilter] = useState("");
   const [formatFilter, setFormatFilter] = useState("");
@@ -71,19 +61,17 @@ export default function AdminPodcastsPage() {
 
   // Real API Fetch with all filters
   const statusParam = activeTab !== "ALL" ? activeTab : "";
-  const { data, error, isLoading, mutate } = useSWR(
-    isAuthenticated ? ["/admin/catalog", statusParam, debouncedSearch, page, limit, langFilter, catFilter, formatFilter, originFilter] : null,
+  const { data, isLoading: loading, mutate } = useSWR(
+    isAuthenticated ? ["/admin/catalog", statusParam, search, page, limit, langFilter, catFilter, formatFilter, originFilter] : null,
     ([url, s, q, p, l, lang, cat, fmt, origin]) => {
       let query = `${url}?status=${s}&search=${q}&page=${p}&limit=${l}`;
       if (lang) query += `&languageCode=${lang}`;
       if (cat) query += `&categoryId=${cat}`;
       if (fmt) query += `&format=${fmt}`;
       if (origin) query += `&countryId=${origin}`;
-      return adminApi(query).then(res => res.data || { items: [] });
+      return adminApi(query).then(res => res.data);
     }
   );
-
-  const loading = isLoading && !error;
 
   const rawPodcasts = data?.items || [];
   // Client-side fallback filter for format if backend returns mixed
@@ -100,12 +88,12 @@ export default function AdminPodcastsPage() {
   const counts = data?.counts || { ALL: 0, PENDING: 0, PUBLISHED: 0, DRAFT: 0, SUSPENDED: 0, ARCHIVED: 0 };
   
   const TABS = [
-    { id: "ALL", label: "Toutes les Ã©missions", count: counts.ALL || displayedPodcasts.length },
-    { id: "PUBLISHED", label: "PubliÃ©es", count: counts.PUBLISHED || 0 },
+    { id: "ALL", label: "Toutes les émissions", count: counts.ALL || displayedPodcasts.length },
+    { id: "PUBLISHED", label: "Publiées", count: counts.PUBLISHED || 0 },
     { id: "DRAFT", label: "Brouillons", count: counts.DRAFT || 0 },
-    { id: "PENDING", label: "Ã€ valider", count: counts.PENDING || 0 },
+    { id: "PENDING", label: "À valider", count: counts.PENDING || 0 },
     { id: "SUSPENDED", label: "Suspendues", count: counts.SUSPENDED || 0 },
-    { id: "ARCHIVED", label: "ArchivÃ©es", count: counts.ARCHIVED || 0 },
+    { id: "ARCHIVED", label: "Archivées", count: counts.ARCHIVED || 0 },
   ];
 
   const totalPages = limit === 1000 ? 1 : Math.ceil(totalItems / limit);
@@ -113,7 +101,7 @@ export default function AdminPodcastsPage() {
   // Reset page when tab, search or filters change
   React.useEffect(() => { 
     setPage(1); 
-  }, [activeTab, debouncedSearch, limit, langFilter, catFilter, formatFilter, originFilter]);
+  }, [activeTab, search, limit, langFilter, catFilter, formatFilter, originFilter]);
 
   const toggleSelectAll = () => {
     if (selectedIds.size === displayedPodcasts.length) {
@@ -133,7 +121,7 @@ export default function AdminPodcastsPage() {
 
   const handleArchive = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm("ÃŠtes-vous sÃ»r de vouloir archiver cette Ã©mission ? Elle sera masquÃ©e du catalogue public.")) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir archiver cette émission ? Elle sera masquée du catalogue public.")) return;
     try {
       await adminApi(`/admin/podcasts/${id}`, {
         method: "PUT",
@@ -149,7 +137,7 @@ export default function AdminPodcastsPage() {
     if (isBulkLoading) return;
 
     if (payload.action === 'DELETE') {
-      if (!window.confirm(`ÃŠtes-vous sÃ»r de vouloir supprimer dÃ©finitivement ces ${selectedIds.size} Ã©mission(s) ? Cette action est irrÃ©versible.`)) return;
+      if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement ces ${selectedIds.size} émission(s) ? Cette action est irréversible.`)) return;
       setIsBulkLoading(true);
       if (data) {
         const updatedItems = data.items.filter((p: any) => !selectedIds.has(p.id));
@@ -193,7 +181,7 @@ export default function AdminPodcastsPage() {
       await mutate();
       setSelectedIds(new Set());
     } catch (e) {
-      alert("Erreur lors de la mise Ã  jour par lot.");
+      alert("Erreur lors de la mise à jour par lot.");
       mutate();
     } finally {
       setIsBulkLoading(false);
@@ -208,14 +196,14 @@ export default function AdminPodcastsPage() {
     if (status === "PUBLISHED") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20">
-          <CheckCircle className="w-3.5 h-3.5" /> PubliÃ©
+          <CheckCircle className="w-3.5 h-3.5" /> Publié
         </span>
       );
     }
     if (status === "PENDING") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-          <AlertCircle className="w-3.5 h-3.5" /> Ã€ valider
+          <AlertCircle className="w-3.5 h-3.5" /> À valider
         </span>
       );
     }
@@ -229,7 +217,7 @@ export default function AdminPodcastsPage() {
     if (status === "ARCHIVED") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#1C1C1C] text-[#888888] border border-[#2A2A2A]">
-          <Archive className="w-3.5 h-3.5" /> ArchivÃ©
+          <Archive className="w-3.5 h-3.5" /> Archivé
         </span>
       );
     }
@@ -245,14 +233,14 @@ export default function AdminPodcastsPage() {
     if (fmt === "VIDEO") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#1F172E] text-[#D8B4FE] border border-[#3B2D54]">
-          <Video className="w-3.5 h-3.5" /> VidÃ©o
+          <Video className="w-3.5 h-3.5" /> Vidéo
         </span>
       );
     }
     if (fmt === "HYBRID" || fmt === "BOTH" || fmt === "AUDIO_VIDEO") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#262012] text-[#FFBF00] border border-[#524115]">
-          <Headphones className="w-3 h-3" />+<Video className="w-3 h-3" /> Audio & VidÃ©o
+          <Headphones className="w-3 h-3" />+<Video className="w-3 h-3" /> Audio & Vidéo
         </span>
       );
     }
@@ -282,7 +270,7 @@ export default function AdminPodcastsPage() {
     }
     return (
       <span className="inline-flex items-center text-[11px] text-[#888888] bg-[#0B0B0B] px-2 py-0.5 rounded border border-[#2A2A2A]">
-        Non revendiquÃ©
+        Non revendiqué
       </span>
     );
   };
@@ -295,14 +283,14 @@ export default function AdminPodcastsPage() {
           <div className="flex items-center gap-2 text-xs text-[#757575] font-semibold uppercase tracking-wider mb-2">
             <span>Administration</span>
             <span>/</span>
-            <span className="text-[#FFBF00]">Ã‰missions</span>
+            <span className="text-[#FFBF00]">Émissions</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold flex items-center gap-3">
             <Radio className="w-8 h-8 text-[#FFBF00]" />
-            Ã‰missions
+            Émissions
           </h1>
           <p className="text-[#888888] mt-1.5 text-sm">
-            GÃ©rez les sÃ©ries de Bamako Podcast, leurs formats, crÃ©ateurs, sources et Ã©pisodes associÃ©s.
+            Gérez les séries de Bamako Podcast, leurs formats, créateurs, sources et épisodes associés.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -317,7 +305,7 @@ export default function AdminPodcastsPage() {
             className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" 
             onClick={() => router.push("/admin/podcasts/new")}
           >
-            <Plus className="w-4 h-4 mr-2" /> CrÃ©er une Ã©mission
+            <Plus className="w-4 h-4 mr-2" /> Créer une émission
           </Button>
         </div>
       </div>
@@ -342,21 +330,21 @@ export default function AdminPodcastsPage() {
         })}
       </div>
 
-      {/* Barre de Filtres ComplÃ¨te */}
+      {/* Barre de Filtres Complète */}
       <div className="flex flex-col lg:flex-row gap-3">
         {/* Recherche */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#757575]" />
           <input 
             type="text" 
-            placeholder="Rechercher une Ã©mission, un crÃ©ateur ou une organisation..." 
+            placeholder="Rechercher une émission, un créateur ou une organisation..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#171717] border border-[#2A2A2A] rounded-lg pl-10 pr-4 py-2 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#757575]"
           />
         </div>
 
-        {/* Filtres SÃ©lecteurs */}
+        {/* Filtres Sélecteurs */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Format */}
           <div className="relative">
@@ -367,8 +355,8 @@ export default function AdminPodcastsPage() {
             >
               <option value="">Tous les formats</option>
               <option value="AUDIO">Format Audio</option>
-              <option value="VIDEO">Format VidÃ©o</option>
-              <option value="HYBRID">Audio & VidÃ©o</option>
+              <option value="VIDEO">Format Vidéo</option>
+              <option value="HYBRID">Audio & Vidéo</option>
             </select>
             <ChevronRight className="w-3 h-3 text-[#757575] absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
           </div>
@@ -388,14 +376,14 @@ export default function AdminPodcastsPage() {
             <ChevronRight className="w-3 h-3 text-[#757575] absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
           </div>
 
-          {/* CatÃ©gorie */}
+          {/* Catégorie */}
           <div className="relative">
             <select
               value={catFilter}
               onChange={(e) => setCatFilter(e.target.value)}
               className="bg-[#171717] hover:bg-[#262626] border border-[#2A2A2A] text-white text-xs h-9 pl-3 pr-8 rounded-md outline-none appearance-none cursor-pointer focus:border-[#FFBF00]"
             >
-              <option value="">Toutes les catÃ©gories</option>
+              <option value="">Toutes les catégories</option>
               {categories?.map((c: any) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -431,17 +419,17 @@ export default function AdminPodcastsPage() {
               }}
               className="text-xs text-[#757575] hover:text-white h-9"
             >
-              RÃ©initialiser
+              Réinitialiser
             </Button>
           )}
         </div>
       </div>
 
-      {/* Actions groupÃ©es */}
+      {/* Actions groupées */}
       {selectedIds.size > 0 && (
         <div className="bg-[#1C1C1C] border border-[#2A2A2A] rounded-lg p-3 flex items-center justify-between animate-in fade-in">
           <span className="text-xs font-bold text-[#FFBF00]">
-            {selectedIds.size} Ã©mission(s) sÃ©lectionnÃ©e(s)
+            {selectedIds.size} émission(s) sélectionnée(s)
           </span>
           <div className="flex items-center gap-2">
             <Button 
@@ -490,15 +478,15 @@ export default function AdminPodcastsPage() {
                     type="checkbox" 
                     checked={displayedPodcasts.length > 0 && selectedIds.size === displayedPodcasts.length}
                     onChange={toggleSelectAll}
-                    aria-label="SÃ©lectionner toutes les Ã©missions"
+                    aria-label="Sélectionner toutes les émissions"
                     className="w-4 h-4 accent-[#FFBF00] rounded cursor-pointer bg-[#0B0B0B] border-[#2A2A2A]" 
                   />
                 </th>
-                <th className="p-4">Ã‰mission</th>
+                <th className="p-4">Émission</th>
                 <th className="p-4">Responsable</th>
                 <th className="p-4">Format</th>
                 <th className="p-4">Statut</th>
-                <th className="p-4 text-center">Ã‰pisodes</th>
+                <th className="p-4 text-center">Épisodes</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -509,19 +497,13 @@ export default function AdminPodcastsPage() {
                     {loading ? (
                       <div className="flex flex-col items-center justify-center gap-3">
                         <Loader2 className="w-7 h-7 animate-spin text-[#FFBF00]" />
-                        <span className="text-sm text-[#888888]">Chargement des Ã©missions...</span>
-                      </div>
-                    ) : error ? (
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <AlertCircle className="w-8 h-8 text-red-500" />
-                        <p className="text-base font-semibold text-white">Erreur de chargement</p>
-                        <p className="text-xs text-[#757575]">{error.message || "Une erreur est survenue lors du chargement des Ã©missions."}</p>
+                        <span className="text-sm text-[#888888]">Chargement des émissions...</span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Radio className="w-8 h-8 text-[#555555]" />
-                        <p className="text-base font-semibold text-white">Aucune Ã©mission trouvÃ©e</p>
-                        <p className="text-xs text-[#757575]">Modifiez vos filtres ou crÃ©ez votre premiÃ¨re Ã©mission.</p>
+                        <p className="text-base font-semibold text-white">Aucune émission trouvée</p>
+                        <p className="text-xs text-[#757575]">Modifiez vos filtres ou créez votre première émission.</p>
                       </div>
                     )}
                   </td>
@@ -541,7 +523,7 @@ export default function AdminPodcastsPage() {
                           type="checkbox" 
                           checked={isSelected}
                           onChange={(e) => handleToggleSelect(p.id, e as any)}
-                          aria-label={`SÃ©lectionner ${p.name}`}
+                          aria-label={`Sélectionner ${p.name}`}
                           className="w-4 h-4 accent-[#FFBF00] rounded cursor-pointer bg-[#0B0B0B] border-[#2A2A2A]" 
                         />
                       </td>
@@ -558,8 +540,8 @@ export default function AdminPodcastsPage() {
                             </p>
                             <p className="text-xs text-[#757575] flex items-center gap-1.5 mt-0.5">
                               <span>{p.primaryLanguageCode?.toUpperCase() || p.languageCode?.toUpperCase() || "FR"}</span>
-                              <span className="opacity-40">â€¢</span>
-                              <span>{p.categories?.[0]?.category?.name || p.category?.name || "GÃ©nÃ©ral"}</span>
+                              <span className="opacity-40">•</span>
+                              <span>{p.categories?.[0]?.category?.name || p.category?.name || "Général"}</span>
                             </p>
                           </div>
                         </div>
@@ -583,7 +565,7 @@ export default function AdminPodcastsPage() {
                             variant="ghost" 
                             className="h-8 px-2 text-xs text-[#B8B8B8] hover:text-white hover:bg-[#2A2A2A]" 
                             onClick={() => handleRowClick(p.id, p.slug)} 
-                            title="Ouvrir la fiche de l'Ã©mission"
+                            title="Ouvrir la fiche de l'émission"
                           >
                             <Eye className="w-3.5 h-3.5 mr-1" /> Ouvrir
                           </Button>
@@ -591,7 +573,7 @@ export default function AdminPodcastsPage() {
                             size="sm" 
                             variant="ghost" 
                             className="h-8 px-2 text-xs text-[#B8B8B8] hover:text-[#FFBF00] hover:bg-[#2A2A2A]" 
-                            onClick={() => router.push(`/admin/podcasts/${p.slug || p.id}/edit`)} 
+                            onClick={() => router.push(`/admin/podcasts/${p.id}/edit`)} 
                             title="Modifier les informations"
                           >
                             <Edit2 className="w-3.5 h-3.5 mr-1" /> Modifier
@@ -601,7 +583,7 @@ export default function AdminPodcastsPage() {
                             variant="ghost" 
                             className="h-8 px-2 text-xs text-[#757575] hover:text-amber-400 hover:bg-[#2A2A2A]" 
                             onClick={(e) => handleArchive(p.id, e)} 
-                            title="Archiver l'Ã©mission"
+                            title="Archiver l'émission"
                           >
                             <Archive className="w-3.5 h-3.5 mr-1" /> Archiver
                           </Button>
@@ -637,7 +619,7 @@ export default function AdminPodcastsPage() {
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <FormatBadge podcast={p} />
                     <span className="text-xs text-[#757575]">
-                      {p._count?.episodes || p.episodesCount || 0} Ã©pisode(s)
+                      {p._count?.episodes || p.episodesCount || 0} épisode(s)
                     </span>
                   </div>
                   <div className="mt-1.5">
@@ -674,7 +656,7 @@ export default function AdminPodcastsPage() {
 
           {displayedPodcasts.length === 0 && !loading && (
             <div className="p-8 text-center text-[#757575]">
-              Aucune Ã©mission trouvÃ©e.
+              Aucune émission trouvée.
             </div>
           )}
         </div>
@@ -682,7 +664,7 @@ export default function AdminPodcastsPage() {
         {/* Pagination Footer */}
         <div className="p-4 border-t border-[#2A2A2A] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#757575]">
           <div>
-            <span>{displayedPodcasts.length > 0 ? (page - 1) * limit + 1 : 0}â€“{Math.min(page * limit, totalItems)} sur {totalItems}</span>
+            <span>{displayedPodcasts.length > 0 ? (page - 1) * limit + 1 : 0}–{Math.min(page * limit, totalItems)} sur {totalItems}</span>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -692,7 +674,7 @@ export default function AdminPodcastsPage() {
               onClick={() => setPage(p => Math.max(p - 1, 1))}
               className="h-8 text-xs bg-[#171717] border-[#2A2A2A] text-white hover:bg-[#262626] disabled:opacity-40"
             >
-              <ChevronLeft className="w-3.5 h-3.5 mr-1" /> PrÃ©cÃ©dent
+              <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Précédent
             </Button>
             <span className="text-white px-2">Page {page} / {Math.max(totalPages, 1)}</span>
             <Button
@@ -711,4 +693,3 @@ export default function AdminPodcastsPage() {
     </div>
   );
 }
-

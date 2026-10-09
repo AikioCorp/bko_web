@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -84,7 +84,7 @@ export default function StudioOffersPage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Tarification Studio</h1>
-          <p className="text-[#888888]">GÃ©rez les forfaits (Packages) et services additionnels du Studio Bamako.</p>
+          <p className="text-[#888888]">Gérez les forfaits (Packages) et services additionnels du Studio Bamako.</p>
         </div>
         <Button onClick={() => handleOpenEdit()} className="bg-[#FFBF00] text-black font-bold hover:bg-[#E5AB00]">
           <Plus className="w-4 h-4 mr-2" />
@@ -100,7 +100,7 @@ export default function StudioOffersPage() {
         <div className="text-center py-16 border border-[#222] border-dashed rounded-2xl bg-[#111]">
           <Package className="w-12 h-12 text-[#333] mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">Aucune offre</h3>
-          <p className="text-[#888888]">CrÃ©ez le premier forfait pour vos futurs crÃ©ateurs.</p>
+          <p className="text-[#888888]">Créez le premier forfait pour vos futurs créateurs.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -119,7 +119,7 @@ export default function StudioOffersPage() {
               
               <div className="flex justify-between items-start mb-4">
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#222] text-[#888]">
-                  {offer.type === "PACKAGE" ? "Forfait" : "Service Ã  la carte"}
+                  {offer.type === "PACKAGE" ? "Forfait" : "Service à la carte"}
                 </span>
                 <div className="flex gap-2">
                   <button onClick={() => handleOpenEdit(offer)} className="p-1.5 text-[#888] hover:text-white bg-[#222] rounded-lg transition-colors">
@@ -157,7 +157,7 @@ export default function StudioOffersPage() {
           <div className="absolute inset-0 bg-black/80" onClick={() => setIsEditing(null)} />
           <div className="relative bg-[#111] border border-[#222] w-full max-w-lg rounded-2xl shadow-2xl p-6 flex flex-col max-h-[90vh] animate-in zoom-in-95">
             <h2 className="text-xl font-bold text-white mb-6 border-b border-[#222] pb-4">
-              {isEditing.isNew ? "CrÃ©er une offre" : "Modifier l'offre"}
+              {isEditing.isNew ? "Créer une offre" : "Modifier l'offre"}
             </h2>
             
             <form onSubmit={handleSave} className="overflow-y-auto pr-2 space-y-4 pb-4 custom-scrollbar flex-1">
@@ -170,7 +170,7 @@ export default function StudioOffersPage() {
                     className="w-full bg-[#0A0A0A] border border-[#222] rounded-lg p-2.5 text-sm text-white outline-none focus:border-[#FFBF00]"
                   >
                     <option value="PACKAGE">Forfait complet (Package)</option>
-                    <option value="SERVICE">Service additionnel (Ã€ la carte)</option>
+                    <option value="SERVICE">Service additionnel (À la carte)</option>
                   </select>
                 </div>
                 <div>
@@ -197,7 +197,7 @@ export default function StudioOffersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#888] uppercase mb-1">UnitÃ© (ex: heure, mois)</label>
+                  <label className="block text-xs font-bold text-[#888] uppercase mb-1">Unité (ex: heure, mois)</label>
                   <input
                     type="text"
                     value={formData.unit}
@@ -237,7 +237,7 @@ export default function StudioOffersPage() {
                     value={featureInput}
                     onChange={e => setFeatureInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFeature(); } }}
-                    placeholder="Ajouter un point clÃ©..."
+                    placeholder="Ajouter un point clé..."
                     className="flex-1 bg-[#0A0A0A] border border-[#222] rounded-lg p-2 text-sm text-white outline-none focus:border-[#FFBF00]"
                   />
                   <Button type="button" variant="secondary" onClick={handleAddFeature}>Ajouter</Button>
@@ -281,4 +281,3 @@ export default function StudioOffersPage() {
     </div>
   );
 }
-

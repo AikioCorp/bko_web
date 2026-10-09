@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -59,23 +59,23 @@ export default function OnboardingPage() {
     <div className="max-w-xl mx-auto px-4 py-12">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-6 shadow-2xl">
         <div className="flex justify-between items-center text-xs text-gray-400">
-          <span>Ã‰tape {step} sur 4</span>
+          <span>Étape {step} sur 4</span>
           <button onClick={handleFinish} className="flex items-center space-x-1 hover:text-[#E5A93C] transition">
             <span>Passer</span>
             <SkipForward className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Ã‰tape 1 : Bienvenue */}
+        {/* Étape 1 : Bienvenue */}
         {step === 1 && (
           <div className="space-y-6 text-center py-4">
             <div className="w-16 h-16 bg-[#E5A93C] rounded-2xl flex items-center justify-center font-bold text-black text-3xl mx-auto shadow-lg">
-              ðŸŽ™ï¸
+              🎙️
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-black text-white">Bienvenue sur Bamako Podcast</h2>
               <p className="text-xs text-gray-300 max-w-md mx-auto">
-                La plateforme de rÃ©fÃ©rence pour dÃ©couvrir, Ã©couter et suivre les voies du Mali et de l'Afrique.
+                La plateforme de référence pour découvrir, écouter et suivre les voies du Mali et de l'Afrique.
               </p>
             </div>
             <button
@@ -88,19 +88,19 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Ã‰tape 2 : Langues */}
+        {/* Étape 2 : Langues */}
         {step === 2 && (
           <div className="space-y-6">
             <div className="space-y-1">
-              <h2 className="text-xl font-extrabold text-white">Quelles langues souhaitez-vous Ã©couter ?</h2>
-              <p className="text-xs text-gray-400">SÃ©lectionnez vos langues de prÃ©dilection.</p>
+              <h2 className="text-xl font-extrabold text-white">Quelles langues souhaitez-vous écouter ?</h2>
+              <p className="text-xs text-gray-400">Sélectionnez vos langues de prédilection.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
               {[
-                { code: "bm", name: "Bamanankan (Bambara)", desc: "Ã‰missions et contes en bambara" },
-                { code: "fr", name: "FranÃ§ais", desc: "Podcasts business, culture et actualitÃ©s" },
-                { code: "en", name: "English", desc: "Podcasts internationaux et rÃ©gionaux" },
+                { code: "bm", name: "Bamanankan (Bambara)", desc: "Émissions et contes en bambara" },
+                { code: "fr", name: "Français", desc: "Podcasts business, culture et actualités" },
+                { code: "en", name: "English", desc: "Podcasts internationaux et régionaux" },
               ].map((lang) => {
                 const isSelected = selectedLanguages.includes(lang.code);
                 return (
@@ -130,18 +130,18 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Ã‰tape 3 : Sujets */}
+        {/* Étape 3 : Sujets */}
         {step === 3 && (
           <div className="space-y-6">
             <div className="space-y-1">
-              <h2 className="text-xl font-extrabold text-white">Quels thÃ¨mes vous passionnent ?</h2>
+              <h2 className="text-xl font-extrabold text-white">Quels thèmes vous passionnent ?</h2>
               <p className="text-xs text-gray-400">Choisissez les sujets pour votre recommandation.</p>
             </div>
 
             <div className="flex flex-wrap gap-3">
               {[
                 { slug: "entrepreneuriat-mali", label: "Entrepreneuriat" },
-                { slug: "culture-mandingue", label: "Culture & MandÃ©" },
+                { slug: "culture-mandingue", label: "Culture & Mandé" },
                 { slug: "agrobusiness-sahel", label: "Agrobusiness" },
                 { slug: "fintech-afrique", label: "Fintech & Tech" },
               ].map((t) => {
@@ -170,20 +170,20 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Ã‰tape 4 : Pays & Fin */}
+        {/* Étape 4 : Pays & Fin */}
         {step === 4 && (
           <div className="space-y-6">
             <div className="space-y-1">
               <h2 className="text-xl font-extrabold text-white">Quels pays souhaitez-vous suivre ?</h2>
-              <p className="text-xs text-gray-400">Le Mali est sÃ©lectionnÃ© par dÃ©faut.</p>
+              <p className="text-xs text-gray-400">Le Mali est sélectionné par défaut.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                { id: "ML", flag: "ðŸ‡²ðŸ‡±", name: "Mali" },
-                { id: "SN", flag: "ðŸ‡¸ðŸ‡³", name: "SÃ©nÃ©gal" },
-                { id: "CI", flag: "ðŸ‡¨ðŸ‡®", name: "CÃ´te d'Ivoire" },
-                { id: "BF", flag: "ðŸ‡§ðŸ‡«", name: "Burkina Faso" },
+                { id: "ML", flag: "🇲🇱", name: "Mali" },
+                { id: "SN", flag: "🇸🇳", name: "Sénégal" },
+                { id: "CI", flag: "🇨🇮", name: "Côte d'Ivoire" },
+                { id: "BF", flag: "🇧🇫", name: "Burkina Faso" },
               ].map((c) => {
                 const isSelected = selectedCountries.includes(c.id);
                 return (
@@ -205,7 +205,7 @@ export default function OnboardingPage() {
               onClick={handleFinish}
               className="w-full bg-[#E5A93C] text-black font-extrabold py-3 rounded-xl text-xs hover:bg-[#F5B82E] transition shadow-lg"
             >
-              COMMENCER Ã€ Ã‰COUTER ðŸŽ§
+              COMMENCER À ÉCOUTER 🎧
             </button>
           </div>
         )}
@@ -213,4 +213,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-

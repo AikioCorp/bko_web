@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { Suspense, useState } from "react";
 import Link from "next/link";
@@ -15,7 +15,7 @@ function ResetInner() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.length < 8) return setError("Le mot de passe doit contenir au moins 8 caractÃ¨res.");
+    if (password.length < 8) return setError("Le mot de passe doit contenir au moins 8 caractères.");
     if (password !== confirm) return setError("Les deux mots de passe ne correspondent pas.");
     setState("busy");
     try {
@@ -34,10 +34,10 @@ function ResetInner() {
       <div className="bg-[#161616] border border-[#262626] rounded-2xl p-8 space-y-5">
         <h1 className="text-xl font-extrabold text-white">Nouveau mot de passe</h1>
         {!token ? (
-          <p className="text-sm text-red-300">Lien incomplet. Refaites une demande de rÃ©initialisation.</p>
+          <p className="text-sm text-red-300">Lien incomplet. Refaites une demande de réinitialisation.</p>
         ) : state === "done" ? (
           <>
-            <p className="text-sm text-emerald-400">Votre mot de passe a Ã©tÃ© modifiÃ©. Toutes vos sessions ont Ã©tÃ© dÃ©connectÃ©es.</p>
+            <p className="text-sm text-emerald-400">Votre mot de passe a été modifié. Toutes vos sessions ont été déconnectées.</p>
             <Link href="/login" className="inline-block bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-4 py-2 rounded-lg">Se connecter</Link>
           </>
         ) : (
@@ -53,7 +53,7 @@ function ResetInner() {
             {error && (
               <p className="text-xs text-red-400">
                 {error}{" "}
-                {/invalide|expirÃ©/i.test(error) && (
+                {/invalide|expiré/i.test(error) && (
                   <Link href="/forgot-password" className="underline">
                     Demander un nouveau lien
                   </Link>
@@ -61,7 +61,7 @@ function ResetInner() {
               </p>
             )}
             <button type="submit" disabled={state === "busy"} className="w-full bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold py-2.5 rounded-lg disabled:opacity-50">
-              {state === "busy" ? "â€¦" : "Changer le mot de passe"}
+              {state === "busy" ? "…" : "Changer le mot de passe"}
             </button>
           </form>
         )}
@@ -77,4 +77,3 @@ export default function ResetPasswordPage() {
     </Suspense>
   );
 }
-

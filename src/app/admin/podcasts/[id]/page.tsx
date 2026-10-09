@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -37,14 +37,8 @@ import useSWR from "swr";
 import { adminApi } from "@/lib/api";
 
 const TABS = ["Épisodes", "Sources RSS", "Équipe", "Historique", "Informations", "Paramètres"];
-const PODCAST_STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Brouillon", PUBLISHED: "Publié", UNLISTED: "Non répertorié",
-  PENDING_REVIEW: "En attente de validation", SUSPENDED: "Suspendu", ARCHIVED: "Archivé",
-};
 
 export default function AdminPodcastDetailsPage() {
-  const [toast, setToast] = useState("");
-  const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
   const { id } = useParams();
   const router = useRouter();
   
@@ -121,78 +115,6 @@ export default function AdminPodcastDetailsPage() {
   };
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [publishingIds, setPublishingIds] = useState<Set<string>>(new Set());
-  const [publishingPodcast, setPublishingPodcast] = useState(false);
-  const podcastPublishLock = useRef(false);
-  const publishLocks = useRef(new Set<string>());
-
-  const publishPodcast = async () => {
-    if (podcastPublishLock.current || !id || hasUnsavedChanges) return;
-    podcastPublishLock.current = true;
-    setPublishingPodcast(true);
-    setErrorMsg(null);
-    try {
-      const response = await adminApi(`/admin/podcasts/${id}`, {
-        method: "PUT", body: JSON.stringify({ status: "PUBLISHED" }),
-      });
-      await mutate((previous: any) => ({ ...previous, ...response.data }), { revalidate: false });
-    } catch (error: any) {
-      setErrorMsg(error.message || "Impossible de publier l'émission.");
-    } finally {
-      podcastPublishLock.current = false;
-      setPublishingPodcast(false);
-    }
-  };
-
-  const [deletingEpisodeIds, setDeletingEpisodeIds] = useState<Set<string>>(new Set());
-  const deletingEpisodeLocks = useRef(new Set<string>());
-  const deleteEpisode = async (episode: any) => {
-    if (deletingEpisodeLocks.current.has(episode.id)) return;
-    if (!window.confirm(`Supprimer définitivement l’épisode « ${episode.title} » ?`)) return;
-    deletingEpisodeLocks.current.add(episode.id);
-    setDeletingEpisodeIds(previous => new Set(previous).add(episode.id));
-    setErrorMsg(null);
-    try {
-      await adminApi(`/admin/episodes/${episode.id}`, {method:"DELETE"});
-      await mutateEpisodes((previous: any[] | undefined) => previous?.filter(item => item.id !== episode.id), {revalidate:false});
-      void mutate();
-    } catch (error: any) {
-      setErrorMsg(error.message || "Impossible de supprimer cet épisode.");
-    } finally {
-      deletingEpisodeLocks.current.delete(episode.id);
-      setDeletingEpisodeIds(previous => {const next=new Set(previous);next.delete(episode.id);return next;});
-    }
-  };
-
-  const publishEpisode = async (episodeId: string) => {
-    if (publishLocks.current.has(episodeId)) return;
-    publishLocks.current.add(episodeId);
-    setPublishingIds(previous => new Set(previous).add(episodeId));
-    setErrorMsg(null);
-    try {
-      const response = await adminApi(`/admin/episodes/${episodeId}/publish`, {
-        method: "POST", body: JSON.stringify({ mode: "now" }),
-      });
-      const published = response.data;
-      // Update the episode list, not the unrelated podcast details cache.
-      await mutateEpisodes((previous: any[] | undefined) => previous?.map(episode =>
-        episode.id === episodeId ? {
-          ...episode,
-          status: published?.status ?? "PUBLISHED",
-          publishedAt: published?.publishedAt ?? episode.publishedAt,
-        } : episode
-      ), { revalidate: false });
-    } catch (error: any) {
-      setErrorMsg(error.message || "Impossible de publier cet épisode.");
-    } finally {
-      publishLocks.current.delete(episodeId);
-      setPublishingIds(previous => {
-        const next = new Set(previous);
-        next.delete(episodeId);
-        return next;
-      });
-    }
-  };
 
   const handleSave = async () => {
     if (!id) return;
@@ -443,7 +365,7 @@ export default function AdminPodcastDetailsPage() {
         {/* Podcast Identity Header */}
         <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <img src={podcast.cover || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=96&h=96&fit=crop"} alt={podcast.name} className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover border border-[#2A2A2A]" />
+            <img src={podcast.cover || "/default-cover.png"} alt={podcast.name} className="w-16 h-16 md:w-20 md:h-20 rounded-xl object-cover border border-[#2A2A2A]" />
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl md:text-2xl font-extrabold text-white">{podcast.name}</h1>
@@ -662,25 +584,16 @@ export default function AdminPodcastDetailsPage() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs font-bold text-[#757575] uppercase mb-1">Statut</p>
-                    <p className="text-sm font-medium text-white">{PODCAST_STATUS_LABELS[podcast.status] || podcast.status}</p>
+                    <p className="text-sm font-medium text-white">{podcast.status}</p>
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[#757575] uppercase mb-1">Visibilité</p>
                     <p className="text-sm font-medium text-white">{podcast.visibility}</p>
-                    {podcast.status === "DRAFT" && <p className="mt-2 text-xs text-[#B8B8B8]">L'émission reste non publique même si certains épisodes sont publiés.</p>}
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[#757575] uppercase mb-1">Créé le</p>
                     <p className="text-sm font-medium text-white">{podcast.publishedAt}</p>
                   </div>
-                  {podcast.status === "DRAFT" && <div className="space-y-2">
-                    <Button onClick={() => void publishPodcast()} disabled={publishingPodcast || isSaving || hasUnsavedChanges}
-                      aria-busy={publishingPodcast} className="w-full bg-[#FFBF00] text-black hover:bg-[#E5AB00] font-bold">
-                      {publishingPodcast && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {publishingPodcast ? "Publication…" : "Publier l'émission"}
-                    </Button>
-                    {hasUnsavedChanges && <p className="text-xs text-[#B8B8B8]">Enregistrez vos modifications avant de publier.</p>}
-                  </div>}
                 </div>
               </div>
 
@@ -845,7 +758,7 @@ export default function AdminPodcastDetailsPage() {
                         <tr key={ep.id} className="hover:bg-[#2A2A2A]/30 transition-colors group">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-4">
-                              <img src={ep.cover || podcast.cover || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=96&h=96&fit=crop"} alt={ep.title} className="w-12 h-12 rounded-lg object-cover border border-[#2A2A2A]" />
+                              <img src={ep.cover || podcast.cover} alt={ep.title} className="w-12 h-12 rounded-lg object-cover border border-[#2A2A2A]" />
                               <div>
                                 <p className="font-bold line-clamp-1">{ep.title}</p>
                                 <p className="text-xs text-[#757575] line-clamp-1">{ep.description}</p>
@@ -869,28 +782,13 @@ export default function AdminPodcastDetailsPage() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2 transition-opacity">
-                              {ep.status !== "PUBLISHED" && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  disabled={publishingIds.has(ep.id)}
-                                  aria-busy={publishingIds.has(ep.id)}
-                                  className="h-8 px-2 text-xs font-bold text-[#FFBF00] hover:text-black hover:bg-[#FFBF00]"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    void publishEpisode(ep.id);
-                                  }}
-                                >
-                                  {publishingIds.has(ep.id) ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Publication…</> : "Publier"}
-                                </Button>
-                              )}
                               <Link href={`/admin/episodes/${ep.slug || ep.id}`}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-[#757575] hover:text-white hover:bg-[#2A2A2A]">
                                   <Edit3 className="w-4 h-4" />
                                 </Button>
                               </Link>
-                              <Button variant="ghost" size="icon" disabled={deletingEpisodeIds.has(ep.id) || publishingIds.has(ep.id)} aria-label={`Supprimer ${ep.title}`} aria-busy={deletingEpisodeIds.has(ep.id)} onClick={() => void deleteEpisode(ep)} className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10">
-                                {deletingEpisodeIds.has(ep.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                                <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           </td>
@@ -944,7 +842,7 @@ export default function AdminPodcastDetailsPage() {
                           variant="outline"
                           onClick={() => {
                             navigator.clipboard.writeText(raw.rssFeed.url);
-                            flash("URL copiée dans le presse-papier !");
+                            alert("URL copiée dans le presse-papier !");
                           }}
                           className="h-8 text-xs bg-[#171717] border-[#2A2A2A] hover:bg-[#262626] text-white"
                         >
@@ -990,28 +888,23 @@ export default function AdminPodcastDetailsPage() {
                     <Button 
                       className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-9 px-4"
                       onClick={async () => {
-    try {
-      await adminApi(`/admin/podcasts/${podcast.id}/rss/sync`, { method: 'POST' });
-      flash("Synchronisation immédiate lancée en tâche de fond...");
-      await mutate();
-    } catch (err: any) {
-      flash("Erreur: " + err.message);
-    }
-  }}
+                        alert("Synchronisation immédiate lancée en tâche de fond...");
+                        await mutate();
+                      }}
                     >
                       <RefreshCw className="w-3.5 h-3.5 mr-2" /> Synchroniser maintenant
                     </Button>
                     <Button 
                       variant="outline" 
                       className="bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#222222] text-white text-xs h-9"
-                      onClick={() => flash("Modification des réglages non disponible.")}
+                      onClick={() => alert("Modification des réglages de scrutation et publication automatique.")}
                     >
                       Modifier les réglages
                     </Button>
                     <Button 
                       variant="outline" 
                       className="bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#222222] text-amber-400 text-xs h-9"
-                      onClick={() => flash("Suspendu.")}
+                      onClick={() => alert("La synchronisation automatique a été suspendue.")}
                     >
                       <PauseCircle className="w-3.5 h-3.5 mr-1.5" /> Suspendre la synchronisation
                     </Button>
@@ -1020,7 +913,7 @@ export default function AdminPodcastDetailsPage() {
                       className="bg-[#0B0B0B] border-red-500/20 hover:bg-red-500/10 text-red-400 text-xs h-9"
                       onClick={async () => {
                         if (confirm("Déconnecter le flux conserve tous les épisodes déjà importés sur Bamako Podcast, mais arrêtera définitivement leur mise à jour automatique. Voulez-vous continuer ?")) {
-                          flash("Flux RSS déconnecté avec succès.");
+                          alert("Flux RSS déconnecté avec succès.");
                         }
                       }}
                     >
@@ -1170,7 +1063,6 @@ export default function AdminPodcastDetailsPage() {
         )}
 
       </div>
-          {toast && (<div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-[#FFBF00] text-black px-4 py-2 rounded-lg font-bold text-sm shadow-xl z-50">{toast}</div>)}
-</div>
+    </div>
   );
 }
