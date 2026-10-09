@@ -132,7 +132,7 @@ function HomeContent() {
           positionSeconds: h.positionSeconds,
           completed: h.completed,
         }))
-      : latestEpisodes;
+      : [];
 
   const categoryEntries = data.categoryShelves
     ? data.categoryShelves
@@ -229,7 +229,7 @@ function HomeContent() {
         </section>
 
         {/* 3. Reprendre la lecture */}
-        {latestEpisodes && latestEpisodes.length > 0 && (
+        {resumeItems && resumeItems.length > 0 && (
           <section className="space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -571,10 +571,6 @@ function HomeContent() {
                   <div className="w-10 h-10 rounded-xl bg-[#2A2A2A] group-hover:bg-[#FFBF00] text-[#808080] group-hover:text-[#0B0B0B] flex items-center justify-center transition-colors">
                     {getCategoryIcon(cat.name)}
                   </div>
-                  <span className="bg-[#2A2A2A] text-[#B8B8B8] text-[10px] font-black px-2 py-0.5 rounded-sm">
-                    {cat._count?.podcasts || 0}{" "}
-                    {(cat._count?.podcasts || 0) > 1 ? "séries" : "série"}
-                  </span>
                 </div>
                 <h4 className="text-sm font-bold text-white mb-2 leading-tight">
                   {cat.name}

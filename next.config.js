@@ -2,7 +2,12 @@
 const nextConfig = {
   output: 'standalone',
   images: {
+    unoptimized: true,
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'd3t3ozftmdmh3i.cloudfront.net',
+      },
       {
         protocol: 'https',
         hostname: 'media.rss.com',
