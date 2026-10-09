@@ -188,7 +188,7 @@ export default function AdminPodcastDetailsPage() {
     
     setIsBulkPublishing(true);
     try {
-      const res = await adminApi(/admin/episodes/bulk-publish, {
+      const res = await adminApi("/admin/episodes/bulk-publish", {
         method: "POST",
         body: JSON.stringify({ ids }),
       });
