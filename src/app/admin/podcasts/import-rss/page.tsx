@@ -134,7 +134,7 @@ export default function RssImportPage() {
         body: JSON.stringify({
           ...formData, // This should contain name, description, cover, etc.
           url: url.trim(),
-          importSettings: { importAsDraft: true, mode: settings.mode, downloadMedia: settings.downloadMedia, includeVideo: settings.includeVideo, autoPublish: settings.autoPublish }
+          importSettings: { importAsDraft: true }
         }),
       });
 

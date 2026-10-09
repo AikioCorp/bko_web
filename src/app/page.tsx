@@ -564,7 +564,7 @@ function HomeContent() {
             ).map((cat: any, i: number) => (
               <Link
                 key={i}
-                href={`/search?category=${cat.id}`}
+                href={`/categories/${cat.slug || cat.id}`}
                 className="block bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#FFBF00]/50 rounded-2xl p-5 transition-all group"
               >
                 <div className="flex items-start justify-between mb-4">
@@ -572,7 +572,8 @@ function HomeContent() {
                     {getCategoryIcon(cat.name)}
                   </div>
                   <span className="bg-[#2A2A2A] text-[#B8B8B8] text-[10px] font-black px-2 py-0.5 rounded-sm">
-                    {(String(cat.id || cat.name).charCodeAt(0) % 10) + 1}
+                    {cat._count?.podcasts || 0}{" "}
+                    {(cat._count?.podcasts || 0) > 1 ? "séries" : "série"}
                   </span>
                 </div>
                 <h4 className="text-sm font-bold text-white mb-2 leading-tight">
