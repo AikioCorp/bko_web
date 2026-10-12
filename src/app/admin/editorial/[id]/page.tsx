@@ -31,6 +31,10 @@ export default function EditorialEditPage() {
         title: section.title || "",
         subtitle: section.subtitle || "",
         type: section.type || "HERO",
+        sourceMode: section.sourceMode || "MANUAL",
+        maxItems: section.maxItems || 12,
+        priority: section.priority || 0,
+        isFixedPlacement: section.isFixedPlacement || false,
         isActive: section.isActive || false,
       });
     }
@@ -169,12 +173,62 @@ export default function EditorialEditPage() {
               </select>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-[#888888] mb-1">Mode de contenu</label>
+              <select
+                value={formData.sourceMode || "MANUAL"}
+                onChange={e => setFormData({ ...formData, sourceMode: e.target.value })}
+                className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl px-4 py-2 text-white outline-none focus:border-[#444444]"
+              >
+                <option value="MANUAL">Manuel (Articles choisis à la main)</option>
+                <option value="AUTOMATIC">Automatique (Algorithme hybride)</option>
+                <option value="HYBRID">Hybride (Manuel complété par recommandation)</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[#888888] mb-1">Nb max d'éléments</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={formData.maxItems || 12}
+                  onChange={e => setFormData({ ...formData, maxItems: Number(e.target.value) })}
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl px-4 py-2 text-white outline-none focus:border-[#444444]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#888888] mb-1">Priorité d'affichage</label>
+                <input
+                  type="number"
+                  value={formData.priority || 0}
+                  onChange={e => setFormData({ ...formData, priority: Number(e.target.value) })}
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl px-4 py-2 text-white outline-none focus:border-[#444444]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <div className="font-medium text-white text-sm">Emplacement fixe</div>
+                <div className="text-xs text-[#888888]">Ne pas réordonner cette section automatiquement</div>
+              </div>
+              <input
+                type="checkbox"
+                checked={Boolean(formData.isFixedPlacement)}
+                onChange={e => setFormData({ ...formData, isFixedPlacement: e.target.checked })}
+                className="w-4 h-4 accent-[#FFBF00]"
+              />
+            </div>
+
             <div className="flex items-center justify-between pt-4 border-t border-[#2A2A2A]">
               <div>
                 <div className="font-medium text-white">Statut d'affichage</div>
                 <div className="text-xs text-[#888888]">Rendre cette section visible sur l'accueil</div>
               </div>
               <button
+                type="button"
                 onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
                 className={classNames(
                   "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",

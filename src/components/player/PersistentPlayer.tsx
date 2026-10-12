@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -90,16 +90,21 @@ export const PersistentPlayer = () => {
     return safeHttp(s.externalUrl) ? "redirect" : "none";
   }, [activeSource]);
 
-  // Nouveau suivi d'Ã©coute Ã  chaque Ã©pisode ; flush de l'ancien Ã  la sortie.
+  // Nouveau suivi d'écoute à chaque épisode ; flush de l'ancien à la sortie.
   useEffect(() => {
     if (!currentEpisode) return;
-    const t = new ListenTracker(currentEpisode.id, () => useAuthStore.getState().isAuthenticated);
+    const t = new ListenTracker(
+      currentEpisode.id,
+      () => useAuthStore.getState().isAuthenticated,
+      (currentEpisode as any).attribution
+    );
+    t.setPlaybackRate(playbackRate);
     tracker.current = t;
     trackerStarted.current = false;
     handledSeek.current = 0;
-    // Lecteurs tiers : on ne peut pas mesurer l'Ã©coute, seul le dÃ©marrage est comptÃ©.
+    // Lecteurs tiers : on ne peut pas mesurer l'écoute, seul le démarrage est compté.
     if (kind === "embed") {
-      t.start();
+      t.start(0, playbackRate);
       trackerStarted.current = true;
     }
     return () => {
@@ -109,20 +114,21 @@ export const PersistentPlayer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentEpisode?.id]);
 
-  // DÃ©marrage (premiÃ¨re lecture rÃ©elle) et pause.
+  // Démarrage (première lecture réelle) et pause.
   useEffect(() => {
     const t = tracker.current;
     if (!t) return;
+    t.setPlaybackRate(playbackRate);
     if (isPlaying && (kind === "audio" || kind === "video") && !trackerStarted.current) {
       trackerStarted.current = true;
-      t.start(usePlayerStore.getState().currentTime);
+      t.start(usePlayerStore.getState().currentTime, playbackRate);
     }
     if (!isPlaying && trackerStarted.current && (kind === "audio" || kind === "video")) {
       t.pause(usePlayerStore.getState().currentTime, usePlayerStore.getState().duration);
     }
-  }, [isPlaying, kind]);
+  }, [isPlaying, kind, playbackRate]);
 
-  // Lecture / pause de l'Ã©lÃ©ment audio (un refus d'autoplay du navigateur remet l'interface en pause).
+  // Lecture / pause de l'élément audio (un refus d'autoplay du navigateur remet l'interface en pause).
   useEffect(() => {
     const a = audioRef.current;
     if (!a || kind !== "audio") return;
@@ -140,12 +146,13 @@ export const PersistentPlayer = () => {
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.playbackRate = playbackRate;
+    tracker.current?.setPlaybackRate(playbackRate);
   }, [playbackRate, activeSource]);
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume, activeSource]);
 
-  // DÃ©placements demandÃ©s (barre, chapitres, transcription).
+  // Déplacements demandés (barre, chapitres, transcription).
   useEffect(() => {
     if (!seekRequest || seekRequest.n === handledSeek.current) return;
     handledSeek.current = seekRequest.n;
@@ -170,12 +177,14 @@ export const PersistentPlayer = () => {
 
   const cycleRate = () => {
     const rates = [1.0, 1.25, 1.5, 2.0];
-    setPlaybackRate(rates[(rates.indexOf(playbackRate) + 1) % rates.length]);
+    const newRate = rates[(rates.indexOf(playbackRate) + 1) % rates.length];
+    setPlaybackRate(newRate);
+    tracker.current?.setPlaybackRate(newRate);
   };
 
   const onMediaProgress = (t: number, d: number) => {
     setProgress(t, d);
-    tracker.current?.tick(t, d || total);
+    tracker.current?.tick(t, d || total, playbackRate);
   };
   const onMediaEnded = () => {
     tracker.current?.end(total);

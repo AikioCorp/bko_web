@@ -9,7 +9,7 @@ import {
   Library, Tags, ShieldAlert, BadgeCheck, FileDown, 
   BarChart3, Settings, Database, Activity, Shield, 
   ChevronLeft, ChevronRight, LogOut, ArrowLeft, CreditCard,
-  Sparkles, Loader2, LogIn, Lock
+  Sparkles, Loader2, LogIn, Lock, Megaphone
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { UserDropdown } from "../UserDropdown";
@@ -86,6 +86,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       items: [
         { name: "Sélections et collections", href: "/admin/editorial", icon: Library },
         { name: "Catégories et langues", href: "/admin/categories", icon: Tags },
+        { name: "Régie & Publicités", href: "/admin/ads", icon: Megaphone },
       ]
     },
     {

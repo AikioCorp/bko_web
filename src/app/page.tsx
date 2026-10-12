@@ -9,6 +9,14 @@ import { useAuthStore } from "@/store/authStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { HeroBanner } from "@/components/home/HeroBanner";
 import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
+import { TrackedCard } from "@/components/home/TrackedCard";
+import { recordRecommendationInteraction } from "@/lib/playTracking";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Play,
   Pause,
@@ -33,6 +41,10 @@ import {
   SlidersHorizontal,
   ChevronLeft,
   Headphones,
+  Sparkles,
+  EyeOff,
+  ThumbsDown,
+  MoreVertical,
 } from "lucide-react";
 
 function HomeSkeleton() {
@@ -65,11 +77,22 @@ function HomeContent() {
   const { playEpisode, currentEpisode, isPlaying, addToQueue, togglePlay } =
     usePlayerStore();
 
-  const handlePlay = (ep: any) => {
+  const handlePlay = (ep: any, attribution?: any) => {
     if (currentEpisode?.id === ep.id) {
       togglePlay();
     } else {
-      playEpisode(ep);
+      const episodeWithAttribution = attribution ? { ...ep, attribution } : ep;
+      playEpisode(episodeWithAttribution);
+      if (attribution?.batchId) {
+        recordRecommendationInteraction(
+          attribution.batchId,
+          attribution.sectionId || "section",
+          attribution.sectionSlug || "unknown",
+          "EPISODE",
+          ep.id,
+          "PLAY_START"
+        );
+      }
     }
   };
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
@@ -80,11 +103,27 @@ function HomeContent() {
     user ? '/me/continue-listening' : null,
     fetcher,
   );
-  const { data, isLoading } = useSWR(
-    `${API_BASE_URL}/home?country=all&u=${user ? (user as any).id : "guest"}`,
-    fetcher,
+  // Clé SWR strictement isolée par identité pour interdire toute fuite inter-comptes
+  const { data, isLoading, mutate: mutateHome } = useSWR(
+    [`${API_BASE_URL}/home?country=all`, user?.id || 'anon'],
+    () => fetcher('/home?country=all')
   );
   const { data: catData } = useSWR(`${API_BASE_URL}/categories`, fetcher);
+
+  const handleFeedback = async (
+    targetType: "EPISODE" | "PODCAST",
+    targetId: string,
+    action: "NOT_INTERESTED" | "HIDE_PODCAST"
+  ) => {
+    try {
+      await fetchApi("/recommendations/feedback", {
+        method: "POST",
+        body: JSON.stringify({ targetType, targetId, action }),
+      });
+      // Invalider l'accueil pour recalculer immédiatement les suggestions
+      mutateHome();
+    } catch (_) {}
+  };
 
   if (isLoading || !data) return <HomeSkeleton />;
 
@@ -231,275 +270,512 @@ function HomeContent() {
           </div>
         </section>
 
-        {/* 3. Reprendre la lecture */}
-        {resumeItems && resumeItems.length > 0 && (
-          <section className="space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Play className="w-5 h-5 text-[#FFBF00] fill-current" />
-                Historique de lecture
-              </h2>
-              <Link
-                href="/library"
-                className="text-xs font-bold text-[#808080] hover:text-white transition-colors"
-              >
-                Voir l'historique
-              </Link>
-            </div>
-            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x">
-              {resumeItems?.slice(0, 4).map((ep: any) => {
-                const duration = ep.durationSeconds || 1800;
-                // Use real progress if available, otherwise fake it deterministically for UI preview
-                const pos =
-                  ep.positionSeconds !== undefined
-                    ? ep.positionSeconds
-                    : ((String(ep.id).charCodeAt(0) % 60) + 10) *
-                      (duration / 100);
-                const restMins = Math.max(0, Math.floor((duration - pos) / 60));
-                const percent = Math.min(
-                  100,
-                  Math.max(0, (pos / duration) * 100),
-                );
+        {/* 3. SECTIONS DYNAMIQUES DU MOTEUR DE RECOMMANDATION (OU FALLBACK ÉDITORIAL) */}
+        {data.sections && data.sections.length > 0 ? (
+          <div className="space-y-16">
+            {data.sections.map((sec: any) => {
+              if (!sec.items || sec.items.length === 0) return null;
 
+              // A. Section Continuer l'écoute
+              if (sec.slug === "continue-listening") {
                 return (
-                  <div
-                    key={ep.id}
-                    onClick={() => handlePlay(ep)}
-                    className="snap-start shrink-0 w-[320px] bg-[#141414] hover:bg-[#1A1A1A] rounded-xl p-3 border border-[#242424] hover:border-[#333] cursor-pointer transition-colors group"
-                  >
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-[#0B0B0B] relative">
-                        <img
-                          src={
-                            ep.cover ||
-                            ep.podcast?.cover ||
-                            "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"
-                          }
-                          alt={ep.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          {currentEpisode?.id === ep.id && isPlaying ? (
-                            <Pause className="w-5 h-5 text-white fill-current" />
-                          ) : (
-                            <Play className="w-5 h-5 text-white fill-current" />
-                          )}
-                        </div>
+                  <section key={sec.id} className="space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                          <Play className="w-5 h-5 text-[#FFBF00] fill-current" />
+                          {sec.title}
+                        </h2>
+                        {sec.subtitle && (
+                          <p className="text-xs text-[#808080] mt-0.5">{sec.subtitle}</p>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-0.5">
-                          <span className="text-[10px] font-black text-[#FFBF00] uppercase tracking-wider truncate mr-2">
-                            {ep.category?.name || "ÉPISODE"}
-                          </span>
-                          {pos > 0 ? (
-                            <span className="text-[10px] font-bold text-[#808080] whitespace-nowrap">
-                              Reste {restMins}m
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold text-[#808080] whitespace-nowrap">
-                              {Math.floor(duration / 60)} min
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="text-sm font-bold text-white truncate leading-tight">
-                          {ep.title}
-                        </h4>
-                        <p className="text-xs text-[#808080] truncate">
-                          {ep.podcast?.name}
-                        </p>
-                      </div>
+                      <Link
+                        href="/library"
+                        className="text-xs font-bold text-[#808080] hover:text-white transition-colors"
+                      >
+                        Voir tout
+                      </Link>
                     </div>
-                    {pos > 0 ? (
-                      <div className="w-full bg-[#2A2A2A] h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#FFBF00] h-full rounded-full"
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-full bg-transparent h-1.5" />
-                    )}
-                  </div>
+                    <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x">
+                      {sec.items.map((item: any) => {
+                        const ep = item.episode;
+                        if (!ep) return null;
+                        const duration = ep.durationSeconds || 1800;
+                        const pos = ep.positionSeconds || 0;
+                        const restMins = Math.max(0, Math.floor((duration - pos) / 60));
+                        const percent = Math.min(100, Math.max(0, (pos / duration) * 100));
+
+                        return (
+                          <TrackedCard
+                            key={item.id}
+                            batchId={item.attribution?.batchId}
+                            sectionId={sec.id}
+                            sectionSlug={sec.slug}
+                            targetType="EPISODE"
+                            targetId={ep.id}
+                            position={item.position}
+                            reason={item.reason}
+                            onClick={() => handlePlay(ep, item.attribution)}
+                            className="snap-start shrink-0 w-[320px] bg-[#141414] hover:bg-[#1A1A1A] rounded-xl p-3 border border-[#242424] hover:border-[#333] cursor-pointer transition-colors group"
+                          >
+                            <div className="flex items-center gap-4 mb-3">
+                              <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-[#0B0B0B] relative">
+                                <img
+                                  src={ep.cover || ep.podcast?.cover || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"}
+                                  alt={ep.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {currentEpisode?.id === ep.id && isPlaying ? (
+                                    <Pause className="w-5 h-5 text-white fill-current" />
+                                  ) : (
+                                    <Play className="w-5 h-5 text-white fill-current" />
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start mb-0.5">
+                                  <span className="text-[10px] font-black text-[#FFBF00] uppercase tracking-wider truncate mr-2">
+                                    {item.reason || "EN COURS"}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-[#808080] whitespace-nowrap">
+                                    Reste {restMins}m
+                                  </span>
+                                </div>
+                                <h4 className="text-sm font-bold text-white truncate leading-tight">
+                                  {ep.title}
+                                </h4>
+                                <p className="text-xs text-[#808080] truncate">
+                                  {ep.podcast?.name}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="w-full bg-[#2A2A2A] h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className="bg-[#FFBF00] h-full rounded-full"
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                          </TrackedCard>
+                        );
+                      })}
+                    </div>
+                  </section>
                 );
-              })}
-            </div>
-          </section>
-        )}
+              }
 
-        {/* 4. Fraîchement publiés (Le retour des cartes épisodes) */}
-        {latestEpisodes && latestEpisodes.length > 0 && (
-          <section className="space-y-6 pt-4">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#242424] pb-4">
-              <div>
-                <h2 className="text-3xl font-black text-white tracking-tight">
-                  Fraîchement publiés
-                </h2>
-                <p className="text-sm text-[#B8B8B8] mt-1 max-w-2xl">
-                  Les derniers épisodes à écouter ou à regarder.
-                </p>
-              </div>
-              <div className="flex bg-[#141414] border border-[#242424] rounded-full p-1 shrink-0">
-                <button
-                  onClick={() => setFilterMode("ALL")}
-                  className={`px-5 py-2 text-xs font-bold rounded-full transition-colors ${filterMode === "ALL" ? "bg-[#2A2A2A] text-white" : "text-[#808080] hover:text-white"}`}
-                >
-                  Tous
-                </button>
-                <button
-                  onClick={() => setFilterMode("AUDIO")}
-                  className={`px-5 py-2 text-xs font-bold rounded-full transition-colors ${filterMode === "AUDIO" ? "bg-[#2A2A2A] text-white" : "text-[#808080] hover:text-white"}`}
-                >
-                  Audio
-                </button>
-                <button
-                  onClick={() => setFilterMode("VIDEO")}
-                  className={`px-5 py-2 text-xs font-bold rounded-full transition-colors ${filterMode === "VIDEO" ? "bg-[#2A2A2A] text-white" : "text-[#808080] hover:text-white"}`}
-                >
-                  Vidéo
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredEpisodes.slice(0, 8).map((ep: any) => (
-                <div
-                  key={ep.id}
-                  className="group hover:bg-[#141414] p-2 -mx-2 rounded-xl flex flex-row items-center gap-4 transition-colors cursor-pointer border border-transparent hover:border-[#242424]"
-                  onClick={() => handlePlay(ep)}
-                >
-                  {/* Image carrée ou avec bouton play superposé */}
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0 relative bg-[#0B0B0B] border border-[#2A2A2A]">
-                    <img
-                      src={
-                        ep.cover ||
-                        ep.podcast?.cover ||
-                        "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"
-                      }
-                      alt={ep.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <div className="w-10 h-10 rounded-full bg-[#FFBF00] flex items-center justify-center shadow-lg">
-                        {currentEpisode?.id === ep.id && isPlaying ? (
-                          <Pause className="w-5 h-5 text-black fill-current" />
-                        ) : (
-                          <Play className="w-5 h-5 text-black fill-current ml-1" />
+              // B. Section Épisodes (Pour vous, Éditoriale, etc.)
+              if (sec.type === "EPISODE_ROW") {
+                return (
+                  <section key={sec.id} className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#242424] pb-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          {sec.slug === "for-you" && <Sparkles className="w-4 h-4 text-[#FFBF00]" />}
+                          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                            {sec.title}
+                          </h2>
+                        </div>
+                        {sec.subtitle && (
+                          <p className="text-sm text-[#B8B8B8] max-w-2xl">{sec.subtitle}</p>
                         )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Contenu */}
-                  <div className="flex-1 min-w-0 pr-2">
-                    <p className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate mb-1">
-                      {ep.podcast?.name}
-                    </p>
-                    <h4 className="text-sm md:text-base font-bold text-white leading-tight line-clamp-2 mb-2 group-hover:text-[#FFBF00] transition-colors">
-                      {ep.title}
-                    </h4>
-                    <p className="text-xs text-[#808080] flex items-center gap-2 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Headphones className="w-3 h-3" />
-                        {Math.floor((ep.durationSeconds || 1800) / 60)} min
-                      </span>
-                      <span>•</span>
-                      <span>
-                        {ep.publishedAt
-                          ? new Date(ep.publishedAt).toLocaleDateString(
-                              "fr-FR",
-                              { day: "numeric", month: "short" },
-                            )
-                          : "Récemment"}
-                      </span>
-                    </p>
-                  </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {sec.items.slice(0, 12).map((item: any) => {
+                        const ep = item.episode;
+                        if (!ep) return null;
+                        const isCurrent = currentEpisode?.id === ep.id;
 
-                  {/* Action Bookmark */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToQueue(ep);
-                    }}
-                    className="p-3 text-[#808080] hover:text-white bg-[#2A2A2A]/50 hover:bg-[#2A2A2A] rounded-full transition-colors shrink-0"
-                    title="Ajouter à la file d'attente"
+                        return (
+                          <TrackedCard
+                            key={item.id}
+                            batchId={item.attribution?.batchId}
+                            sectionId={sec.id}
+                            sectionSlug={sec.slug}
+                            targetType="EPISODE"
+                            targetId={ep.id}
+                            position={item.position}
+                            reason={item.reason}
+                            onClick={() => handlePlay(ep, item.attribution)}
+                            className="group hover:bg-[#141414] p-3 rounded-xl flex flex-row items-center gap-4 transition-colors cursor-pointer border border-transparent hover:border-[#242424] bg-[#0E0E0E]"
+                          >
+                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0 relative bg-[#0B0B0B] border border-[#2A2A2A]">
+                              <img
+                                src={ep.cover || ep.podcast?.cover || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"}
+                                alt={ep.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                <div className="w-10 h-10 rounded-full bg-[#FFBF00] flex items-center justify-center shadow-lg">
+                                  {isCurrent && isPlaying ? (
+                                    <Pause className="w-5 h-5 text-black fill-current" />
+                                  ) : (
+                                    <Play className="w-5 h-5 text-black fill-current ml-1" />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex-1 min-w-0 pr-2">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate">
+                                  {ep.podcast?.name}
+                                </span>
+                                {item.reason && (
+                                  <span className="text-[10px] bg-[#1C1C1C] text-[#D4D4D4] px-2 py-0.5 rounded border border-[#2A2A2A] font-semibold">
+                                    {item.reason}
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="text-sm md:text-base font-bold text-white leading-tight line-clamp-2 mb-2 group-hover:text-[#FFBF00] transition-colors">
+                                {ep.title}
+                              </h4>
+                              <p className="text-xs text-[#808080] flex items-center gap-2 font-medium">
+                                <span className="flex items-center gap-1">
+                                  <Headphones className="w-3 h-3" />
+                                  {Math.floor((ep.durationSeconds || 1800) / 60)} min
+                                </span>
+                                <span>•</span>
+                                <span>
+                                  {ep.publishedAt
+                                    ? new Date(ep.publishedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+                                    : "Récemment"}
+                                </span>
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => addToQueue(ep)}
+                                className="p-2.5 text-[#808080] hover:text-white bg-[#1F1F1F] hover:bg-[#2A2A2A] rounded-full transition-colors"
+                                title="Ajouter à la file d'attente"
+                              >
+                                <ListPlus className="w-4 h-4" />
+                              </button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="p-2.5 text-[#808080] hover:text-white bg-[#1F1F1F] hover:bg-[#2A2A2A] rounded-full transition-colors">
+                                    <MoreVertical className="w-4 h-4" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-[#141414] border-[#2A2A2A] text-white">
+                                  <DropdownMenuItem
+                                    onClick={() => handleFeedback("EPISODE", ep.id, "NOT_INTERESTED")}
+                                    className="cursor-pointer gap-2 hover:bg-[#1F1F1F]"
+                                  >
+                                    <ThumbsDown className="w-4 h-4 text-[#808080]" />
+                                    Pas intéressé par cet épisode
+                                  </DropdownMenuItem>
+                                  {ep.podcast?.id && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleFeedback("PODCAST", ep.podcast.id, "HIDE_PODCAST")}
+                                      className="cursor-pointer gap-2 hover:bg-[#1F1F1F]"
+                                    >
+                                      <EyeOff className="w-4 h-4 text-[#808080]" />
+                                      Masquer cette émission
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TrackedCard>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              }
+
+              // C. Section Podcasts (Découverte, Éditoriale, etc.)
+              if (sec.type === "PODCAST_ROW") {
+                return (
+                  <section key={sec.id} className="space-y-4">
+                    <div className="flex items-end justify-between px-1">
+                      <div>
+                        <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
+                          {sec.title}
+                        </h2>
+                        {sec.subtitle && (
+                          <p className="text-xs text-[#808080] mt-1">{sec.subtitle}</p>
+                        )}
+                      </div>
+                      <div className="hidden sm:flex gap-2">
+                        <button className="w-9 h-9 rounded-full border border-[#242424] bg-[#141414] flex items-center justify-center hover:bg-[#2A2A2A] text-white transition-colors">
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button className="w-9 h-9 rounded-full border border-[#242424] bg-[#141414] flex items-center justify-center hover:bg-[#2A2A2A] text-white transition-colors">
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide pb-4 snap-x">
+                      {sec.items.map((item: any) => {
+                        const pod = item.podcast;
+                        if (!pod) return null;
+
+                        return (
+                          <TrackedCard
+                            key={item.id}
+                            batchId={item.attribution?.batchId}
+                            sectionId={sec.id}
+                            sectionSlug={sec.slug}
+                            targetType="PODCAST"
+                            targetId={pod.id}
+                            position={item.position}
+                            reason={item.reason}
+                            className="snap-start shrink-0 w-[260px] md:w-[300px] group block"
+                          >
+                            <Link
+                              href={`/podcasts/${pod.slug}`}
+                              onClick={() => {
+                                if (item.attribution?.batchId) {
+                                  recordRecommendationInteraction(
+                                    item.attribution.batchId,
+                                    sec.id,
+                                    sec.slug,
+                                    "PODCAST",
+                                    pod.id,
+                                    "CLICK",
+                                    item.position
+                                  );
+                                }
+                              }}
+                              className="block"
+                            >
+                              <div className="aspect-video rounded-xl overflow-hidden relative mb-3 bg-[#141414] border border-[#242424] group-hover:border-[#FFBF00]/50 transition-colors">
+                                <img
+                                  src={pod.cover || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400&auto=format&fit=crop"}
+                                  alt={pod.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                />
+                                {item.reason && (
+                                  <div className="absolute top-2 left-2 bg-[#1C1C1C] border border-[#2A2A2A] text-[#FFBF00] text-[9px] font-black px-2 py-1 rounded-sm uppercase tracking-wider shadow-sm">
+                                    {item.reason}
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <div className="w-12 h-12 rounded-full bg-[#FFBF00] flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-transform">
+                                    <Play className="w-6 h-6 text-black fill-current ml-1" />
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="px-1">
+                                <h3 className="text-sm font-bold text-white mb-1 leading-tight truncate group-hover:text-[#FFBF00] transition-colors">
+                                  {pod.name}
+                                </h3>
+                                <p className="text-xs text-[#808080] truncate font-medium">
+                                  {(pod.author?.name || pod.organization?.name) &&
+                                    `Par ${pod.author?.name || pod.organization?.name}`}
+                                </p>
+                              </div>
+                            </Link>
+                          </TrackedCard>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              }
+
+              return null;
+            })}
+          </div>
+        ) : (
+          /* FALLBACK HISTORIQUE LORSQUE SECTIONS EST ABSENT OU VIDE */
+          <>
+            {resumeItems && resumeItems.length > 0 && (
+              <section className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Play className="w-5 h-5 text-[#FFBF00] fill-current" />
+                    Historique de lecture
+                  </h2>
+                  <Link
+                    href="/library"
+                    className="text-xs font-bold text-[#808080] hover:text-white transition-colors"
                   >
-                    <ListPlus className="w-4 h-4" />
-                  </button>
+                    Voir l'historique
+                  </Link>
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
+                <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x">
+                  {resumeItems?.slice(0, 4).map((ep: any) => {
+                    const duration = ep.durationSeconds || 1800;
+                    const pos = ep.positionSeconds !== undefined ? ep.positionSeconds : 0;
+                    const restMins = Math.max(0, Math.floor((duration - pos) / 60));
+                    const percent = Math.min(100, Math.max(0, (pos / duration) * 100));
 
-        {/* 5. Étagères Horizontales (Shelves par Catégorie) avec images 16:9 */}
-        <div className="space-y-12 pt-8">
-          {categoryEntries.map(
-            ([catName, podcasts]: [string, any[]], idx: number) => (
-              <section key={catName} className="space-y-4">
-                <div className="flex items-end justify-between px-1">
+                    return (
+                      <div
+                        key={ep.id}
+                        onClick={() => handlePlay(ep)}
+                        className="snap-start shrink-0 w-[320px] bg-[#141414] hover:bg-[#1A1A1A] rounded-xl p-3 border border-[#242424] hover:border-[#333] cursor-pointer transition-colors group"
+                      >
+                        <div className="flex items-center gap-4 mb-3">
+                          <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-[#0B0B0B] relative">
+                            <img
+                              src={ep.cover || ep.podcast?.cover || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"}
+                              alt={ep.title}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              {currentEpisode?.id === ep.id && isPlaying ? (
+                                <Pause className="w-5 h-5 text-white fill-current" />
+                              ) : (
+                                <Play className="w-5 h-5 text-white fill-current" />
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start mb-0.5">
+                              <span className="text-[10px] font-black text-[#FFBF00] uppercase tracking-wider truncate mr-2">
+                                {ep.category?.name || "ÉPISODE"}
+                              </span>
+                              <span className="text-[10px] font-bold text-[#808080] whitespace-nowrap">
+                                Reste {restMins}m
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-bold text-white truncate leading-tight">
+                              {ep.title}
+                            </h4>
+                            <p className="text-xs text-[#808080] truncate">
+                              {ep.podcast?.name}
+                            </p>
+                          </div>
+                        </div>
+                        {pos > 0 ? (
+                          <div className="w-full bg-[#2A2A2A] h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-[#FFBF00] h-full rounded-full"
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full bg-transparent h-1.5" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {latestEpisodes && latestEpisodes.length > 0 && (
+              <section className="space-y-6 pt-4">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#242424] pb-4">
                   <div>
-                    <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
-                      {catName}
+                    <h2 className="text-3xl font-black text-white tracking-tight">
+                      Fraîchement publiés
                     </h2>
-                    <p className="text-xs text-[#808080] mt-1">
-                      {podcasts.length} séries actives
+                    <p className="text-sm text-[#B8B8B8] mt-1 max-w-2xl">
+                      Les derniers épisodes à écouter ou à regarder.
                     </p>
                   </div>
-                  <div className="hidden sm:flex gap-2">
-                    <button className="w-9 h-9 rounded-full border border-[#242424] bg-[#141414] flex items-center justify-center hover:bg-[#2A2A2A] text-white transition-colors">
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button className="w-9 h-9 rounded-full border border-[#242424] bg-[#141414] flex items-center justify-center hover:bg-[#2A2A2A] text-white transition-colors">
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
                 </div>
 
-                <div className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide pb-4 snap-x">
-                  {podcasts.map((podcast: any) => (
-                    <Link
-                      key={podcast.id}
-                      href={`/podcasts/${podcast.slug}`}
-                      className="snap-start shrink-0 w-[260px] md:w-[300px] group block"
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {filteredEpisodes.slice(0, 8).map((ep: any) => (
+                    <div
+                      key={ep.id}
+                      className="group hover:bg-[#141414] p-2 -mx-2 rounded-xl flex flex-row items-center gap-4 transition-colors cursor-pointer border border-transparent hover:border-[#242424]"
+                      onClick={() => handlePlay(ep)}
                     >
-                      <div className="aspect-video rounded-xl overflow-hidden relative mb-3 bg-[#141414] border border-[#242424] group-hover:border-[#FFBF00]/50 transition-colors">
+                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0 relative bg-[#0B0B0B] border border-[#2A2A2A]">
                         <img
-                          src={
-                            podcast.cover ||
-                            "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400&auto=format&fit=crop"
-                          }
-                          alt={podcast.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          src={ep.cover || ep.podcast?.cover || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"}
+                          alt={ep.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        {/* Badge Langue optionnel en haut à gauche */}
-                        <div className="absolute top-2 left-2 bg-[#E5E5E5] text-[#0B0B0B] text-[9px] font-black px-2 py-1 rounded-sm uppercase tracking-wider shadow-sm">
-                          {podcast.primaryLanguage?.name || "FRANÇAIS"}
-                        </div>
-
-                        {/* Play Button Overlay */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <div className="w-12 h-12 rounded-full bg-[#FFBF00] flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-transform">
-                            <Play className="w-6 h-6 text-black fill-current ml-1" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <div className="w-10 h-10 rounded-full bg-[#FFBF00] flex items-center justify-center shadow-lg">
+                            {currentEpisode?.id === ep.id && isPlaying ? (
+                              <Pause className="w-5 h-5 text-black fill-current" />
+                            ) : (
+                              <Play className="w-5 h-5 text-black fill-current ml-1" />
+                            )}
                           </div>
                         </div>
                       </div>
-                      <div className="px-1">
-                        <h3 className="text-sm font-bold text-white mb-1 leading-tight truncate group-hover:text-[#FFBF00] transition-colors">
-                          {podcast.name}
-                        </h3>
-                        <p className="text-xs text-[#808080] truncate font-medium">
-                          {(podcast.author?.name ||
-                            podcast.organization?.name) &&
-                            `Par ${podcast.author?.name || podcast.organization?.name}`}
+
+                      <div className="flex-1 min-w-0 pr-2">
+                        <p className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate mb-1">
+                          {ep.podcast?.name}
+                        </p>
+                        <h4 className="text-sm md:text-base font-bold text-white leading-tight line-clamp-2 mb-2 group-hover:text-[#FFBF00] transition-colors">
+                          {ep.title}
+                        </h4>
+                        <p className="text-xs text-[#808080] flex items-center gap-2 font-medium">
+                          <span className="flex items-center gap-1">
+                            <Headphones className="w-3 h-3" />
+                            {Math.floor((ep.durationSeconds || 1800) / 60)} min
+                          </span>
+                          <span>•</span>
+                          <span>
+                            {ep.publishedAt
+                              ? new Date(ep.publishedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+                              : "Récemment"}
+                          </span>
                         </p>
                       </div>
-                    </Link>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToQueue(ep);
+                        }}
+                        className="p-3 text-[#808080] hover:text-white bg-[#2A2A2A]/50 hover:bg-[#2A2A2A] rounded-full transition-colors shrink-0"
+                        title="Ajouter à la file d'attente"
+                      >
+                        <ListPlus className="w-4 h-4" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </section>
-            ),
-          )}
-        </div>
+            )}
+
+            <div className="space-y-12 pt-8">
+              {categoryEntries.map(([catName, podcasts]: [string, any[]]) => (
+                <section key={catName} className="space-y-4">
+                  <div className="flex items-end justify-between px-1">
+                    <div>
+                      <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
+                        {catName}
+                      </h2>
+                      <p className="text-xs text-[#808080] mt-1">{podcasts.length} séries actives</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide pb-4 snap-x">
+                    {podcasts.map((podcast: any) => (
+                      <Link
+                        key={podcast.id}
+                        href={`/podcasts/${podcast.slug}`}
+                        className="snap-start shrink-0 w-[260px] md:w-[300px] group block"
+                      >
+                        <div className="aspect-video rounded-xl overflow-hidden relative mb-3 bg-[#141414] border border-[#242424] group-hover:border-[#FFBF00]/50 transition-colors">
+                          <img
+                            src={podcast.cover || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400&auto=format&fit=crop"}
+                            alt={podcast.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          />
+                        </div>
+                        <div className="px-1">
+                          <h3 className="text-sm font-bold text-white mb-1 leading-tight truncate group-hover:text-[#FFBF00] transition-colors">
+                            {podcast.name}
+                          </h3>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* 6. Toutes les Catégories Officielles */}
         <section className="space-y-6 pt-12 border-t border-[#242424]">
