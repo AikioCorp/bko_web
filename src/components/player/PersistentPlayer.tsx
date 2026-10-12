@@ -156,6 +156,7 @@ export const PersistentPlayer = () => {
   useEffect(() => {
     if (!seekRequest || seekRequest.n === handledSeek.current) return;
     handledSeek.current = seekRequest.n;
+    tracker.current?.seek(seekRequest.time);
     if (kind === "audio" && audioRef.current) audioRef.current.currentTime = seekRequest.time;
     if (kind === "video" && videoRef.current) videoRef.current.currentTime = seekRequest.time;
   }, [seekRequest, kind]);

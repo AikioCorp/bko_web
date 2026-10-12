@@ -95,6 +95,7 @@ export const recordRecommendationInteraction = (
 
 export class ListenTracker {
   private lastT = 0;
+  private lastWallClock = 0;
   private listenedRealSeconds = 0; // Temps réel écoulé en secondes (wall-clock)
   private sentProgress = 0;
   private started = false;
@@ -118,7 +119,14 @@ export class ListenTracker {
   setPlaybackRate(rate: number) {
     if (rate > 0 && Number.isFinite(rate)) {
       this.rate = rate;
+      this.lastWallClock = performance.now();
     }
+  }
+
+  seek(targetTime: number) {
+    this.lastT = targetTime;
+    this.lastWallClock = performance.now();
+    this.sendStructuredEvent("seek", targetTime, 0);
   }
 
   private sendStructuredEvent(
@@ -148,6 +156,7 @@ export class ListenTracker {
 
   start(startAt = 0, initialRate = 1.0) {
     this.lastT = startAt;
+    this.lastWallClock = performance.now();
     this.rate = initialRate > 0 ? initialRate : 1.0;
     if (!this.started) {
       this.started = true;
@@ -158,14 +167,18 @@ export class ListenTracker {
 
   tick(currentTime: number, duration: number, currentRate = 1.0) {
     if (currentRate > 0) this.rate = currentRate;
+    const now = performance.now();
+    const wallClockSeconds = this.lastWallClock > 0 ? (now - this.lastWallClock) / 1000 : 0;
+    this.lastWallClock = now;
+
     const contentDelta = currentTime - this.lastT;
     this.lastT = currentTime;
 
     // Seul un avancement continu (0 < contentDelta < 4) compte comme écoute active
-    // Un saut (seek) de 30s ou 10 minutes ne compte JAMAIS comme temps écouté
-    if (contentDelta > 0 && contentDelta < 4) {
-      const realElapsedSeconds = contentDelta / this.rate;
-      this.listenedRealSeconds += realElapsedSeconds;
+    // Le temps réel écouté est borné à la fois par l'horloge murale et par l'avancement divisé par la vitesse
+    if (contentDelta > 0 && contentDelta < 4 && wallClockSeconds > 0) {
+      const boundedSeconds = Math.min(wallClockSeconds, contentDelta / this.rate);
+      this.listenedRealSeconds += boundedSeconds;
     }
 
     if (!this.qualified && this.listenedRealSeconds >= 30) {
@@ -192,12 +205,14 @@ export class ListenTracker {
 
   pause(currentTime: number, duration: number) {
     this.flushProgress(currentTime);
-    this.sendStructuredEvent("pause", currentTime);
+    this.lastWallClock = 0;
+    this.sendStructuredEvent("pause", currentTime, 0);
     if (this.authenticated() && currentTime > 0) saveHistory(this.episodeId, currentTime, duration);
   }
 
   end(duration: number) {
     this.flushProgress(duration);
+    this.lastWallClock = 0;
     if (!this.completed) {
       this.completed = true;
       sendPlayEvent(this.episodeId, "complete");
