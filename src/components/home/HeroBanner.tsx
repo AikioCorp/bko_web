@@ -152,7 +152,7 @@ export function HeroBanner({
                 className="inline-flex items-center gap-2 rounded-full bg-[#FFBF00] px-6 py-3 text-sm font-extrabold text-black transition hover:bg-[#E5AB00] active:scale-95"
               >
                 {active ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}
-                {active ? "En lecture" : "Écouter"}
+                {active ? "En lecture" : slide.kind === "resume" ? "Reprendre" : "Écouter"}
               </button>
               <Link
                 href={`/podcasts/${ep.podcast?.slug || ""}`}

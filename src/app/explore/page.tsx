@@ -106,6 +106,30 @@ function ExploreMain() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Synchronize state when URL query parameters change (e.g. from navigation links or back/forward)
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    const v = (searchParams.get("view") as "episodes" | "podcasts") || "episodes";
+    const f = (searchParams.get("format") as "ALL" | "AUDIO" | "VIDEO") || "ALL";
+    const s = (searchParams.get("sort") as "recent" | "oldest" | "popular") || "recent";
+    const l = searchParams.get("lang") || "";
+    const c = searchParams.get("category") || "";
+    const co = searchParams.get("country") || "";
+    const d = (searchParams.get("duration") as "ALL" | "SHORT" | "MEDIUM" | "LONG") || "ALL";
+
+    setActiveView(v);
+    setFormatFilter(f);
+    setSortOrder(s);
+    setSelectedLang(l);
+    setSelectedCat(c);
+    setSelectedCountry(co);
+    setSelectedDuration(d);
+    if (q !== searchInput) {
+      setSearchInput(q);
+      setDebouncedQ(q);
+    }
+  }, [searchParams]);
+
   // Sync state to URL without resetting scroll
   useEffect(() => {
     const params = new URLSearchParams();
@@ -331,6 +355,7 @@ function ExploreMain() {
     selectedCountry !== "",
     formatFilter !== "ALL",
     selectedDuration !== "ALL",
+    sortOrder !== "recent",
   ].filter(Boolean).length;
 
   const resetAllFilters = () => {
