@@ -101,13 +101,13 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   FREE_TRIAL: "Essai gratuit",
 };
 
-export default function User360Page() {
+export default function UserDetailPage() {
   const params = useParams();
   const router = useRouter();
   const userId = params?.id as string;
   const { user: currentUser } = useAuthStore();
 
-  const [activeTab, setActiveTab] = useState<"monetization" | "listening" | "library" | "preferences" | "technical">("monetization");
+  const [activeTab, setActiveTab] = useState<"overview" | "monetization" | "listening" | "library" | "preferences" | "technical">("overview");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -287,7 +287,7 @@ export default function User360Page() {
     return (
       <div className="w-full min-h-[60vh] flex flex-col items-center justify-center text-[#888888]">
         <RefreshCw className="w-8 h-8 animate-spin text-[#FFBF00] mb-4" />
-        <p className="text-sm font-medium">Chargement du profil 360° utilisateur...</p>
+        <p className="text-sm font-medium">Chargement de la fiche utilisateur...</p>
       </div>
     );
   }
@@ -296,7 +296,7 @@ export default function User360Page() {
     return (
       <div className="w-full py-16 text-center">
         <AlertTriangle className="w-12 h-12 text-[#EF4444] mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Utilisateur introuvable</h2>
+        <h2 className="text-xl font-bold text-white mb-2">Fiche utilisateur introuvable</h2>
         <p className="text-[#888888] text-sm mb-6">Ce profil n'existe pas ou vous n'avez pas l'autorisation d'y accéder.</p>
         <Link href="/admin/users">
           <Button className="bg-[#1C1C1C] hover:bg-[#282828] text-white border border-[#333333]">
@@ -323,13 +323,20 @@ export default function User360Page() {
 
       {/* Barre Supérieure & Navigation Retour */}
       <div className="flex items-center justify-between gap-4 mb-6">
-        <Link
-          href="/admin/users"
-          className="inline-flex items-center gap-2 text-xs md:text-sm text-[#888888] hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Tous les utilisateurs</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/users"
+            className="inline-flex items-center gap-1.5 text-xs md:text-sm text-[#888888] hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Tous les utilisateurs</span>
+          </Link>
+          <span className="text-[#444444]">/</span>
+          <span className="text-xs md:text-sm font-semibold text-[#FFBF00] flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5" />
+            Fiche Utilisateur
+          </span>
+        </div>
 
         <div className="flex items-center gap-2">
           <span className="text-xs text-[#666666] font-mono">ID: {profile.id}</span>
@@ -343,7 +350,7 @@ export default function User360Page() {
         </div>
       </div>
 
-      {/* Header Fiche Profil 360° */}
+      {/* Header Fiche Utilisateur */}
       <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 md:p-8 mb-6 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           {/* Identité */}
@@ -361,10 +368,25 @@ export default function User360Page() {
             )}
 
             <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-[#251D08] text-[#FFBF00] border border-[#FFBF00]/30 flex items-center gap-1">
+                  <User className="w-3 h-3" /> Fiche Utilisateur
+                </span>
+                <span className="text-xs text-[#666666] font-mono">Dossier #{profile.id.slice(0, 8)}</span>
+              </div>
+
               <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
                   {profile.fullName || "Utilisateur sans nom"}
                 </h1>
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#251D08] hover:bg-[#382C0C] text-[#FFBF00] border border-[#FFBF00]/40 text-xs font-semibold transition-colors shadow-sm"
+                  title="Modifier les coordonnées et informations de ce compte"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Modifier</span>
+                </button>
                 {profile.isVerified && (
                   <span title="Compte vérifié">
                     <BadgeCheck className="w-6 h-6 text-blue-400" />
@@ -444,24 +466,25 @@ export default function User360Page() {
             </div>
           </div>
 
-          {/* Boutons d'Action Super Admin */}
+          {/* Boutons d'Action Principaux */}
           <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-2.5 shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0 border-[#1E1E1E]">
             <div className="flex flex-wrap items-center gap-2">
+              {/* Bouton Modifier l'utilisateur - Mis en avant en OR */}
+              <Button
+                onClick={() => setIsEditModalOpen(true)}
+                className="bg-[#FFBF00] hover:bg-[#E5AB00] text-black font-bold text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow-sm"
+              >
+                <Edit3 className="w-4 h-4 text-black" /> Modifier l&apos;utilisateur
+              </Button>
+
               <Button
                 onClick={() => {
                   setSelectedPlanId(subscriptionPlans?.[0]?.id || "");
                   setIsGrantModalOpen(true);
                 }}
-                className="bg-[#FFBF00] hover:bg-[#E6AC00] text-black font-semibold text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow-sm"
+                className="bg-[#181818] hover:bg-[#242424] text-white border border-[#2E2E2E] font-semibold text-xs h-9 px-3.5 rounded-xl flex items-center gap-1.5"
               >
-                <CreditCard className="w-3.5 h-3.5" /> Attribuer un abonnement
-              </Button>
-
-              <Button
-                onClick={() => setIsEditModalOpen(true)}
-                className="bg-[#181818] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs h-9 px-3 rounded-xl flex items-center gap-1.5"
-              >
-                <Edit3 className="w-3.5 h-3.5 text-[#FFBF00]" /> Modifier profil
+                <CreditCard className="w-3.5 h-3.5 text-[#FFBF00]" /> Attribuer un abonnement
               </Button>
 
               <Button
@@ -615,8 +638,21 @@ export default function User360Page() {
         </div>
       </div>
 
-      {/* Barre d'Onglets 360° */}
+      {/* Barre d'Onglets du Dossier Utilisateur */}
       <div className="flex items-center gap-2 border-b border-[#222222] pb-3 mb-6 overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={classNames(
+            "px-4 py-2 rounded-xl text-xs font-semibold transition-colors shrink-0 flex items-center gap-2",
+            activeTab === "overview"
+              ? "bg-[#FFBF00] text-black font-bold"
+              : "bg-[#141414] text-[#888888] hover:text-white border border-[#242424]"
+          )}
+        >
+          <User className="w-4 h-4" />
+          Profil & Coordonnées
+        </button>
+
         <button
           onClick={() => setActiveTab("monetization")}
           className={classNames(
@@ -640,7 +676,7 @@ export default function User360Page() {
           )}
         >
           <Headphones className="w-4 h-4" />
-          Historique d'Écoute ({activity.recentPlaybackHistory?.length || 0})
+          Historique d&apos;Écoute ({activity.recentPlaybackHistory?.length || 0})
         </button>
 
         <button
@@ -682,6 +718,247 @@ export default function User360Page() {
           Appareils & Sécurité ({technical.devices?.length + technical.sessions?.length})
         </button>
       </div>
+
+      {/* CONTENU ONGLET 0 : PROFIL & COORDONNÉES */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Carte Identité & Coordonnées */}
+            <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-[#1E1E1E] mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-[#251D08] border border-[#FFBF00]/30 flex items-center justify-center text-[#FFBF00]">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white">Coordonnées & Identité</h3>
+                      <p className="text-xs text-[#777777]">Informations de profil et contact du compte</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="bg-[#FFBF00] hover:bg-[#E5AB00] text-black font-bold text-xs h-8 px-3 rounded-lg flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" /> Modifier
+                  </Button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div className="flex items-center justify-between py-2 border-b border-[#1A1A1A]">
+                    <span className="text-[#888888] font-medium">Nom complet</span>
+                    <span className="font-semibold text-white">{profile.fullName || "Non renseigné"}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2 border-b border-[#1A1A1A]">
+                    <span className="text-[#888888] font-medium">Adresse email</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-white">{profile.email}</span>
+                      {profile.isVerified ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#102A1A] text-[#1DB954] border border-emerald-900/50">
+                          Vérifié
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#2A1517] text-[#EF4444] border border-red-900/40">
+                          Non vérifié
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2 border-b border-[#1A1A1A]">
+                    <span className="text-[#888888] font-medium">Nom d&apos;utilisateur (@)</span>
+                    <span className="font-mono text-gray-200">
+                      {profile.username ? `@${profile.username}` : "Non défini"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2 border-b border-[#1A1A1A]">
+                    <span className="text-[#888888] font-medium">Numéro de téléphone</span>
+                    <span className="font-mono text-gray-200">
+                      {profile.phoneNumber || "Non renseigné"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2 border-b border-[#1A1A1A]">
+                    <span className="text-[#888888] font-medium">Identifiant unique (UUID)</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-[#888888] text-[11px] truncate max-w-[200px]">{profile.id}</span>
+                      <button
+                        onClick={() => copyToClipboard(profile.id, "id_tab")}
+                        className="p-1 rounded hover:bg-[#222222] text-[#777777] hover:text-white"
+                        title="Copier"
+                      >
+                        {copiedField === "id_tab" ? <Check className="w-3 h-3 text-[#1DB954]" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-[#888888] font-medium">Date d&apos;inscription</span>
+                    <span className="text-gray-300">
+                      {new Date(profile.createdAt).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[#1E1E1E] mt-4 flex items-center justify-between">
+                <span className="text-[11px] text-[#666666]">
+                  Dernière mise à jour : {profile.updatedAt ? new Date(profile.updatedAt).toLocaleDateString("fr-FR") : "N/A"}
+                </span>
+                <Button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="bg-[#1A1A1A] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs h-8 px-3 rounded-lg flex items-center gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-[#FFBF00]" />
+                  <span>Modifier les informations</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Carte Droits & Rôles RBAC */}
+            <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-[#1E1E1E] mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-[#0F223D] border border-[#3B82F6]/30 flex items-center justify-center text-[#60A5FA]">
+                      <Shield className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white">Privilèges & Rôles d&apos;Accès</h3>
+                      <p className="text-xs text-[#777777]">Contrôle d&apos;accès basé sur les rôles (RBAC)</p>
+                    </div>
+                  </div>
+                  {!isCurrent && (
+                    <Button
+                      onClick={() => {
+                        setSelectedRoles(profile.roles || []);
+                        setIsRolesModalOpen(true);
+                      }}
+                      className="bg-[#1A1A1A] hover:bg-[#252525] text-white border border-[#2E2E2E] text-xs h-8 px-3 rounded-lg flex items-center gap-1.5"
+                    >
+                      <Shield className="w-3.5 h-3.5 text-[#3B82F6]" /> Gérer les rôles
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-xs font-semibold text-[#888888] uppercase tracking-wider block mb-2">
+                      Rôles attribués ({profile.roles?.length || 0})
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.roles?.length > 0 ? (
+                        profile.roles.map((r: string) => {
+                          const info = ROLE_INFO_MAP[r] || ROLE_INFO_MAP.USER;
+                          const RoleIcon = info.icon;
+                          return (
+                            <div
+                              key={r}
+                              className={classNames(
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold",
+                                info.badgeBg,
+                                info.badgeText
+                              )}
+                            >
+                              <RoleIcon className="w-3.5 h-3.5" />
+                              <span>{info.label}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <span className="text-xs text-[#666666]">Auditeur standard</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Profil Créateur */}
+                  {profile.creatorProfile && (
+                    <div className="p-3.5 rounded-xl bg-[#1A1424] border border-purple-900/40">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-[#C084FC] flex items-center gap-1.5">
+                          <Radio className="w-3.5 h-3.5" /> Profil Créateur Actif
+                        </span>
+                        {profile.creatorProfile.isVerified && (
+                          <span className="text-[10px] font-bold text-blue-400 bg-blue-950/60 border border-blue-800/40 px-2 py-0.5 rounded">
+                            Certifié Officiel
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-300">
+                        Nom public : <span className="font-semibold text-white">{profile.creatorProfile.displayName}</span>
+                      </p>
+                      {profile.creatorProfile.bio && (
+                        <p className="text-[11px] text-[#888888] mt-1 line-clamp-2">
+                          {profile.creatorProfile.bio}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Statut Sécurité */}
+                  <div className="p-3.5 rounded-xl bg-[#141414] border border-[#262626]">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {profile.isSuspended ? (
+                          <Ban className="w-4 h-4 text-[#EF4444]" />
+                        ) : (
+                          <CheckCircle2 className="w-4 h-4 text-[#1DB954]" />
+                        )}
+                        <span className="text-xs font-bold text-white">
+                          {profile.isSuspended ? "Compte bloqué (accès révoqué)" : "Compte actif et fonctionnel"}
+                        </span>
+                      </div>
+                      {!isCurrent && (
+                        <Button
+                          size="sm"
+                          onClick={() => setIsSuspendModalOpen(true)}
+                          className={classNames(
+                            "text-[11px] h-7 px-2.5 rounded-lg border",
+                            profile.isSuspended
+                              ? "bg-[#142318] text-[#1DB954] border-emerald-900/40"
+                              : "bg-[#2A1517] text-[#EF4444] border-red-900/40"
+                          )}
+                        >
+                          {profile.isSuspended ? "Débloquer" : "Bloquer"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[#1E1E1E] mt-4 flex items-center justify-between">
+                <Button
+                  onClick={() => setIsPasswordModalOpen(true)}
+                  className="bg-[#1A1A1A] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs h-8 px-3 rounded-lg flex items-center gap-1.5"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-[#FFBF00]" />
+                  <span>Changer le mot de passe</span>
+                </Button>
+
+                {!isCurrent && (
+                  <Button
+                    onClick={() => {
+                      setSelectedRoles(profile.roles || []);
+                      setIsRolesModalOpen(true);
+                    }}
+                    className="bg-[#1A1A1A] hover:bg-[#242424] text-[#3B82F6] border border-[#2E2E2E] text-xs h-8 px-3 rounded-lg flex items-center gap-1.5"
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Modifier les rôles</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CONTENU ONGLET 1 : ABONNEMENTS & MONÉTISATION */}
       {activeTab === "monetization" && (

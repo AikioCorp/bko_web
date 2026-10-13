@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import useSWR from "swr";
 import {
   X,
   User,
@@ -12,8 +13,46 @@ import {
   Loader2,
   ShieldCheck,
   Save,
+  Shield,
+  Crown,
+  Sparkles,
+  Radio,
+  Users,
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
+
+const ROLE_INFO_MAP: Record<string, { label: string; badgeBg: string; badgeText: string; icon: any }> = {
+  SUPER_ADMIN: {
+    label: "Super Admin",
+    badgeBg: "bg-[#2E2405] border border-[#FFBF00]/40",
+    badgeText: "text-[#FFBF00]",
+    icon: Crown,
+  },
+  ADMIN: {
+    label: "Admin",
+    badgeBg: "bg-[#0F223D] border border-[#3B82F6]/40",
+    badgeText: "text-[#60A5FA]",
+    icon: Shield,
+  },
+  EDITOR: {
+    label: "Éditeur",
+    badgeBg: "bg-[#0E2C2C] border border-[#14B8A6]/40",
+    badgeText: "text-[#2DD4BF]",
+    icon: Sparkles,
+  },
+  CREATOR: {
+    label: "Créateur",
+    badgeBg: "bg-[#27153E] border border-[#A855F7]/40",
+    badgeText: "text-[#C084FC]",
+    icon: Radio,
+  },
+  USER: {
+    label: "Auditeur",
+    badgeBg: "bg-[#1E1E1E] border border-[#333333]",
+    badgeText: "text-[#AAAAAA]",
+    icon: Users,
+  },
+};
 
 interface AdminEditUserModalProps {
   isOpen: boolean;
@@ -24,6 +63,7 @@ interface AdminEditUserModalProps {
     email: string;
     username?: string | null;
     phoneNumber?: string | null;
+    roles?: string[];
     isVerified?: boolean;
     isEmailVerified?: boolean;
     avatar?: string | null;
@@ -42,9 +82,16 @@ export function AdminEditUserModal({
   const [username, setUsername] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isVerified, setIsVerified] = useState(false);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [initialRoles, setInitialRoles] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { data: assignableRoles } = useSWR<any[]>(
+    isOpen ? "/admin/assignable-roles" : null,
+    (url: string) => adminApi(url).then((r) => r.data)
+  );
 
   useEffect(() => {
     if (user && isOpen) {
@@ -53,6 +100,9 @@ export function AdminEditUserModal({
       setUsername(user.username || "");
       setPhoneNumber(user.phoneNumber || "");
       setIsVerified(Boolean(user.isVerified ?? user.isEmailVerified));
+      const currentRoles = user.roles || [];
+      setSelectedRoles(currentRoles);
+      setInitialRoles(currentRoles);
       setErrorMessage(null);
     }
   }, [user, isOpen]);
@@ -85,8 +135,22 @@ export function AdminEditUserModal({
         }),
       });
 
+      // Mettre à jour les rôles si modifiés
+      const rolesChanged =
+        JSON.stringify([...selectedRoles].sort()) !== JSON.stringify([...initialRoles].sort());
+      if (rolesChanged && selectedRoles.length > 0) {
+        try {
+          await adminApi(`/admin/users/${user.id}/roles`, {
+            method: "PUT",
+            body: JSON.stringify({ roles: selectedRoles }),
+          });
+        } catch (roleErr: any) {
+          console.warn("Échec mise à jour rôles:", roleErr.message);
+        }
+      }
+
       if (res.data) {
-        onSuccess(res.data);
+        onSuccess({ ...res.data, roles: selectedRoles });
         onClose();
       }
     } catch (err: any) {
@@ -109,9 +173,9 @@ export function AdminEditUserModal({
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-[#141414] border border-[#262626] rounded-2xl shadow-2xl text-white overflow-hidden">
+      <div className="relative w-full max-w-lg bg-[#141414] border border-[#262626] rounded-2xl shadow-2xl text-white overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header Modal */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#222222] bg-[#111111]">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#222222] bg-[#111111] shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#221A05] border border-[#FFBF00]/40 flex items-center justify-center text-[#FFBF00]">
               <User className="w-5 h-5" />
@@ -131,14 +195,14 @@ export function AdminEditUserModal({
 
         {/* Message d'erreur */}
         {errorMessage && (
-          <div className="mx-6 mt-5 p-3.5 rounded-xl bg-[#251012] border border-red-900/50 flex items-start gap-2.5 text-xs text-red-300">
+          <div className="mx-6 mt-4 p-3.5 rounded-xl bg-[#251012] border border-red-900/50 flex items-start gap-2.5 text-xs text-red-300 shrink-0">
             <AlertTriangle className="w-4 h-4 text-[#EF4444] shrink-0 mt-0.5" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Formulaire */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           {/* Nom complet */}
           <div>
             <label className="block text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider mb-1.5">
@@ -237,6 +301,64 @@ export function AdminEditUserModal({
               />
             </button>
           </div>
+
+          {/* Attribution des Rôles RBAC */}
+          {assignableRoles && assignableRoles.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-[#FFBF00]" />
+                  Rôles RBAC attribués
+                </label>
+                <span className="text-[11px] text-[#777777]">
+                  {selectedRoles.length} sélectionné(s)
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {assignableRoles.map((role: any) => {
+                  const isSelected = selectedRoles.includes(role.name);
+                  const meta = ROLE_INFO_MAP[role.name] || {
+                    label: role.name,
+                    badgeBg: "bg-[#222222] border border-[#333333]",
+                    badgeText: "text-gray-300",
+                    icon: Users,
+                  };
+                  const RoleIcon = meta.icon;
+
+                  return (
+                    <label
+                      key={role.id || role.name}
+                      className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-[#1C1C1C] border-[#3E3E3E]"
+                          : "bg-[#111111] border-[#222222] hover:bg-[#161616]"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedRoles([...selectedRoles, role.name]);
+                          } else {
+                            setSelectedRoles(selectedRoles.filter((r) => r !== role.name));
+                          }
+                        }}
+                        className="w-4 h-4 rounded bg-[#222222] border-[#444444] text-[#FFBF00] focus:ring-[#FFBF00]"
+                      />
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <RoleIcon className="w-3.5 h-3.5 shrink-0 text-[#888888]" />
+                        <span className="text-xs font-semibold text-white truncate">
+                          {meta.label}
+                        </span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#222222]">

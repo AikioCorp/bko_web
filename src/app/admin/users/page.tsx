@@ -33,7 +33,8 @@ import {
   Filter,
   X,
   Activity,
-  Edit3
+  Edit3,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminEditUserModal } from "@/components/admin/AdminEditUserModal";
@@ -604,6 +605,44 @@ export default function UsersPage() {
                       {/* Actions Rapides */}
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          {/* Bouton Modifier l'utilisateur - Mis en avant avec icône et texte */}
+                          <button
+                            title="Modifier les informations de l'utilisateur"
+                            onClick={() => setUserToEdit(user)}
+                            className="px-2.5 py-1.5 rounded-lg bg-[#251D08] hover:bg-[#382C0C] text-[#FFBF00] border border-[#FFBF00]/40 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Modifier</span>
+                          </button>
+
+                          {/* Bouton Fiche Utilisateur (remplace Vue 360°) */}
+                          <Link
+                            href={`/admin/users/${user.id}`}
+                            className="px-2.5 py-1.5 rounded-lg bg-[#181818] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs font-semibold transition-colors flex items-center gap-1.5"
+                            title="Consulter la fiche détaillée du membre"
+                          >
+                            <User className="w-3.5 h-3.5 text-[#FFBF00]" />
+                            <span>Fiche</span>
+                          </Link>
+
+                          {/* Bouton Volet Gérer */}
+                          <button
+                            onClick={() => openUserPanel(user)}
+                            className="px-2.5 py-1.5 rounded-lg bg-[#141414] hover:bg-[#202020] text-[#AAAAAA] hover:text-white text-xs font-medium transition-colors border border-[#242424]"
+                            title="Ouvrir le panneau de gestion rapide"
+                          >
+                            Gérer
+                          </button>
+
+                          {/* Bouton Mot de passe & Sécurité */}
+                          <button
+                            title="Gérer / Réinitialiser le mot de passe"
+                            onClick={() => setUserToResetPassword(user)}
+                            className="p-2 rounded-lg bg-[#141414] hover:bg-[#202020] text-[#888888] hover:text-[#FFBF00] border border-[#242424] hover:border-[#FFBF00]/40 transition-colors"
+                          >
+                            <KeyRound className="w-4 h-4" />
+                          </button>
+
                           {!isCurrent ? (
                             <>
                               {/* Bouton Bloquer / Débloquer rapide */}
@@ -637,41 +676,6 @@ export default function UsersPage() {
                               </button>
                             </>
                           ) : null}
-
-                          {/* Bouton Modifier l'utilisateur */}
-                          <button
-                            title="Modifier les informations de l'utilisateur"
-                            onClick={() => setUserToEdit(user)}
-                            className="p-2 rounded-lg bg-[#141414] hover:bg-[#202020] text-[#888888] hover:text-[#FFBF00] border border-[#242424] hover:border-[#FFBF00]/40 transition-colors"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-
-                          {/* Bouton Mot de passe & Sécurité */}
-                          <button
-                            title="Gérer / Réinitialiser le mot de passe"
-                            onClick={() => setUserToResetPassword(user)}
-                            className="p-2 rounded-lg bg-[#141414] hover:bg-[#202020] text-[#888888] hover:text-[#FFBF00] border border-[#242424] hover:border-[#FFBF00]/40 transition-colors"
-                          >
-                            <KeyRound className="w-4 h-4" />
-                          </button>
-
-                          {/* Bouton Vue 360° */}
-                          <Link
-                            href={`/admin/users/${user.id}`}
-                            className="px-2.5 py-1.5 rounded-lg bg-[#251D08] hover:bg-[#382C0C] text-[#FFBF00] border border-[#FFBF00]/30 text-xs font-semibold transition-colors flex items-center gap-1.5"
-                          >
-                            <Activity className="w-3.5 h-3.5" />
-                            <span>Vue 360°</span>
-                          </Link>
-
-                          {/* Bouton Gérer */}
-                          <button
-                            onClick={() => openUserPanel(user)}
-                            className="px-3 py-1.5 rounded-lg bg-[#1F1F1F] hover:bg-[#282828] text-white text-xs font-semibold transition-colors border border-[#2E2E2E]"
-                          >
-                            Gérer
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -777,35 +781,34 @@ export default function UsersPage() {
                   </div>
                 </div>
 
-                {/* Bouton Fiche 360° */}
-                <div className="mt-3 pt-3 border-t border-[#222222]">
-                  <Link
-                    href={`/admin/users/${selectedUser.id}`}
-                    className="w-full py-2 px-3 rounded-xl bg-[#251D08] hover:bg-[#382C0C] text-[#FFBF00] border border-[#FFBF00]/30 text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <Activity className="w-4 h-4" />
-                    <span>Ouvrir la Vue 360° Complète (Abonnements & Écoutes)</span>
-                  </Link>
-                </div>
-
-                {/* Actions rapides d'édition et mot de passe */}
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                {/* Actions principales d'administration */}
+                <div className="mt-4 pt-4 border-t border-[#222222] space-y-2">
                   <button
                     type="button"
                     onClick={() => setUserToEdit(selectedUser)}
-                    className="py-2 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#2E2E2E] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#FFBF00] hover:bg-[#E5AB00] text-black text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-[#FFBF00]" />
-                    <span>Modifier profil</span>
+                    <Edit3 className="w-4 h-4 text-black" />
+                    <span>Modifier l&apos;utilisateur</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setUserToResetPassword(selectedUser)}
-                    className="py-2 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#2E2E2E] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <KeyRound className="w-3.5 h-3.5 text-[#FFBF00]" />
-                    <span>Mot de passe</span>
-                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      href={`/admin/users/${selectedUser.id}`}
+                      className="py-2 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#2E2E2E] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <User className="w-3.5 h-3.5 text-[#FFBF00]" />
+                      <span>Fiche Utilisateur</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setUserToResetPassword(selectedUser)}
+                      className="py-2 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#2E2E2E] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-[#FFBF00]" />
+                      <span>Mot de passe</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
