@@ -9,8 +9,10 @@ import { useAuthStore } from "@/store/authStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { HeroBanner } from "@/components/home/HeroBanner";
 import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
+import { DiscoveryPromotionModal } from "@/components/discovery/DiscoveryPromotionModal";
 import { TrackedCard } from "@/components/home/TrackedCard";
 import { recordRecommendationInteraction } from "@/lib/playTracking";
+import { formatPodcastSubtitle, decodeHtmlEntities } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,6 +69,266 @@ function HomeSkeleton() {
         ))}
       </div>
     </div>
+  );
+}
+
+function ContinueListeningShelf({
+  sec,
+  handlePlay,
+  currentEpisode,
+  isPlaying,
+}: {
+  sec: any;
+  handlePlay: (ep: any, attribution?: any) => void;
+  currentEpisode: any;
+  isPlaying: boolean;
+}) {
+  const shelfRef = useRef<HTMLDivElement | null>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (shelfRef.current) {
+      const scrollAmount = Math.max(300, Math.floor(shelfRef.current.clientWidth * 0.75));
+      shelfRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between border-b border-[#242424] pb-3">
+        <div>
+          <Link
+            href="/discovery/sections/continue-listening"
+            className="group flex items-center gap-2"
+          >
+            <Clock className="w-5 h-5 text-[#FFBF00]" />
+            <h2 className="text-xl md:text-2xl font-black text-white group-hover:text-[#FFBF00] transition-colors tracking-tight">
+              {sec.title}
+            </h2>
+            <ChevronRight className="w-4 h-4 text-[#757575] group-hover:text-[#FFBF00] group-hover:translate-x-0.5 transition-all" />
+          </Link>
+          {sec.subtitle && (
+            <p className="text-xs text-[#808080] mt-0.5">{sec.subtitle}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => scroll("left")}
+              aria-label="Faire défiler vers la gauche"
+              className="w-8 h-8 rounded-full border border-[#242424] bg-[#141414] hover:bg-[#1E1E1E] hover:border-[#FFBF00]/50 hover:text-white flex items-center justify-center text-[#888888] transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              aria-label="Faire défiler vers la droite"
+              className="w-8 h-8 rounded-full border border-[#242424] bg-[#141414] hover:bg-[#1E1E1E] hover:border-[#FFBF00]/50 hover:text-white flex items-center justify-center text-[#888888] transition-colors cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          <Link
+            href="/discovery/sections/continue-listening"
+            className="text-xs font-bold text-[#808080] hover:text-[#FFBF00] transition-colors"
+          >
+            Historique complet
+          </Link>
+        </div>
+      </div>
+
+      <div
+        ref={shelfRef}
+        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x scroll-smooth"
+      >
+        {sec.items.map((item: any) => {
+          const ep = item.episode || item;
+          const pos = ep.positionSeconds || item.positionSeconds || 0;
+          const duration = ep.durationSeconds || item.durationSeconds || 1800;
+          const progressPercent = Math.min(100, Math.max(0, (pos / duration) * 100));
+          const restMins = Math.max(0, Math.floor((duration - pos) / 60));
+
+          return (
+            <div
+              key={ep.id}
+              onClick={() => handlePlay(ep, item.attribution)}
+              className="snap-start shrink-0 w-[280px] sm:w-[320px] bg-[#141414] hover:bg-[#1E1E1E] rounded-xl p-3 border border-[#242424] hover:border-[#333333] cursor-pointer transition-colors group relative"
+            >
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-[#0B0B0B] relative">
+                  <img
+                    src={
+                      ep.cover ||
+                      ep.podcast?.cover ||
+                      "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"
+                    }
+                    alt={ep.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    {currentEpisode?.id === ep.id && isPlaying ? (
+                      <Pause className="w-6 h-6 text-[#FFBF00] fill-current" />
+                    ) : (
+                      <Play className="w-6 h-6 text-white fill-current ml-0.5" />
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  {ep.podcast?.slug ? (
+                    <Link
+                      href={`/podcasts/${ep.podcast.slug}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[10px] font-bold text-[#FFBF00] hover:underline uppercase tracking-wider line-clamp-1 block transition-colors"
+                    >
+                      {ep.podcast?.title || ep.podcast?.name || "Émission"}
+                    </Link>
+                  ) : (
+                    <p className="text-[10px] font-bold text-[#FFBF00] uppercase tracking-wider line-clamp-1">
+                      {ep.podcast?.title || ep.podcast?.name || "Émission"}
+                    </p>
+                  )}
+                  <h4 className="text-sm font-bold text-white line-clamp-1 group-hover:text-[#FFBF00] transition-colors">
+                    {decodeHtmlEntities(ep.title)}
+                  </h4>
+                  <p className="text-xs text-[#808080] mt-0.5">
+                    {restMins > 0 ? `Il reste ${restMins} min` : "Terminé"}
+                  </p>
+                </div>
+              </div>
+              <div className="w-full bg-[#242424] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-[#FFBF00] h-full rounded-full transition-all"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function PodcastShelfRow({ sec }: { sec: any }) {
+  const shelfRef = useRef<HTMLDivElement | null>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (shelfRef.current) {
+      const scrollAmount = Math.max(300, Math.floor(shelfRef.current.clientWidth * 0.75));
+      shelfRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const destinationUrl =
+    sec.discoveryContext?.targetUrl?.startsWith("/discovery")
+      ? sec.discoveryContext.targetUrl
+      : `/discovery/sections/${sec.slug || sec.id}`;
+
+  return (
+    <section className="space-y-6">
+      <div className="flex items-center justify-between border-b border-[#242424] pb-4">
+        <div>
+          <Link
+            href={destinationUrl}
+            className="group flex items-center gap-2 mb-1"
+          >
+            <Radio className="w-4 h-4 text-[#FFBF00]" />
+            <h2 className="text-2xl md:text-3xl font-black text-white group-hover:text-[#FFBF00] transition-colors tracking-tight">
+              {sec.title}
+            </h2>
+            <ChevronRight className="w-4 h-4 text-[#757575] group-hover:text-[#FFBF00] group-hover:translate-x-0.5 transition-all" />
+          </Link>
+          {sec.subtitle && (
+            <p className="text-sm text-[#B8B8B8] max-w-2xl">{sec.subtitle}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => scroll("left")}
+              aria-label="Faire défiler vers la gauche"
+              className="w-8 h-8 rounded-full border border-[#242424] bg-[#141414] hover:bg-[#1E1E1E] hover:border-[#FFBF00]/50 hover:text-white flex items-center justify-center text-[#888888] transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              aria-label="Faire défiler vers la droite"
+              className="w-8 h-8 rounded-full border border-[#242424] bg-[#141414] hover:bg-[#1E1E1E] hover:border-[#FFBF00]/50 hover:text-white flex items-center justify-center text-[#888888] transition-colors cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          <Link
+            href={destinationUrl}
+            className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#141414] hover:bg-[#1E1E1E] border border-[#242424] hover:border-[#FFBF00]/40 text-xs font-bold text-[#D4D4D4] hover:text-[#FFBF00] transition-colors shrink-0"
+          >
+            <span>Découvrir davantage</span>
+            <ChevronRight className="w-3.5 h-3.5 text-[#888888] group-hover:text-[#FFBF00] transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
+      </div>
+
+      <div
+        ref={shelfRef}
+        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x scroll-smooth"
+      >
+        {sec.items.map((item: any) => {
+          const pod = item.podcast || item;
+          const epCount =
+            pod._count?.episodes ?? pod.episodesCount ?? pod.episodes?.length ?? 0;
+          return (
+            <TrackedCard
+              key={item.id || pod.id}
+              batchId={item.attribution?.batchId}
+              sectionId={sec.id}
+              sectionSlug={sec.slug}
+              targetType="PODCAST"
+              targetId={pod.id}
+              position={item.position ?? 0}
+              reason={item.reason}
+              className="snap-start shrink-0 w-[180px] sm:w-[210px] bg-[#141414] hover:bg-[#1A1A1A] rounded-2xl p-3 border border-[#242424] hover:border-[#383838] transition-colors group cursor-pointer"
+            >
+              <Link href={`/podcasts/${pod.slug || pod.id}`} className="block">
+                <div className="w-full aspect-square rounded-xl overflow-hidden bg-[#0B0B0B] relative mb-3">
+                  <img
+                    src={
+                      pod.cover ||
+                      pod.imageUrl ||
+                      "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=300&auto=format&fit=crop"
+                    }
+                    alt={pod.title || pod.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <h3 className="text-sm font-bold text-white group-hover:text-[#FFBF00] transition-colors truncate">
+                  {pod.title || pod.name}
+                </h3>
+                {formatPodcastSubtitle(pod) && (
+                  <p className="text-xs text-[#808080] truncate mt-0.5">
+                    {formatPodcastSubtitle(pod)}
+                  </p>
+                )}
+                <div className="flex items-center gap-2 mt-2 text-[10px] font-medium text-[#707070]">
+                  <span>{epCount} épisodes</span>
+                  {pod.language && (
+                    <>
+                      <span>•</span>
+                      <span className="uppercase">{pod.language}</span>
+                    </>
+                  )}
+                </div>
+              </Link>
+            </TrackedCard>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -362,111 +624,43 @@ function HomeContent() {
               // A. Section Continuer l'écoute
               if (sec.slug === "continue-listening") {
                 return (
-                  <section key={sec.id} className="space-y-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                          <Play className="w-5 h-5 text-[#FFBF00] fill-current" />
-                          {sec.title}
-                        </h2>
-                        {sec.subtitle && (
-                          <p className="text-xs text-[#808080] mt-0.5">{sec.subtitle}</p>
-                        )}
-                      </div>
-                      <Link
-                        href={sec.discoveryContext?.targetUrl || "/library"}
-                        className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#141414] hover:bg-[#1E1E1E] border border-[#242424] hover:border-[#FFBF00]/40 text-xs font-bold text-[#D4D4D4] hover:text-[#FFBF00] transition-colors"
-                      >
-                        <span>Découvrir davantage</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-[#888888] group-hover:text-[#FFBF00] transition-transform group-hover:translate-x-0.5" />
-                      </Link>
-                    </div>
-                    <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x">
-                      {sec.items.map((item: any) => {
-                        const ep = item.episode;
-                        if (!ep) return null;
-                        const duration = ep.durationSeconds || 1800;
-                        const pos = ep.positionSeconds || 0;
-                        const restMins = Math.max(0, Math.floor((duration - pos) / 60));
-                        const percent = Math.min(100, Math.max(0, (pos / duration) * 100));
-
-                        return (
-                          <TrackedCard
-                            key={item.id}
-                            batchId={item.attribution?.batchId}
-                            sectionId={sec.id}
-                            sectionSlug={sec.slug}
-                            targetType="EPISODE"
-                            targetId={ep.id}
-                            position={item.position}
-                            reason={item.reason}
-                            onClick={() => handlePlay(ep, item.attribution)}
-                            className="snap-start shrink-0 w-[320px] bg-[#141414] hover:bg-[#1A1A1A] rounded-xl p-3 border border-[#242424] hover:border-[#333] cursor-pointer transition-colors group"
-                          >
-                            <div className="flex items-center gap-4 mb-3">
-                              <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-[#0B0B0B] relative">
-                                <img
-                                  src={ep.cover || ep.podcast?.cover || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop"}
-                                  alt={ep.title}
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                  {currentEpisode?.id === ep.id && isPlaying ? (
-                                    <Pause className="w-5 h-5 text-white fill-current" />
-                                  ) : (
-                                    <Play className="w-5 h-5 text-white fill-current" />
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-start mb-0.5">
-                                  <span className="text-[10px] font-black text-[#FFBF00] uppercase tracking-wider truncate mr-2">
-                                    {item.reason || "EN COURS"}
-                                  </span>
-                                  <span className="text-[10px] font-bold text-[#808080] whitespace-nowrap">
-                                    Reste {restMins}m
-                                  </span>
-                                </div>
-                                <h4 className="text-sm font-bold text-white truncate leading-tight">
-                                  {ep.title}
-                                </h4>
-                                <p className="text-xs text-[#808080] truncate">
-                                  {ep.podcast?.name}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="w-full bg-[#2A2A2A] h-1.5 rounded-full overflow-hidden">
-                              <div
-                                className="bg-[#FFBF00] h-full rounded-full"
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
-                          </TrackedCard>
-                        );
-                      })}
-                    </div>
-                  </section>
+                  <ContinueListeningShelf
+                    key={sec.id}
+                    sec={sec}
+                    handlePlay={handlePlay}
+                    currentEpisode={currentEpisode}
+                    isPlaying={isPlaying}
+                  />
                 );
               }
 
               // B. Section Épisodes (Pour vous, Éditoriale, etc.)
               if (sec.type === "EPISODE_ROW") {
+                const destinationUrl =
+                  sec.discoveryContext?.targetUrl?.startsWith("/discovery")
+                    ? sec.discoveryContext.targetUrl
+                    : `/discovery/sections/${sec.slug || sec.id}`;
+
                 return (
                   <section key={sec.id} className="space-y-6">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#242424] pb-4">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <Link
+                          href={destinationUrl}
+                          className="group inline-flex items-center gap-2 mb-1"
+                        >
                           {sec.slug === "for-you" && <Sparkles className="w-4 h-4 text-[#FFBF00]" />}
-                          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                          <h2 className="text-2xl md:text-3xl font-black text-white group-hover:text-[#FFBF00] transition-colors tracking-tight">
                             {sec.title}
                           </h2>
-                        </div>
+                          <ChevronRight className="w-4 h-4 text-[#757575] group-hover:text-[#FFBF00] group-hover:translate-x-0.5 transition-all" />
+                        </Link>
                         {sec.subtitle && (
                           <p className="text-sm text-[#B8B8B8] max-w-2xl">{sec.subtitle}</p>
                         )}
                       </div>
                       <Link
-                        href={sec.discoveryContext?.targetUrl || "/explore?view=episodes"}
+                        href={destinationUrl}
                         className="self-start md:self-end group flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#141414] hover:bg-[#1E1E1E] border border-[#242424] hover:border-[#FFBF00]/40 text-xs font-bold text-[#D4D4D4] hover:text-[#FFBF00] transition-colors shrink-0"
                       >
                         <span>Découvrir davantage</span>
@@ -512,9 +706,19 @@ function HomeContent() {
 
                             <div className="flex-1 min-w-0 pr-2">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate">
-                                  {ep.podcast?.name}
-                                </span>
+                                {ep.podcast?.slug ? (
+                                  <Link
+                                    href={`/podcasts/${ep.podcast.slug}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[10px] md:text-xs font-bold text-[#FFBF00] hover:underline uppercase tracking-wider truncate cursor-pointer transition-colors"
+                                  >
+                                    {ep.podcast?.name || ep.podcast?.title}
+                                  </Link>
+                                ) : (
+                                  <span className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate">
+                                    {ep.podcast?.name || ep.podcast?.title}
+                                  </span>
+                                )}
                                 {item.reason && (
                                   <span className="text-[10px] bg-[#1C1C1C] text-[#D4D4D4] px-2 py-0.5 rounded border border-[#2A2A2A] font-semibold">
                                     {item.reason}
@@ -522,7 +726,7 @@ function HomeContent() {
                                 )}
                               </div>
                               <h4 className="text-sm md:text-base font-bold text-white leading-tight line-clamp-2 mb-2 group-hover:text-[#FFBF00] transition-colors">
-                                {ep.title}
+                                {decodeHtmlEntities(ep.title)}
                               </h4>
                               <p className="text-xs text-[#808080] flex items-center gap-2 font-medium">
                                 <span className="flex items-center gap-1">
@@ -582,103 +786,7 @@ function HomeContent() {
 
               // C. Section Podcasts (Découverte, Éditoriale, etc.)
               if (sec.type === "PODCAST_ROW") {
-                return (
-                  <section key={sec.id} className="space-y-4">
-                    <div className="flex items-end justify-between px-1">
-                      <div>
-                        <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
-                          {sec.title}
-                        </h2>
-                        {sec.subtitle && (
-                          <p className="text-xs text-[#808080] mt-1">{sec.subtitle}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={sec.discoveryContext?.targetUrl || "/explore?view=podcasts"}
-                          className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#141414] hover:bg-[#1E1E1E] border border-[#242424] hover:border-[#FFBF00]/40 text-xs font-bold text-[#D4D4D4] hover:text-[#FFBF00] transition-colors shrink-0"
-                        >
-                          <span>Découvrir davantage</span>
-                          <ChevronRight className="w-3.5 h-3.5 text-[#888888] group-hover:text-[#FFBF00] transition-transform group-hover:translate-x-0.5" />
-                        </Link>
-                        <div className="hidden sm:flex gap-1.5 ml-1">
-                          <button className="w-8 h-8 rounded-full border border-[#242424] bg-[#141414] flex items-center justify-center hover:bg-[#2A2A2A] text-white transition-colors">
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <button className="w-8 h-8 rounded-full border border-[#242424] bg-[#141414] flex items-center justify-center hover:bg-[#2A2A2A] text-white transition-colors">
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide pb-4 snap-x">
-                      {sec.items.map((item: any) => {
-                        const pod = item.podcast;
-                        if (!pod) return null;
-
-                        return (
-                          <TrackedCard
-                            key={item.id}
-                            batchId={item.attribution?.batchId}
-                            sectionId={sec.id}
-                            sectionSlug={sec.slug}
-                            targetType="PODCAST"
-                            targetId={pod.id}
-                            position={item.position}
-                            reason={item.reason}
-                            className="snap-start shrink-0 w-[260px] md:w-[300px] group block"
-                          >
-                            <Link
-                              href={`/podcasts/${pod.slug}`}
-                              onClick={() => {
-                                if (item.attribution?.batchId) {
-                                  recordRecommendationInteraction(
-                                    item.attribution.batchId,
-                                    sec.id,
-                                    sec.slug,
-                                    "PODCAST",
-                                    pod.id,
-                                    "CLICK",
-                                    item.position
-                                  );
-                                }
-                              }}
-                              className="block"
-                            >
-                              <div className="aspect-video rounded-xl overflow-hidden relative mb-3 bg-[#141414] border border-[#242424] group-hover:border-[#FFBF00]/50 transition-colors">
-                                <img
-                                  src={pod.cover || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400&auto=format&fit=crop"}
-                                  alt={pod.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                />
-                                {item.reason && (
-                                  <div className="absolute top-2 left-2 bg-[#1C1C1C] border border-[#2A2A2A] text-[#FFBF00] text-[9px] font-black px-2 py-1 rounded-sm uppercase tracking-wider shadow-sm">
-                                    {item.reason}
-                                  </div>
-                                )}
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                  <div className="w-12 h-12 rounded-full bg-[#FFBF00] flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-transform">
-                                    <Play className="w-6 h-6 text-black fill-current ml-1" />
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="px-1">
-                                <h3 className="text-sm font-bold text-white mb-1 leading-tight truncate group-hover:text-[#FFBF00] transition-colors">
-                                  {pod.name}
-                                </h3>
-                                <p className="text-xs text-[#808080] truncate font-medium">
-                                  {(pod.author?.name || pod.organization?.name) &&
-                                    `Par ${pod.author?.name || pod.organization?.name}`}
-                                </p>
-                              </div>
-                            </Link>
-                          </TrackedCard>
-                        );
-                      })}
-                    </div>
-                  </section>
-                );
+                return <PodcastShelfRow key={sec.id} sec={sec} />;
               }
 
               return null;
@@ -801,11 +909,21 @@ function HomeContent() {
                       </div>
 
                       <div className="flex-1 min-w-0 pr-2">
-                        <p className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate mb-1">
-                          {ep.podcast?.name}
-                        </p>
+                        {ep.podcast?.slug ? (
+                          <Link
+                            href={`/podcasts/${ep.podcast.slug}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[10px] md:text-xs font-bold text-[#FFBF00] hover:underline uppercase tracking-wider truncate mb-1 block cursor-pointer transition-colors"
+                          >
+                            {ep.podcast?.name || ep.podcast?.title}
+                          </Link>
+                        ) : (
+                          <p className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate mb-1">
+                            {ep.podcast?.name || ep.podcast?.title}
+                          </p>
+                        )}
                         <h4 className="text-sm md:text-base font-bold text-white leading-tight line-clamp-2 mb-2 group-hover:text-[#FFBF00] transition-colors">
-                          {ep.title}
+                          {decodeHtmlEntities(ep.title)}
                         </h4>
                         <p className="text-xs text-[#808080] flex items-center gap-2 font-medium">
                           <span className="flex items-center gap-1">
@@ -921,9 +1039,19 @@ function HomeContent() {
 
                   <div className="flex-1 min-w-0 pr-2">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate">
-                        {ep.podcast?.name}
-                      </span>
+                      {ep.podcast?.slug ? (
+                        <Link
+                          href={`/podcasts/${ep.podcast.slug}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[10px] md:text-xs font-bold text-[#FFBF00] hover:underline uppercase tracking-wider truncate cursor-pointer transition-colors"
+                        >
+                          {ep.podcast?.name || ep.podcast?.title}
+                        </Link>
+                      ) : (
+                        <span className="text-[10px] md:text-xs font-bold text-[#FFBF00] uppercase tracking-wider truncate">
+                          {ep.podcast?.name || ep.podcast?.title}
+                        </span>
+                      )}
                       {item.reason && (
                         <span className="text-[10px] bg-[#1C1C1C] text-[#D4D4D4] px-2 py-0.5 rounded border border-[#2A2A2A] font-semibold">
                           {item.reason}
@@ -931,7 +1059,7 @@ function HomeContent() {
                       )}
                     </div>
                     <h4 className="text-sm md:text-base font-bold text-white leading-tight line-clamp-2 mb-2 group-hover:text-[#FFBF00] transition-colors">
-                      {ep.title}
+                      {decodeHtmlEntities(ep.title)}
                     </h4>
                     <p className="text-xs text-[#808080] flex items-center gap-2 font-medium">
                       <span className="flex items-center gap-1">
@@ -1039,6 +1167,20 @@ function HomeContent() {
           </div>
         </div>
       </div>
+
+      <DiscoveryPromotionModal
+        config={{
+          campaignId: "promo_discover_podcasts_2026",
+          title: "Plongez dans les nouvelles voix du Mali",
+          description:
+            "Explorez notre sélection spéciale de créatrices et créateurs indépendants enregistrés à Bamako et dans la diaspora.",
+          targetUrl: "/discovery/sections/discover-podcasts",
+          buttonLabel: "Découvrir la sélection",
+          coverUrl:
+            "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=600&auto=format&fit=crop",
+          maxFrequencyHours: 48,
+        }}
+      />
 
       <AppDownloadModal
         isOpen={isAppModalOpen}

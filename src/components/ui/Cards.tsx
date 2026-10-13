@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { formatPodcastSubtitle } from "@/lib/utils";
 
 // --- PODCAST ITEM INTERFACE ---
 
@@ -18,50 +19,56 @@ export interface PodcastItem {
 
 // --- MINIMAL PODCAST CARDS (Apple-inspired Editorial Style) ---
 
-export const PodcastCardCompact: React.FC<{ podcast: PodcastItem }> = ({ podcast }) => (
-  <Link
-    href={`/podcasts/${podcast.slug}`}
-    className="group flex items-center gap-3 py-2 transition-opacity hover:opacity-90"
-  >
-    <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#161B22]">
-      <Image
-        src={podcast.cover || "/brand/favicon.png"}
-        alt={podcast.name}
-        fill
-        className="object-cover group-hover:scale-105 transition-transform duration-300"
-      />
-    </div>
-    <div className="min-w-0 flex-1">
-      <h4 className="text-sm font-semibold text-[#F0F6FC] truncate group-hover:text-[#E6B009] transition-colors">
-        {podcast.name}
-      </h4>
-      <p className="text-xs text-[#8B949E] truncate">{podcast.organization?.name || "Bko Podcast"}</p>
-    </div>
-  </Link>
-);
+export const PodcastCardCompact: React.FC<{ podcast: PodcastItem }> = ({ podcast }) => {
+  const subtitle = formatPodcastSubtitle(podcast);
+  return (
+    <Link
+      href={`/podcasts/${podcast.slug}`}
+      className="group flex items-center gap-3 py-2 transition-opacity hover:opacity-90"
+    >
+      <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#161B22]">
+        <Image
+          src={podcast.cover || "/brand/favicon.png"}
+          alt={podcast.name}
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h4 className="text-sm font-semibold text-[#F0F6FC] truncate group-hover:text-[#E6B009] transition-colors">
+          {podcast.name}
+        </h4>
+        {subtitle && <p className="text-xs text-[#8B949E] truncate">{subtitle}</p>}
+      </div>
+    </Link>
+  );
+};
 
-export const PodcastCardStandard: React.FC<{ podcast: PodcastItem }> = ({ podcast }) => (
-  <Link href={`/podcasts/${podcast.slug}`} className="group flex flex-col space-y-2.5 transition-all">
-    {/* Cover is the Card */}
-    <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#161B22] shadow-md">
-      <Image
-        src={podcast.cover || "/brand/favicon.png"}
-        alt={podcast.name}
-        fill
-        className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-      />
-      <div className="absolute inset-0 bg-[#0B0F17]/10 group-hover:bg-transparent transition-colors" />
-    </div>
+export const PodcastCardStandard: React.FC<{ podcast: PodcastItem }> = ({ podcast }) => {
+  const subtitle = formatPodcastSubtitle(podcast);
+  return (
+    <Link href={`/podcasts/${podcast.slug}`} className="group flex flex-col space-y-2.5 transition-all">
+      {/* Cover is the Card */}
+      <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#161B22] shadow-md">
+        <Image
+          src={podcast.cover || "/brand/favicon.png"}
+          alt={podcast.name}
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+        />
+        <div className="absolute inset-0 bg-[#0B0F17]/10 group-hover:bg-transparent transition-colors" />
+      </div>
 
-    {/* Text Below Cover */}
-    <div className="space-y-0.5 px-0.5">
-      <h3 className="text-sm font-bold text-[#F0F6FC] group-hover:text-[#E6B009] transition-colors line-clamp-1">
-        {podcast.name}
-      </h3>
-      <p className="text-xs text-[#8B949E] line-clamp-1">{podcast.organization?.name || "Bko Podcast"}</p>
-    </div>
-  </Link>
-);
+      {/* Text Below Cover */}
+      <div className="space-y-0.5 px-0.5">
+        <h3 className="text-sm font-bold text-[#F0F6FC] group-hover:text-[#E6B009] transition-colors line-clamp-1">
+          {podcast.name}
+        </h3>
+        {subtitle && <p className="text-xs text-[#8B949E] line-clamp-1">{subtitle}</p>}
+      </div>
+    </Link>
+  );
+};
 
 export const PodcastCardFeatured: React.FC<{ podcast: PodcastItem }> = ({ podcast }) => (
   <div className="group relative rounded-3xl bg-[#161B22] overflow-hidden p-6 md:p-8 flex flex-col md:flex-row gap-8 items-center border border-[#21262D]">

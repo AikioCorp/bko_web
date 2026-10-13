@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Grid, ChevronLeft, Search, Radio } from "lucide-react";
 import Link from "next/link";
+import { formatPodcastSubtitle } from "@/lib/utils";
 
 export default function CategoryDetailPage() {
   const params = useParams();
@@ -106,9 +107,11 @@ export default function CategoryDetailPage() {
                         <h3 className="font-bold text-white group-hover:text-[#FFBF00] transition-colors truncate">
                           {p.name}
                         </h3>
-                        <p className="text-xs text-[#808080] mt-1 truncate">
-                          {p.author?.fullName || p.country?.name || 'Indépendant'}
-                        </p>
+                        {formatPodcastSubtitle(p) && (
+                          <p className="text-xs text-[#808080] mt-1 truncate">
+                            {formatPodcastSubtitle(p)}
+                          </p>
+                        )}
                         {p.primaryLanguage && (
                           <span className="inline-block mt-2 text-[10px] bg-[#2A2A2A] text-[#B8B8B8] px-2 py-0.5 rounded font-bold uppercase">
                             {p.primaryLanguage.name}

@@ -269,7 +269,7 @@ function ExploreMain() {
       durationSeconds: ep.durationSeconds || 1800,
       podcast: {
         slug: ep.podcast?.slug || "podcast",
-        name: ep.podcast?.name || "Bamako Podcast",
+        name: ep.podcast?.name || ep.showName || "",
         cover: ep.podcast?.cover || ep.cover || "/images/default-cover.jpg",
       },
       mediaSources: ep.mediaSources || [],
@@ -287,7 +287,7 @@ function ExploreMain() {
       durationSeconds: ep.durationSeconds || 1800,
       podcast: {
         slug: ep.podcast?.slug || "podcast",
-        name: ep.podcast?.name || "Bamako Podcast",
+        name: ep.podcast?.name || ep.showName || "",
         cover: ep.podcast?.cover || ep.cover || "/images/default-cover.jpg",
       },
       mediaSources: ep.mediaSources || [],
@@ -589,6 +589,14 @@ function ExploreMain() {
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#181818] border border-[#2A2A2A] text-white text-[11px] font-medium">
                 <span>Format: {formatFilter === "AUDIO" ? "Audio uniquement" : "Vidéo"}</span>
                 <button onClick={() => setFormatFilter("ALL")} className="text-[#757575] hover:text-white">✕</button>
+              </span>
+            )}
+
+            {/* Pastille Tri */}
+            {sortOrder !== "recent" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#181818] border border-[#2A2A2A] text-white text-[11px] font-medium">
+                <span>Tri: {sortOrder === "popular" ? "Populaires" : "Plus anciens d'abord"}</span>
+                <button onClick={() => setSortOrder("recent")} className="text-[#757575] hover:text-white">✕</button>
               </span>
             )}
 

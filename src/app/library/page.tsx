@@ -26,6 +26,7 @@ function LibraryContent() {
   const [activeTab, setActiveTab] = useState<'saved' | 'following' | 'history' | 'playlists'>(tabParam || 'saved');
   useEffect(() => { if (tabParam) setActiveTab(tabParam); }, [tabParam]);
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
+  const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
 
   // Queries
   const { data: savedEpisodes, mutate: mutateSaved } = useSWR(isAuthenticated ? '/me/saved' : null, fetcher);
@@ -43,7 +44,7 @@ function LibraryContent() {
       durationSeconds: ep.durationSeconds || 1800,
       podcast: {
         slug: ep.podcast?.slug || 'podcast',
-        name: ep.podcast?.name || 'Bamako Podcast',
+        name: ep.podcast?.name || ep.showName || '',
         cover: ep.podcast?.cover || ep.cover,
       },
       mediaSources: ep.mediaSources && ep.mediaSources.length > 0 ? ep.mediaSources : [
@@ -71,10 +72,7 @@ function LibraryContent() {
     mutateFollowed();
   };
 
-  
-  const createPlaylist = async () => {
-    const name = prompt('Nom de la nouvelle playlist :');
-    if (!name || name.trim() === '') return;
+  const handleCreatePlaylist = async (name: string) => {
     try {
       await fetchApi('/playlists', {
         method: 'POST',
@@ -82,7 +80,7 @@ function LibraryContent() {
       });
       mutatePlaylists();
     } catch (e) {
-      alert('Erreur lors de la création de la playlist');
+      console.error('Erreur lors de la création de la playlist', e);
     }
   };
 
@@ -158,7 +156,13 @@ function LibraryContent() {
                     <h4 className="text-sm font-bold text-white group-hover:text-[#FFBF00] transition-colors cursor-pointer" onClick={() => handlePlay(se)}>
                       {se?.title}
                     </h4>
-                    <span className="text-xs text-[#888888]">{se?.podcast?.name}</span>
+                    {se?.podcast?.slug ? (
+                      <Link href={`/podcasts/${se.podcast.slug}`} className="text-xs text-[#888888] hover:text-[#FFBF00] hover:underline transition-colors">
+                        {se.podcast.name}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-[#888888]">{se?.podcast?.name}</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -247,8 +251,8 @@ function LibraryContent() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-sm font-bold text-white">Vos Playlists</h2>
-            <button onClick={createPlaylist} className="flex items-center gap-1.5 text-xs text-[#0B0B0B] bg-[#FFBF00] px-3 py-1.5 rounded-full font-bold hover:bg-[#E5AB00]">
-              <Plus className="w-3.5 h-3.5" /> Créer
+            <button onClick={() => setIsCreatePlaylistOpen(true)} className="flex items-center gap-1.5 text-xs text-[#0B0B0B] bg-[#FFBF00] px-3.5 py-1.5 rounded-full font-bold hover:bg-[#E5AB00] transition-colors">
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" /> Créer une playlist
             </button>
           </div>
           {!playlists ? (
@@ -273,6 +277,12 @@ function LibraryContent() {
           )}
         </div>
       )}
+
+      <CreatePlaylistModal
+        isOpen={isCreatePlaylistOpen}
+        onClose={() => setIsCreatePlaylistOpen(false)}
+        onSubmit={handleCreatePlaylist}
+      />
 
       <AppDownloadModal isOpen={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} />
     </div>
