@@ -18,15 +18,14 @@ function VerifyOtpInner() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitCode = async (codeToVerify: string) => {
     setError("");
 
     if (!email) {
       setError("Adresse email manquante. Reprenez l'inscription.");
       return;
     }
-    if (otpCode.length !== 6) {
+    if (codeToVerify.length !== 6) {
       setError("Le code doit comporter 6 chiffres.");
       return;
     }
@@ -38,7 +37,7 @@ function VerifyOtpInner() {
       const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otpCode }),
+        body: JSON.stringify({ email, otpCode: codeToVerify }),
       });
       const json = await res.json();
 
@@ -47,7 +46,7 @@ function VerifyOtpInner() {
         setTimeout(() => router.push(destination), 1200);
       } else {
         // En mode test / dev, si le code correspond au code de test affiché
-        if (otpCode === devCode || otpCode === "123456" || otpCode === "000000") {
+        if (codeToVerify === devCode || codeToVerify === "123456" || codeToVerify === "000000") {
           setSuccess(true);
           setTimeout(() => router.push(destination), 1200);
         } else {
@@ -55,7 +54,7 @@ function VerifyOtpInner() {
         }
       }
     } catch (err) {
-      if (otpCode === devCode || otpCode === "123456" || otpCode === "000000") {
+      if (codeToVerify === devCode || codeToVerify === "123456" || codeToVerify === "000000") {
         setSuccess(true);
         setTimeout(() => router.push(destination), 1200);
       } else {
@@ -64,6 +63,20 @@ function VerifyOtpInner() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleInputChange = (val: string) => {
+    const cleaned = val.replace(/\D/g, "").slice(0, 6);
+    setOtpCode(cleaned);
+    // Autovalidation dès 6 chiffres saisis
+    if (cleaned.length === 6 && !loading && !success) {
+      submitCode(cleaned);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    submitCode(otpCode);
   };
 
   return (
@@ -81,11 +94,19 @@ function VerifyOtpInner() {
         </div>
 
         {devCode && (
-          <div className="flex items-center justify-center space-x-2 text-xs py-1.5 px-3.5 bg-[#1C180E] border border-[#FFBF00]/30 rounded-full w-fit mx-auto text-[#B8B8B8]">
+          <button
+            type="button"
+            onClick={() => {
+              setOtpCode(devCode);
+              submitCode(devCode);
+            }}
+            title="Cliquer pour valider directement"
+            className="flex items-center justify-center space-x-2 text-xs py-1.5 px-3.5 bg-[#1C180E] border border-[#FFBF00]/30 hover:border-[#FFBF00] rounded-full w-fit mx-auto text-[#B8B8B8] cursor-pointer transition"
+          >
             <ShieldCheck className="w-3.5 h-3.5 text-[#FFBF00]" />
             <span>Code de test :</span>
-            <span className="font-mono font-bold text-[#FFBF00] tracking-wider select-all">{devCode}</span>
-          </div>
+            <span className="font-mono font-bold text-[#FFBF00] tracking-wider">{devCode}</span>
+          </button>
         )}
 
         {error && (
@@ -107,9 +128,10 @@ function VerifyOtpInner() {
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
+                autoFocus
                 required
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) => handleInputChange(e.target.value)}
                 placeholder="000000"
                 className="w-full bg-[#0E0E0E] border border-[#262626] rounded-xl py-3 px-4 text-center text-2xl tracking-[0.5em] font-black text-white outline-none focus:border-[#FFBF00]"
               />

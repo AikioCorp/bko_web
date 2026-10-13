@@ -18,10 +18,53 @@ import {
   AlertCircle,
   LogOut,
 } from "lucide-react";
-import { useAuthStore } from "../../store/authStore";
+import { useAuthStore } from "@/store/authStore";
 import { API_BASE_URL } from "@/lib/api";
+import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 
 export const dynamic = "force-dynamic";
+
+const COUNTRIES = [
+  { code: "ML", name: "Mali", dial: "+223", flag: "🇲🇱", hint: "70 00 00 90", maxDigits: 8 },
+  { code: "GH", name: "Ghana", dial: "+233", flag: "🇬🇭", hint: "050 706 6762", maxDigits: 10 },
+  { code: "CI", name: "Côte d'Ivoire", dial: "+225", flag: "🇨🇮", hint: "07 00 00 00 00", maxDigits: 10 },
+  { code: "SN", name: "Sénégal", dial: "+221", flag: "🇸🇳", hint: "77 123 45 67", maxDigits: 9 },
+  { code: "BF", name: "Burkina Faso", dial: "+226", flag: "🇧🇫", hint: "70 00 00 00", maxDigits: 8 },
+  { code: "GN", name: "Guinée", dial: "+224", flag: "🇬🇳", hint: "620 00 00 00", maxDigits: 9 },
+  { code: "FR", name: "France", dial: "+33", flag: "🇫🇷", hint: "06 12 34 56 78", maxDigits: 10 },
+];
+
+function formatPhoneNumber(val: string, countryCode: string): string {
+  const digits = val.replace(/\D/g, "");
+  if (!digits) return "";
+  if (countryCode === "ML" || countryCode === "BF") {
+    return digits.slice(0, 8).replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+  }
+  if (countryCode === "GH") {
+    if (digits.startsWith("0")) {
+      const p1 = digits.slice(0, 3);
+      const p2 = digits.slice(3, 6);
+      const p3 = digits.slice(6, 10);
+      return [p1, p2, p3].filter(Boolean).join(" ");
+    } else {
+      const p1 = digits.slice(0, 2);
+      const p2 = digits.slice(2, 5);
+      const p3 = digits.slice(5, 9);
+      return [p1, p2, p3].filter(Boolean).join(" ");
+    }
+  }
+  if (countryCode === "CI" || countryCode === "FR") {
+    return digits.slice(0, 10).replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+  }
+  if (countryCode === "SN") {
+    const p1 = digits.slice(0, 2);
+    const p2 = digits.slice(2, 5);
+    const p3 = digits.slice(5, 7);
+    const p4 = digits.slice(7, 9);
+    return [p1, p2, p3, p4].filter(Boolean).join(" ");
+  }
+  return digits.slice(0, 12).replace(/(\d{3})(?=\d)/g, "$1 ").trim();
+}
 
 function AuthComponent() {
   const router = useRouter();
@@ -94,6 +137,7 @@ function AuthComponent() {
   // Register form state
   const [fullName, setFullName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
@@ -182,7 +226,7 @@ function AuthComponent() {
         body: JSON.stringify({
           fullName: fullName.trim(),
           email: registerEmail.trim(),
-          phoneNumber: phoneNumber ? `+223${phoneNumber.replace(/\s+/g, "")}` : undefined,
+          phoneNumber: phoneNumber ? `${selectedCountry.dial}${phoneNumber.replace(/\s+/g, "")}` : undefined,
           password: registerPassword,
           isCreator,
           podcastName: isCreator ? podcastName.trim() : undefined,
@@ -430,6 +474,9 @@ function AuthComponent() {
               <span>{loading ? "Connexion en cours..." : "Se connecter"}</span>
             </button>
 
+            {/* Google Sign In */}
+            <GoogleLoginButton mode="login" />
+
             {/* Free Listening Card */}
             <div className="bg-[#0E0E0E] border border-[#242424] rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
               <div className="flex items-center gap-2.5">
@@ -509,14 +556,31 @@ function AuthComponent() {
                 <span className="text-[10px] text-[#757575]">Optionnel • SMS / Alertes</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="bg-[#181818] border border-[#262626] px-3 py-2.5 rounded-xl text-xs font-semibold text-[#FFBF00] shrink-0">
-                  ML +223
-                </span>
+                <div className="relative shrink-0">
+                  <select
+                    value={selectedCountry.code}
+                    onChange={(e) => {
+                      const next = COUNTRIES.find((c) => c.code === e.target.value) || COUNTRIES[0];
+                      setSelectedCountry(next);
+                      setPhoneNumber(formatPhoneNumber(phoneNumber, next.code));
+                    }}
+                    className="bg-[#181818] border border-[#262626] focus:border-[#FFBF00] text-xs font-semibold text-[#FFBF00] rounded-xl py-2.5 sm:py-3 pl-2.5 pr-6 appearance-none outline-none cursor-pointer"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code} className="bg-[#181818] text-white">
+                        {c.flag} {c.dial}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#757575] pointer-events-none">
+                    ▼
+                  </span>
+                </div>
                 <input
                   type="tel"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="70 00 00 00"
+                  onChange={(e) => setPhoneNumber(formatPhoneNumber(e.target.value, selectedCountry.code))}
+                  placeholder={selectedCountry.hint}
                   className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 px-3.5 outline-none font-mono transition-colors"
                 />
               </div>
@@ -596,6 +660,9 @@ function AuthComponent() {
               <UserPlus className="w-4 h-4 stroke-[2.5]" />
               <span>{loading ? "Création en cours..." : "Créer mon compte gratuit"}</span>
             </button>
+
+            {/* Google Sign Up */}
+            <GoogleLoginButton mode="register" />
 
             {/* Assurance note */}
             <p className="text-[10px] text-center text-[#757575] flex items-center justify-center gap-1">

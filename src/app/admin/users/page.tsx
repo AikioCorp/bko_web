@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
+import Link from "next/link";
 import { adminApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import {
   Search,
   ShieldAlert,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
   Shield,
   Ban,
@@ -21,7 +22,17 @@ import {
   Lock,
   Unlock,
   AlertOctagon,
-  UserCheck
+  Users,
+  UserCheck,
+  Sparkles,
+  Radio,
+  Crown,
+  KeyRound,
+  MailCheck,
+  ChevronRight,
+  Filter,
+  X,
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -30,26 +41,59 @@ function classNames(...classes: (string | boolean | undefined | null)[]) {
 }
 
 const SUSPEND_REASON_PRESETS = [
-  "Non-respect des règles de la plateforme",
-  "Suspicion de fraude ou activité suspecte",
-  "Spam ou abus de signalement",
+  "Non-respect des règles de la communauté",
+  "Suspicion de fraude ou activité abusive",
+  "Spam ou usurpation d'identité",
   "Demande explicite de l'utilisateur",
-  "Violation des droits d'auteur",
+  "Violation répétée des droits d'auteur",
 ];
+
+const ROLE_INFO_MAP: Record<string, { label: string; badgeBg: string; badgeText: string; icon: any }> = {
+  SUPER_ADMIN: {
+    label: "Super Admin",
+    badgeBg: "bg-[#2E2405] border border-[#FFBF00]/40",
+    badgeText: "text-[#FFBF00]",
+    icon: Crown,
+  },
+  ADMIN: {
+    label: "Admin",
+    badgeBg: "bg-[#0F223D] border border-[#3B82F6]/40",
+    badgeText: "text-[#60A5FA]",
+    icon: Shield,
+  },
+  EDITOR: {
+    label: "Éditeur",
+    badgeBg: "bg-[#0E2C2C] border border-[#14B8A6]/40",
+    badgeText: "text-[#2DD4BF]",
+    icon: Sparkles,
+  },
+  CREATOR: {
+    label: "Créateur",
+    badgeBg: "bg-[#27153E] border border-[#A855F7]/40",
+    badgeText: "text-[#C084FC]",
+    icon: Radio,
+  },
+  USER: {
+    label: "Auditeur",
+    badgeBg: "bg-[#1E1E1E] border border-[#333333]",
+    badgeText: "text-[#AAAAAA]",
+    icon: Users,
+  },
+};
 
 export default function UsersPage() {
   const { user: currentUser } = useAuthStore();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended">("all");
+  const [activeTabFilter, setActiveTabFilter] = useState<"all" | "active" | "suspended" | "certified" | "admins">("all");
   const limit = 20;
 
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1);
-    }, 400);
+    }, 350);
     return () => clearTimeout(handler);
   }, [search]);
 
@@ -67,7 +111,7 @@ export default function UsersPage() {
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [suspendReason, setSuspendReason] = useState("");
   const [isSuspended, setIsSuspended] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
+  const [isCreatorVerified, setIsCreatorVerified] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
 
   // Modale de suppression
@@ -81,7 +125,7 @@ export default function UsersPage() {
   const [quickSuspendReason, setQuickSuspendReason] = useState("");
   const [isQuickSuspending, setIsQuickSuspending] = useState(false);
 
-  // Toast temporaire
+  // Toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -91,10 +135,11 @@ export default function UsersPage() {
 
   const openUserPanel = (user: any) => {
     setSelectedUser(user);
-    setUserRoles(user.userRoles?.map((ur: any) => ur.role?.name || ur.role) || []);
+    setUserRoles(user.roles || user.userRoles?.map((ur: any) => ur.role?.name || ur.role) || []);
     setIsSuspended(Boolean(user.isSuspended));
     setSuspendReason(user.suspendedReason || "");
-    setIsVerified(Boolean(user.isVerified));
+    // ATTENTION : La certification créateur est basée STRICTEMENT sur isCreatorVerified (et non sur la validation email/OTP)
+    setIsCreatorVerified(Boolean(user.isCreatorVerified ?? user.creatorProfile?.isVerified));
     setIsPanelOpen(true);
   };
 
@@ -122,18 +167,18 @@ export default function UsersPage() {
     }
   };
 
-  // Blocage / Déblocage depuis le panneau latéral
+  // Suspension / Blocage
   const handleToggleSuspension = async () => {
     if (!selectedUser) return;
     if (currentUser?.id === selectedUser.id) {
-      alert("Impossible : vous ne pouvez pas bloquer votre propre compte.");
+      alert("Impossible : vous ne pouvez pas bloquer votre propre compte administrateur.");
       return;
     }
 
     try {
       setIsUpdating(true);
       const nextSuspended = !isSuspended;
-      const res = await adminApi(`/admin/users/${selectedUser.id}/suspension`, {
+      await adminApi(`/admin/users/${selectedUser.id}/suspension`, {
         method: "POST",
         body: JSON.stringify({
           suspended: nextSuspended,
@@ -144,7 +189,7 @@ export default function UsersPage() {
       setIsSuspended(nextSuspended);
       if (!nextSuspended) setSuspendReason("");
       await mutate();
-      showToast(nextSuspended ? "Compte utilisateur bloqué." : "Compte utilisateur débloqué.");
+      showToast(nextSuspended ? "Compte utilisateur suspendu avec succès." : "Accès du compte réactivé.");
     } catch (e: any) {
       alert("Erreur lors de la modification du statut : " + e.message);
     } finally {
@@ -152,7 +197,7 @@ export default function UsersPage() {
     }
   };
 
-  // Blocage rapide depuis la table
+  // Blocage rapide
   const handleQuickSuspendSubmit = async () => {
     if (!userToSuspend) return;
     try {
@@ -176,26 +221,31 @@ export default function UsersPage() {
     }
   };
 
-  // Vérification Créateur
-  const handleUpdateVerification = async () => {
+  // Certification Créateur MANUELLE (exclusivement gérée par le super admin, jamais automatique)
+  const handleToggleCertification = async () => {
     if (!selectedUser) return;
     try {
       setIsUpdating(true);
+      const nextVerified = !isCreatorVerified;
       await adminApi(`/admin/users/${selectedUser.id}/creator-verification`, {
         method: "POST",
-        body: JSON.stringify({ verified: !isVerified }),
+        body: JSON.stringify({ verified: nextVerified }),
       });
-      setIsVerified(!isVerified);
+      setIsCreatorVerified(nextVerified);
       await mutate();
-      showToast(!isVerified ? "Badge créateur vérifié attribué." : "Badge créateur vérifié retiré.");
+      showToast(
+        nextVerified
+          ? "Badge officiel de créateur certifié attribué."
+          : "Certification officielle de créateur retirée."
+      );
     } catch (e: any) {
-      alert("Erreur: " + e.message);
+      alert("Erreur lors de la mise à jour de la certification : " + e.message);
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // Suppression définitive du compte
+  // Suppression Définitive
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     if (currentUser?.id === userToDelete.id) {
@@ -209,16 +259,15 @@ export default function UsersPage() {
       await adminApi(`/admin/users/${userToDelete.id}`, {
         method: "DELETE",
       });
-      
+
       await mutate();
-      showToast(`Le compte de ${userToDelete.fullName} (${userToDelete.email}) a été définitivement supprimé.`);
-      
-      // Si le panneau latéral affichait cet utilisateur, le fermer
+      showToast(`Compte ${userToDelete.email} définitivement supprimé.`);
+
       if (selectedUser?.id === userToDelete.id) {
         setIsPanelOpen(false);
         setSelectedUser(null);
       }
-      
+
       setUserToDelete(null);
       setDeleteConfirmationInput("");
     } catch (e: any) {
@@ -228,125 +277,219 @@ export default function UsersPage() {
     }
   };
 
-  // Filtrage local actif / bloqué
+  // Filtrage local des données reçues
   const rawItems = usersData?.items || [];
-  const filteredUsers = rawItems.filter((u: any) => {
-    if (statusFilter === "active") return !u.isSuspended;
-    if (statusFilter === "suspended") return u.isSuspended;
-    return true;
-  });
+  const filteredUsers = useMemo(() => {
+    return rawItems.filter((u: any) => {
+      const isSusp = Boolean(u.isSuspended);
+      const isCert = Boolean(u.isCreatorVerified ?? u.creatorProfile?.isVerified);
+      const roles = u.roles || u.userRoles?.map((ur: any) => ur.role?.name || ur.role) || [];
+      const isAdmin = roles.some((r: string) => ["SUPER_ADMIN", "ADMIN"].includes(r));
+
+      if (activeTabFilter === "active") return !isSusp;
+      if (activeTabFilter === "suspended") return isSusp;
+      if (activeTabFilter === "certified") return isCert;
+      if (activeTabFilter === "admins") return isAdmin;
+      return true;
+    });
+  }, [rawItems, activeTabFilter]);
+
+  // Statistiques d'ensemble
+  const stats = useMemo(() => {
+    const total = usersData?.total || rawItems.length;
+    const suspended = rawItems.filter((u: any) => u.isSuspended).length;
+    const active = rawItems.filter((u: any) => !u.isSuspended).length;
+    const certified = rawItems.filter((u: any) => u.isCreatorVerified ?? u.creatorProfile?.isVerified).length;
+    const admins = rawItems.filter((u: any) => {
+      const roles = u.roles || u.userRoles?.map((ur: any) => ur.role?.name || ur.role) || [];
+      return roles.some((r: string) => ["SUPER_ADMIN", "ADMIN"].includes(r));
+    }).length;
+    return { total, active, suspended, certified, admins };
+  }, [rawItems, usersData]);
 
   return (
-    <div className="w-full pb-16">
-      {/* Toast Notification */}
+    <div className="w-full pb-20">
+      {/* Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#161616] border border-[#2E2E2E] text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <CheckCircle className="w-5 h-5 text-[#1DB954]" />
+          <CheckCircle2 className="w-5 h-5 text-[#1DB954]" />
           <span className="text-sm font-medium">{toastMessage}</span>
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+      {/* Header & Titre */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1.5 flex items-center gap-2.5">
-            <Shield className="w-6 h-6 text-[#FFBF00]" />
-            Utilisateurs & Comptes
-          </h1>
-          <p className="text-[#888888] text-sm">
-            Gestion centralisée des accès, blocage de sécurité et suppression définitive de comptes.
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-white tracking-tight">Utilisateurs & Rôles</h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#1C1C1C] text-[#AAAAAA] border border-[#282828]">
+              {stats.total} membres
+            </span>
+          </div>
+          <p className="text-[#888888] text-xs md:text-sm mt-1">
+            Supervision des membres, attribution des privilèges RBAC, certification créateur et sécurité des comptes.
           </p>
         </div>
 
-        {/* Search Bar */}
+        {/* Barre de Recherche */}
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#777777]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher nom, email, ID..."
-            className="w-full bg-[#111111] border border-[#242424] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white outline-none focus:border-[#444444] transition-colors placeholder:text-[#555555]"
+            placeholder="Rechercher nom, email, identifiant..."
+            className="w-full bg-[#111111] border border-[#242424] rounded-xl pl-9 pr-9 py-2.5 text-xs md:text-sm text-white outline-none focus:border-[#444444] transition-colors placeholder:text-[#555555]"
           />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777777] hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 mb-6">
+      {/* Cartes Métriques Synthétiques */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+          <div className="flex items-center justify-between text-[#888888] text-xs font-medium mb-1">
+            <span>Comptes Actifs</span>
+            <CheckCircle2 className="w-4 h-4 text-[#1DB954]" />
+          </div>
+          <div className="text-2xl font-bold text-white">{stats.active}</div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+          <div className="flex items-center justify-between text-[#888888] text-xs font-medium mb-1">
+            <span>Comptes Bloqués</span>
+            <Ban className="w-4 h-4 text-[#EF4444]" />
+          </div>
+          <div className="text-2xl font-bold text-[#EF4444]">{stats.suspended}</div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+          <div className="flex items-center justify-between text-[#888888] text-xs font-medium mb-1">
+            <span>Créateurs Certifiés</span>
+            <BadgeCheck className="w-4 h-4 text-blue-400" />
+          </div>
+          <div className="text-2xl font-bold text-blue-400">{stats.certified}</div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#111111] border border-[#222222]">
+          <div className="flex items-center justify-between text-[#888888] text-xs font-medium mb-1">
+            <span>Administrateurs</span>
+            <Shield className="w-4 h-4 text-[#FFBF00]" />
+          </div>
+          <div className="text-2xl font-bold text-[#FFBF00]">{stats.admins}</div>
+        </div>
+      </div>
+
+      {/* Onglets Filtres */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-none">
         <button
-          onClick={() => setStatusFilter("all")}
+          onClick={() => setActiveTabFilter("all")}
           className={classNames(
-            "px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-            statusFilter === "all"
+            "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0",
+            activeTabFilter === "all"
               ? "bg-white text-black"
               : "bg-[#141414] text-[#888888] hover:text-white border border-[#242424]"
           )}
         >
-          Tous les comptes ({rawItems.length})
+          Tous ({rawItems.length})
         </button>
         <button
-          onClick={() => setStatusFilter("active")}
+          onClick={() => setActiveTabFilter("active")}
           className={classNames(
-            "px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5",
-            statusFilter === "active"
+            "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 flex items-center gap-1.5",
+            activeTabFilter === "active"
               ? "bg-[#1DB954] text-black"
               : "bg-[#141414] text-[#888888] hover:text-white border border-[#242424]"
           )}
         >
-          <CheckCircle className="w-3.5 h-3.5" />
-          Actifs ({rawItems.filter((u: any) => !u.isSuspended).length})
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          Actifs
         </button>
         <button
-          onClick={() => setStatusFilter("suspended")}
+          onClick={() => setActiveTabFilter("suspended")}
           className={classNames(
-            "px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5",
-            statusFilter === "suspended"
+            "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 flex items-center gap-1.5",
+            activeTabFilter === "suspended"
               ? "bg-[#EF4444] text-white"
               : "bg-[#141414] text-[#888888] hover:text-white border border-[#242424]"
           )}
         >
           <Ban className="w-3.5 h-3.5" />
-          Bloqués ({rawItems.filter((u: any) => u.isSuspended).length})
+          Bloqués ({stats.suspended})
+        </button>
+        <button
+          onClick={() => setActiveTabFilter("certified")}
+          className={classNames(
+            "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 flex items-center gap-1.5",
+            activeTabFilter === "certified"
+              ? "bg-blue-500 text-white"
+              : "bg-[#141414] text-[#888888] hover:text-white border border-[#242424]"
+          )}
+        >
+          <BadgeCheck className="w-3.5 h-3.5" />
+          Certifiés uniquement ({stats.certified})
+        </button>
+        <button
+          onClick={() => setActiveTabFilter("admins")}
+          className={classNames(
+            "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 flex items-center gap-1.5",
+            activeTabFilter === "admins"
+              ? "bg-[#FFBF00] text-black"
+              : "bg-[#141414] text-[#888888] hover:text-white border border-[#242424]"
+          )}
+        >
+          <Crown className="w-3.5 h-3.5" />
+          Équipe Admin ({stats.admins})
         </button>
       </div>
 
-      {/* Main Table */}
-      <div className="bg-[#111111] border border-[#222222] rounded-xl overflow-hidden shadow-lg">
+      {/* Tableau des Utilisateurs */}
+      <div className="bg-[#111111] border border-[#222222] rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[#222222] bg-[#0A0A0A]">
-                <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Utilisateur</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Membre</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Rôles</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Statut</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Rôles RBAC</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Statut & Badge</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1F1F1F]">
+            <tbody className="divide-y divide-[#1C1C1C]">
               {isLoading && !usersData ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center text-[#888888]">
+                  <td colSpan={5} className="px-6 py-20 text-center text-[#888888]">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3 text-[#FFBF00]" />
                     Chargement des comptes utilisateurs...
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center text-[#888888]">
-                    Aucun utilisateur trouvé pour cette sélection.
+                  <td colSpan={5} className="px-6 py-20 text-center text-[#888888]">
+                    Aucun utilisateur correspondant à ce filtre.
                   </td>
                 </tr>
               ) : (
                 filteredUsers.map((user: any) => {
                   const isCurrent = currentUser?.id === user.id;
+                  const roles = user.roles || user.userRoles?.map((ur: any) => ur.role?.name || ur.role) || [];
+                  const isCert = Boolean(user.isCreatorVerified ?? user.creatorProfile?.isVerified);
+
                   return (
                     <tr
                       key={user.id}
                       className="hover:bg-[#161616] transition-colors group cursor-pointer"
                       onClick={() => openUserPanel(user)}
                     >
-                      {/* Utilisateur */}
+                      {/* Membre */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {user.avatar ? (
@@ -356,21 +499,26 @@ export default function UsersPage() {
                               className="w-10 h-10 rounded-full object-cover border border-[#2E2E2E]"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#2E2E2E] flex items-center justify-center font-bold text-white text-sm">
+                            <div className="w-10 h-10 rounded-full bg-[#1C1C1C] border border-[#2E2E2E] flex items-center justify-center font-bold text-white text-sm">
                               {user.fullName?.charAt(0).toUpperCase() || "?"}
                             </div>
                           )}
                           <div>
                             <div className="font-semibold text-white flex items-center gap-1.5 text-sm">
                               {user.fullName || "Sans nom"}
-                              {user.isVerified && <BadgeCheck className="w-4 h-4 text-blue-400 shrink-0" />}
+                              {/* BADGE OFFICIEL : Apparaît UNIQUEMENT si le créateur est officiellement certifié */}
+                              {isCert && (
+                                <span title="Créateur Officiel Certifié">
+                                  <BadgeCheck className="w-4 h-4 text-blue-400 shrink-0" />
+                                </span>
+                              )}
                               {isCurrent && (
                                 <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-[#222222] text-[#AAAAAA] ml-1">
                                   Vous
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-[#666666] font-mono mt-0.5 truncate max-w-[180px]">
+                            <div className="text-[11px] text-[#666666] font-mono mt-0.5 truncate max-w-[170px]">
                               {user.id}
                             </div>
                           </div>
@@ -380,35 +528,36 @@ export default function UsersPage() {
                       {/* Contact */}
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-200">{user.email}</div>
-                        {user.phoneNumber && (
+                        {user.phoneNumber ? (
                           <div className="text-xs text-[#777777] mt-0.5 font-mono">{user.phoneNumber}</div>
+                        ) : (
+                          <div className="text-[11px] text-[#555555] mt-0.5">Aucun téléphone</div>
                         )}
                       </td>
 
                       {/* Rôles */}
                       <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {user.userRoles?.length > 0 ? (
-                            user.userRoles.map((ur: any) => {
-                              const roleName = ur.role?.name || ur.role;
-                              const isSuper = roleName === "SUPER_ADMIN";
-                              const isAdmin = roleName === "ADMIN";
-                              const isCreator = roleName === "CREATOR";
+                        <div className="flex flex-wrap gap-1.5 max-w-[240px]">
+                          {roles.length > 0 ? (
+                            roles.map((roleName: string) => {
+                              const meta = ROLE_INFO_MAP[roleName] || {
+                                label: roleName,
+                                badgeBg: "bg-[#222222] border border-[#333333]",
+                                badgeText: "text-gray-300",
+                                icon: Users,
+                              };
+                              const Icon = meta.icon;
                               return (
                                 <span
                                   key={roleName}
                                   className={classNames(
-                                    "px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider",
-                                    isSuper
-                                      ? "bg-[#FFBF00] text-black"
-                                      : isAdmin
-                                      ? "bg-[#2563EB] text-white"
-                                      : isCreator
-                                      ? "bg-[#9333EA] text-white"
-                                      : "bg-[#222222] text-gray-300"
+                                    "px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1",
+                                    meta.badgeBg,
+                                    meta.badgeText
                                   )}
                                 >
-                                  {roleName}
+                                  <Icon className="w-3 h-3" />
+                                  {meta.label}
                                 </span>
                               );
                             })
@@ -418,60 +567,83 @@ export default function UsersPage() {
                         </div>
                       </td>
 
-                      {/* Statut */}
+                      {/* Statut & Badge */}
                       <td className="px-6 py-4">
-                        {user.isSuspended ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#2E1417] text-[#EF4444] border border-red-900/40">
-                            <Ban className="w-3.5 h-3.5" /> Bloqué
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#102A1A] text-[#1DB954] border border-emerald-900/40">
-                            <CheckCircle className="w-3.5 h-3.5" /> Actif
-                          </span>
-                        )}
+                        <div className="flex flex-col gap-1 items-start">
+                          {user.isSuspended ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#2E1417] text-[#EF4444] border border-red-900/40">
+                              <Ban className="w-3.5 h-3.5" /> Compte Bloqué
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#102A1A] text-[#1DB954] border border-emerald-900/40">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Actif
+                            </span>
+                          )}
+
+                          {isCert ? (
+                            <span className="text-[10px] font-semibold text-blue-400 flex items-center gap-1">
+                              <BadgeCheck className="w-3 h-3" /> Créateur Certifié
+                            </span>
+                          ) : user.isEmailVerified ?? user.isVerified ? (
+                            <span className="text-[10px] text-[#777777] flex items-center gap-1">
+                              <MailCheck className="w-3 h-3 text-[#1DB954]" /> Email validé
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-[#666666]">Non certifié</span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Actions Rapides */}
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                          {/* Bouton Bloquer / Débloquer rapide */}
                           {!isCurrent ? (
-                            <button
-                              title={user.isSuspended ? "Débloquer le compte" : "Bloquer le compte"}
-                              onClick={() => {
-                                setUserToSuspend(user);
-                                setQuickSuspendReason("");
-                              }}
-                              className={classNames(
-                                "p-2 rounded-lg transition-colors border text-xs font-medium",
-                                user.isSuspended
-                                  ? "bg-[#142318] hover:bg-[#1B3021] text-[#1DB954] border-emerald-900/40"
-                                  : "bg-[#1E1416] hover:bg-[#2A1B1D] text-[#EF4444] border-red-900/40"
-                              )}
-                            >
-                              {user.isSuspended ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                            </button>
+                            <>
+                              {/* Bouton Bloquer / Débloquer rapide */}
+                              <button
+                                title={user.isSuspended ? "Débloquer le compte" : "Bloquer le compte"}
+                                onClick={() => {
+                                  setUserToSuspend(user);
+                                  setQuickSuspendReason("");
+                                }}
+                                className={classNames(
+                                  "p-2 rounded-lg transition-colors border text-xs font-medium",
+                                  user.isSuspended
+                                    ? "bg-[#142318] hover:bg-[#1B3021] text-[#1DB954] border-emerald-900/40"
+                                    : "bg-[#1E1416] hover:bg-[#2A1B1D] text-[#EF4444] border-red-900/40"
+                                )}
+                              >
+                                {user.isSuspended ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                              </button>
+
+                              {/* Bouton Supprimer rapide */}
+                              <button
+                                title="Supprimer définitivement ce compte"
+                                onClick={() => {
+                                  setUserToDelete(user);
+                                  setDeleteConfirmationInput("");
+                                  setDeleteError(null);
+                                }}
+                                className="p-2 rounded-lg bg-[#141414] hover:bg-[#2A1517] text-[#888888] hover:text-[#EF4444] border border-[#242424] hover:border-red-900/40 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
                           ) : null}
 
-                          {/* Bouton Supprimer rapide */}
-                          {!isCurrent ? (
-                            <button
-                              title="Supprimer définitivement"
-                              onClick={() => {
-                                setUserToDelete(user);
-                                setDeleteConfirmationInput("");
-                                setDeleteError(null);
-                              }}
-                              className="p-2 rounded-lg bg-[#141414] hover:bg-[#2A1517] text-[#888888] hover:text-[#EF4444] border border-[#242424] hover:border-red-900/40 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          ) : null}
+                          {/* Bouton Vue 360° */}
+                          <Link
+                            href={`/admin/users/${user.id}`}
+                            className="px-2.5 py-1.5 rounded-lg bg-[#251D08] hover:bg-[#382C0C] text-[#FFBF00] border border-[#FFBF00]/30 text-xs font-semibold transition-colors flex items-center gap-1.5"
+                          >
+                            <Activity className="w-3.5 h-3.5" />
+                            <span>Vue 360°</span>
+                          </Link>
 
-                          {/* Bouton Ouvrir fiche */}
+                          {/* Bouton Gérer */}
                           <button
                             onClick={() => openUserPanel(user)}
-                            className="px-3 py-1.5 rounded-lg bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold transition-colors border border-[#2E2E2E]"
+                            className="px-3 py-1.5 rounded-lg bg-[#1F1F1F] hover:bg-[#282828] text-white text-xs font-semibold transition-colors border border-[#2E2E2E]"
                           >
                             Gérer
                           </button>
@@ -487,7 +659,7 @@ export default function UsersPage() {
 
         {/* Pagination */}
         {usersData && usersData.total > limit && (
-          <div className="p-4 border-t border-[#222222] flex items-center justify-between bg-[#0D0D0D]">
+          <div className="p-4 border-t border-[#222222] flex items-center justify-between bg-[#0A0A0A]">
             <span className="text-xs text-[#888888]">
               Affichage {((page - 1) * limit) + 1} - {Math.min(page * limit, usersData.total)} sur {usersData.total}
             </span>
@@ -497,7 +669,7 @@ export default function UsersPage() {
                 variant="ghost"
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="bg-[#161616] text-white hover:bg-[#222222] border border-[#262626]"
+                className="bg-[#161616] text-white hover:bg-[#222222] border border-[#262626] text-xs"
               >
                 Précédent
               </Button>
@@ -506,7 +678,7 @@ export default function UsersPage() {
                 variant="ghost"
                 disabled={page * limit >= usersData.total}
                 onClick={() => setPage(page + 1)}
-                className="bg-[#161616] text-white hover:bg-[#222222] border border-[#262626]"
+                className="bg-[#161616] text-white hover:bg-[#222222] border border-[#262626] text-xs"
               >
                 Suivant
               </Button>
@@ -523,11 +695,11 @@ export default function UsersPage() {
             onClick={() => setIsPanelOpen(false)}
           />
           <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-[#111111] border-l border-[#242424] shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
-            {/* Header */}
+            {/* Header du Panel */}
             <div className="p-6 border-b border-[#222222] flex items-center justify-between bg-[#0A0A0A]">
               <div className="flex items-center gap-2.5">
                 <Shield className="w-5 h-5 text-[#FFBF00]" />
-                <h2 className="text-lg font-bold text-white">Gestion de l'utilisateur</h2>
+                <h2 className="text-lg font-bold text-white">Gestion du compte</h2>
               </div>
               <button
                 onClick={() => setIsPanelOpen(false)}
@@ -537,9 +709,9 @@ export default function UsersPage() {
               </button>
             </div>
 
-            {/* Scrollable Body */}
+            {/* Corps du Panel */}
             <div className="flex-1 overflow-y-auto p-6 space-y-7">
-              {/* Profil Card */}
+              {/* Carte Utilisateur */}
               <div className="p-4 rounded-xl bg-[#161616] border border-[#262626]">
                 <div className="flex items-start gap-4">
                   {selectedUser.avatar ? (
@@ -549,14 +721,14 @@ export default function UsersPage() {
                       className="w-16 h-16 rounded-full object-cover border-2 border-[#333333] shrink-0"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-[#222222] border-2 border-[#333333] flex items-center justify-center text-xl font-bold text-white shrink-0">
+                    <div className="w-16 h-16 rounded-full bg-[#1F1F1F] border-2 border-[#333333] flex items-center justify-center text-xl font-bold text-white shrink-0">
                       {selectedUser.fullName?.charAt(0).toUpperCase() || "?"}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="text-base font-bold text-white truncate">{selectedUser.fullName || "Sans nom"}</h3>
-                      {selectedUser.isVerified && <BadgeCheck className="w-4 h-4 text-blue-400 shrink-0" />}
+                      {isCreatorVerified && <BadgeCheck className="w-4 h-4 text-blue-400 shrink-0" />}
                     </div>
                     <p className="text-xs text-[#888888] truncate mt-0.5">{selectedUser.email}</p>
                     {selectedUser.phoneNumber && (
@@ -579,11 +751,22 @@ export default function UsersPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Bouton Fiche 360° */}
+                <div className="mt-3 pt-3 border-t border-[#222222]">
+                  <Link
+                    href={`/admin/users/${selectedUser.id}`}
+                    className="w-full py-2 px-3 rounded-xl bg-[#251D08] hover:bg-[#382C0C] text-[#FFBF00] border border-[#FFBF00]/30 text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Activity className="w-4 h-4" />
+                    <span>Ouvrir la Vue 360° Complète (Abonnements & Écoutes)</span>
+                  </Link>
+                </div>
               </div>
 
-              {/* Statut en cours */}
+              {/* État Actuel */}
               <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-[#888888] uppercase tracking-wider">État actuel du compte</h4>
+                <h4 className="text-xs font-semibold text-[#888888] uppercase tracking-wider">Statut d'accès</h4>
                 <div
                   className={classNames(
                     "p-3.5 rounded-xl border flex items-center justify-between",
@@ -596,114 +779,150 @@ export default function UsersPage() {
                     {isSuspended ? (
                       <Ban className="w-5 h-5 text-[#EF4444] shrink-0" />
                     ) : (
-                      <CheckCircle className="w-5 h-5 text-[#1DB954] shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-[#1DB954] shrink-0" />
                     )}
                     <div>
                       <div className="text-sm font-bold text-white">
-                        {isSuspended ? "Compte Bloqué / Suspendu" : "Compte Actif"}
+                        {isSuspended ? "Compte Suspendu (Bloqué)" : "Compte Actif"}
                       </div>
                       <div className="text-xs opacity-80 mt-0.5">
                         {isSuspended
-                          ? (suspendReason ? `Motif: ${suspendReason}` : "Accès révoqué par l'administration")
-                          : "L'utilisateur peut se connecter et interagir normalement."}
+                          ? (suspendReason ? `Raison: ${suspendReason}` : "Sessions révoquées et accès suspendu.")
+                          : "Le membre peut se connecter et utiliser la plateforme."}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Rôles RBAC */}
+              {/* Rôles RBAC avec descriptions claires */}
               <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-[#888888] uppercase tracking-wider">Rôles attribués</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold text-[#888888] uppercase tracking-wider">
+                    Privilèges & Rôles
+                  </h4>
+                  <span className="text-[11px] text-[#666666]">
+                    {userRoles.length} rôle(s) sélectionné(s)
+                  </span>
+                </div>
+
                 <div className="flex flex-col gap-2">
-                  {rolesData?.map((role: any) => (
-                    <label
-                      key={role.name}
-                      className={classNames(
-                        "flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer",
-                        userRoles.includes(role.name)
-                          ? "bg-[#191919] border-[#383838]"
-                          : "bg-[#141414] border-[#222222] hover:bg-[#181818]"
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={userRoles.includes(role.name)}
-                        onChange={(e) => {
-                          if (e.target.checked) setUserRoles([...userRoles, role.name]);
-                          else setUserRoles(userRoles.filter((r) => r !== role.name));
-                        }}
-                        className="w-4 h-4 rounded bg-[#222222] border-[#444444] text-[#FFBF00] focus:ring-[#FFBF00]"
-                      />
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-white">{role.name}</div>
-                        {role.description && <div className="text-xs text-[#888888]">{role.description}</div>}
-                      </div>
-                    </label>
-                  ))}
+                  {rolesData?.map((role: any) => {
+                    const isChecked = userRoles.includes(role.name);
+                    const meta = ROLE_INFO_MAP[role.name];
+
+                    return (
+                      <label
+                        key={role.name}
+                        className={classNames(
+                          "flex items-start gap-3 p-3.5 rounded-xl border transition-colors cursor-pointer",
+                          isChecked
+                            ? "bg-[#181818] border-[#3E3E3E]"
+                            : "bg-[#131313] border-[#222222] hover:bg-[#171717]"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) setUserRoles([...userRoles, role.name]);
+                            else setUserRoles(userRoles.filter((r) => r !== role.name));
+                          }}
+                          className="w-4 h-4 rounded bg-[#222222] border-[#444444] text-[#FFBF00] focus:ring-[#FFBF00] mt-0.5"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-white">{role.name}</span>
+                            {meta && (
+                              <span
+                                className={classNames(
+                                  "px-2 py-0.2 rounded text-[10px] font-semibold uppercase",
+                                  meta.badgeBg,
+                                  meta.badgeText
+                                )}
+                              >
+                                {meta.label}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[#888888] mt-1 leading-relaxed">
+                            {role.description || "Aucune description renseignée."}
+                          </p>
+                        </div>
+                      </label>
+                    );
+                  })}
+
                   <Button
                     onClick={handleUpdateRoles}
                     disabled={isUpdating}
-                    className="mt-1 bg-[#FFBF00] text-black hover:bg-[#E5AB00] font-bold text-xs"
+                    className="mt-1 bg-[#FFBF00] text-black hover:bg-[#E5AB00] font-bold text-xs py-2.5 rounded-xl"
                   >
                     {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Enregistrer les rôles
+                    Enregistrer les rôles de l'utilisateur
                   </Button>
                 </div>
               </div>
 
-              {/* Badge Créateur */}
+              {/* Certification Créateur (MANUELLE UNIQUEMENT) */}
               <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-[#888888] uppercase tracking-wider">Certification Créateur</h4>
-                <div className="p-4 rounded-xl border border-[#242424] bg-[#161616] flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-white flex items-center gap-2">
-                      {isVerified ? (
-                        <>
-                          <BadgeCheck className="w-4 h-4 text-blue-400" /> Créateur Certifié
-                        </>
-                      ) : (
-                        "Non certifié"
-                      )}
+                <h4 className="text-xs font-semibold text-[#888888] uppercase tracking-wider">
+                  Certification Officielle Créateur
+                </h4>
+                <div className="p-4 rounded-xl border border-[#242424] bg-[#161616]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="text-sm font-bold text-white flex items-center gap-2">
+                        {isCreatorVerified ? (
+                          <>
+                            <BadgeCheck className="w-4 h-4 text-blue-400" />
+                            Créateur Officiellement Certifié
+                          </>
+                        ) : (
+                          "Non certifié"
+                        )}
+                      </div>
+                      <p className="text-xs text-[#888888] mt-1 leading-relaxed">
+                        Cette certification attribue le badge bleu officiel. Elle n'est <strong>jamais automatique</strong> et relève exclusivement de la décision de l'administrateur.
+                      </p>
                     </div>
-                    <p className="text-xs text-[#888888] mt-0.5 pr-2">
-                      Affiche le badge de confiance à côté de son nom sur le site et l'app.
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleUpdateVerification}
-                    disabled={isUpdating}
-                    className={classNames(
-                      "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                      isVerified ? "bg-blue-500" : "bg-[#333333]"
-                    )}
-                  >
-                    <span
+
+                    <button
+                      type="button"
+                      onClick={handleToggleCertification}
+                      disabled={isUpdating}
                       className={classNames(
-                        "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                        isVerified ? "translate-x-5" : "translate-x-0"
+                        "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                        isCreatorVerified ? "bg-blue-500" : "bg-[#333333]"
                       )}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={classNames(
+                          "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                          isCreatorVerified ? "translate-x-5" : "translate-x-0"
+                        )}
+                      />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* ZONE DE SÉCURITÉ : BLOCAGE & SUPPRESSION */}
+              {/* ZONE DE CONTRÔLE DE SÉCURITÉ */}
               <div className="space-y-4 pt-2 border-t border-[#222222]">
                 <h4 className="text-xs font-bold text-[#EF4444] uppercase tracking-wider flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4" /> Zone de Contrôle & Sécurité
+                  <ShieldAlert className="w-4 h-4" /> Zone de Sécurité & Modération
                 </h4>
 
                 {/* 1. Blocage / Déblocage */}
                 <div className="p-4 rounded-xl border border-[#2E2426] bg-[#161112]">
-                  <div className="flex items-center gap-2.5 mb-2">
+                  <div className="flex items-center gap-2 mb-2">
                     {isSuspended ? (
                       <Unlock className="w-4 h-4 text-[#1DB954]" />
                     ) : (
                       <Lock className="w-4 h-4 text-[#EF4444]" />
                     )}
                     <span className="text-sm font-bold text-white">
-                      {isSuspended ? "Débloquer l'accès" : "Bloquer l'accès (Suspension)"}
+                      {isSuspended ? "Débloquer l'accès" : "Bloquer l'accès au compte"}
                     </span>
                   </div>
                   <p className="text-xs text-[#888888] mb-3">
@@ -733,7 +952,7 @@ export default function UsersPage() {
                       </div>
                       <input
                         type="text"
-                        placeholder="Raison personnalisée (ex: violation CGU)..."
+                        placeholder="Raison personnalisée..."
                         value={suspendReason}
                         onChange={(e) => setSuspendReason(e.target.value)}
                         className="w-full bg-[#111111] border border-[#2E2E2E] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-red-500"
@@ -745,7 +964,7 @@ export default function UsersPage() {
                     onClick={handleToggleSuspension}
                     disabled={isUpdating || currentUser?.id === selectedUser.id}
                     className={classNames(
-                      "w-full text-xs font-bold transition-colors",
+                      "w-full text-xs font-bold transition-colors py-2.5 rounded-xl",
                       isSuspended
                         ? "bg-[#102A1A] hover:bg-[#183D26] text-[#1DB954] border border-emerald-900/50"
                         : "bg-[#2E1417] hover:bg-[#401B20] text-[#EF4444] border border-red-900/50"
@@ -778,7 +997,7 @@ export default function UsersPage() {
                         setDeleteConfirmationInput("");
                         setDeleteError(null);
                       }}
-                      className="w-full bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold text-xs"
+                      className="w-full bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold text-xs py-2.5 rounded-xl"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Supprimer définitivement ce compte
@@ -809,7 +1028,7 @@ export default function UsersPage() {
               </div>
             </div>
 
-            {/* User Details */}
+            {/* Détails Utilisateur */}
             <div className="p-3.5 rounded-xl bg-[#1A1A1A] border border-[#282828] mb-4">
               <div className="text-sm font-semibold text-white">{userToDelete.fullName}</div>
               <div className="text-xs text-[#AAAAAA] mt-0.5">{userToDelete.email}</div>
@@ -827,10 +1046,10 @@ export default function UsersPage() {
               </div>
             )}
 
-            {/* Confirmation Input */}
+            {/* Champ de confirmation */}
             <div className="space-y-1.5 mb-5">
               <label className="text-[11px] font-semibold text-[#888888] uppercase tracking-wider">
-                Pour confirmer, saisissez l'adresse email :
+                Pour confirmer, saisissez l'adresse email exacte :
               </label>
               <input
                 type="text"
@@ -841,7 +1060,7 @@ export default function UsersPage() {
               />
             </div>
 
-            {/* Modal Actions */}
+            {/* Actions */}
             <div className="flex items-center justify-end gap-3">
               <Button
                 variant="ghost"

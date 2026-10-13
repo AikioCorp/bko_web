@@ -21,7 +21,9 @@ import {
   ChevronRight,
   Clock,
   FolderPlus,
-  Sparkles
+  Sparkles,
+  Crown,
+  Lock
 } from "lucide-react";
 import { studioApi } from "@/lib/studioApi";
 import { formatDate, formatDuration, shareOrCopy, toPlayerEpisode } from "@/lib/playback";
@@ -29,6 +31,8 @@ import { usePlayerStore } from "../../../store/playerStore";
 import { useAuthStore } from "../../../store/authStore";
 import { ReportButton } from "@/components/public/ReportButton";
 import { AddToPlaylistModal } from "@/components/modals/AddToPlaylistModal";
+import { ClaimPodcastModal } from "@/components/modals/ClaimPodcastModal";
+import { ShieldCheck } from "lucide-react";
 
 type Episode = {
   id: string;
@@ -43,6 +47,8 @@ type Episode = {
   mediaSources: any[];
   defaultMode: "AUDIO" | "VIDEO";
   people: { role: string; person: { name: string } }[];
+  isPremium?: boolean;
+  premiumPrice?: number | null;
 };
 
 type Podcast = {
@@ -53,15 +59,19 @@ type Podcast = {
   shortDescription?: string | null;
   cover: string;
   website?: string | null;
+  isPremium?: boolean;
   country: { name: string; flagEmoji?: string };
   primaryLanguage: { name: string };
   organization?: { name: string; slug: string } | null;
   categories: { category: { name: string; slug: string } }[];
   seasons: { id: string; number: number; title?: string | null }[];
   episodes: (Episode & { seasonId?: string | null })[];
+  ownershipStatus?: string;
   _count: { episodes: number; followers: number };
   viewer: {
     isFollowing: boolean;
+    hasActiveSubscription?: boolean;
+    purchasedEpisodeIds?: string[];
     savedEpisodeIds: string[];
     progress: Record<string, { positionSeconds: number; completed: boolean }>;
   } | null;
@@ -83,6 +93,7 @@ export default function PodcastPage() {
   const [expanded, setExpanded] = useState(false);
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const [playlistEpisodeId, setPlaylistEpisodeId] = useState<string | null>(null);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -359,6 +370,17 @@ export default function PodcastPage() {
                 </a>
               )}
 
+              {(!podcast.ownershipStatus || podcast.ownershipStatus === "UNCLAIMED") && (
+                <button
+                  onClick={() => setIsClaimModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#181818] hover:bg-[#222222] border border-[#2A2A2A] hover:border-[#FFBF00]/40 text-xs font-bold text-[#B8B8B8] hover:text-[#FFBF00] transition-colors cursor-pointer"
+                  title="Vous êtes l'auteur de ce podcast ? Revendiquer la propriété"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#FFBF00]" />
+                  <span>Revendiquer</span>
+                </button>
+              )}
+
               <ReportButton targetType="PODCAST" targetId={podcast.id} />
             </div>
           </div>
@@ -446,6 +468,13 @@ export default function PodcastPage() {
                   {/* Détails de l'épisode */}
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
+                      {ep.isPremium && (
+                        <span className="px-2 py-0.5 rounded-full bg-[#1F1B0B] border border-[#FFBF00]/60 text-[#FFBF00] text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                          <Crown className="w-3 h-3 fill-current" />
+                          Premium {ep.premiumPrice ? `• ${ep.premiumPrice.toLocaleString('fr-FR')} F` : ""}
+                        </span>
+                      )}
+
                       {hasVideo ? (
                         <span className="px-2 py-0.5 rounded-full bg-[#202020] text-[#A0A0A0] text-[10px] font-bold flex items-center gap-1">
                           <Video className="w-3 h-3 text-[#FFBF00]" /> Vidéo
@@ -563,6 +592,17 @@ export default function PodcastPage() {
         isOpen={!!playlistEpisodeId}
         onClose={() => setPlaylistEpisodeId(null)}
       />
+
+      {/* MODAL REVENDICATION DE PODCAST */}
+      {podcast && (
+        <ClaimPodcastModal
+          isOpen={isClaimModalOpen}
+          onClose={() => setIsClaimModalOpen(false)}
+          podcastId={podcast.id}
+          podcastName={podcast.name}
+          podcastCover={podcast.cover}
+        />
+      )}
     </div>
   );
 }

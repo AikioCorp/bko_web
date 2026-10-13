@@ -264,15 +264,32 @@ function LibraryContent() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {playlists.map((pl: any) => (
-                <div key={pl.id} className="group p-3 bg-[#141414] border border-[#262626] rounded-xl hover:border-[#FFBF00]/40 transition-colors">
-                  <div className="aspect-square bg-[#222222] rounded-lg flex items-center justify-center mb-3">
-                    <ListMusic className="w-8 h-8 text-[#444444]" />
-                  </div>
-                  <h4 className="text-sm font-bold text-white truncate">{pl.name}</h4>
-                  <p className="text-xs text-[#757575]">{pl._count?.items || 0} épisodes</p>
-                </div>
-              ))}
+              {playlists.map((pl: any) => {
+                const firstCover = pl.items?.[0]?.episode?.cover || pl.items?.[0]?.episode?.podcast?.cover;
+                return (
+                  <Link
+                    key={pl.id}
+                    href={`/playlists/${pl.id}`}
+                    className="group p-3 bg-[#141414] border border-[#262626] rounded-xl hover:border-[#FFBF00]/40 transition-colors block cursor-pointer"
+                  >
+                    <div className="relative aspect-square bg-[#222222] rounded-lg overflow-hidden flex items-center justify-center mb-3">
+                      {firstCover ? (
+                        <Image
+                          unoptimized
+                          src={firstCover}
+                          alt={pl.name}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <ListMusic className="w-8 h-8 text-[#555555]" />
+                      )}
+                    </div>
+                    <h4 className="text-sm font-bold text-white truncate group-hover:text-[#FFBF00] transition-colors">{pl.name}</h4>
+                    <p className="text-xs text-[#757575]">{pl._count?.items || 0} épisode{(pl._count?.items || 0) > 1 ? 's' : ''}</p>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

@@ -6,9 +6,11 @@ import { X, Smartphone, Download, Headphones, Bell, Zap, CheckCircle2 } from "lu
 interface AppDownloadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
-export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onClose }) => {
+export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onClose, title, subtitle }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -56,10 +58,10 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
               DISPONIBLE SUR MOBILE
             </span>
             <h2 className="text-xl font-headline font-extrabold text-white">
-              Application Bamako Podcast
+              {title || "Application Bamako Podcast"}
             </h2>
             <p className="text-xs text-[#B8B8B8]">
-              Emportez les voix du Mali et d'Afrique partout avec vous.
+              {subtitle || "Emportez les voix du Mali et d'Afrique partout avec vous."}
             </p>
           </div>
         </div>

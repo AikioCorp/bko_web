@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Bookmark, Radio, Smartphone, ShieldCheck, Sparkles, Download, ArrowRight, Mic, Clock } from "lucide-react";
+import { Home, Compass, Bookmark, Radio, Smartphone, ShieldCheck, Sparkles, Download, ArrowRight, Mic, Clock, Crown } from "lucide-react";
 import { useConsoleAccess } from "@/hooks/useConsoleAccess";
 import { AppDownloadModal } from "./modals/AppDownloadModal";
 
@@ -57,11 +57,17 @@ export const Sidebar: React.FC = () => {
         exact: false,
       }] : []),
       {
+        label: "Abonnement Premium",
+        href: "/premium",
+        icon: Crown,
+        exact: false,
+      },
+      {
         label: "Notre Studio (Tarifs)",
-      href: "/tarifs",
-      icon: Mic,
-      exact: false,
-    },
+        href: "/tarifs",
+        icon: Mic,
+        exact: false,
+      },
     // Creator space or Become a Creator
     ...(isCreator
       ? [{ label: "Espace Créateurs / Studio", href: "/studio", icon: Radio, exact: false }]

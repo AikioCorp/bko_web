@@ -1,17 +1,26 @@
 import { API_BASE_URL } from "@/lib/api";
+import { getAccessToken } from "@/lib/token";
 
 // Appel API d'administration : renvoie `data` ou lève une Error portant le message du backend.
-// Le Bearer est injecté (et rafraîchi sur 401) par l'intercepteur de `lib/token.ts`.
 export async function adminApi<T = any>(
   path: string,
-  options: { method?: string; body?: unknown } = {}
+  options: { method?: string; body?: unknown; headers?: Record<string, string> } = {}
 ): Promise<T> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
       method: options.method ?? "GET",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     });
   } catch {

@@ -28,6 +28,7 @@ interface AuthState {
   isLoading: boolean;
 
   setAuth: (user: UserProfile, accessToken: string, refreshToken?: string) => void;
+  updateUser: (partialUser: Partial<UserProfile>) => void;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -62,6 +63,16 @@ export const useAuthStore = create<AuthState>((set, get) => {
         localStorage.setItem(USER_KEY, JSON.stringify(user));
       }
       set({ user, accessToken, isAuthenticated: true, isLoading: false });
+    },
+
+    updateUser: (partialUser) => {
+      const current = get().user;
+      if (!current) return;
+      const updated = { ...current, ...partialUser };
+      if (typeof window !== "undefined") {
+        localStorage.setItem(USER_KEY, JSON.stringify(updated));
+      }
+      set({ user: updated });
     },
 
     logout: async () => {
