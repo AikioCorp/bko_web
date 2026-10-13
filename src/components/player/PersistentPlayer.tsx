@@ -280,7 +280,7 @@ export const PersistentPlayer = () => {
           />
         )}
         {kind === "embed" && embedUrl && (
-          <iframe src={embedUrl} title={currentEpisode.title} width="100%" height={152} allow="autoplay; encrypted-media" />
+          <iframe src={embedUrl} title={currentEpisode?.title ?? "Lecteur"} width="100%" height={152} allow="autoplay; encrypted-media" />
         )}
         {kind === "audio" && (
           <audio ref={audioRef} src={safeHttp(activeSource?.externalUrl) ?? undefined} preload="metadata" onLoadedMetadata={(e: any) => { const a = e.currentTarget; if (startAt > 0 && handledSeek.current === 0 && a.currentTime === 0) a.currentTime = startAt; if (isFinite(a.duration)) setProgress(a.currentTime, a.duration); }} onTimeUpdate={(e: any) => onMediaProgress(e.currentTarget.currentTime, isFinite(e.currentTarget.duration) ? e.currentTarget.duration : total)} onEnded={onMediaEnded} onError={() => pause()} />

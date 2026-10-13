@@ -45,7 +45,7 @@ export default function SettingsPersonalizationPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4">
+    <div className="w-full py-6 px-4 sm:px-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
           <Sliders className="w-6 h-6 text-[#FFBF00]" />

@@ -99,7 +99,7 @@ export default function UserSubscriptionSettingsPage() {
   const transactions = data?.transactions || [];
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-32 text-white">
+    <div className="w-full px-4 sm:px-6 py-6 pb-32 text-white">
       {/* Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#161616] border border-[#2E2E2E] text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3">

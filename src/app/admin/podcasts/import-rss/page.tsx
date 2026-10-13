@@ -207,7 +207,7 @@ export default function RssImportPage() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto py-4 pb-32 text-white space-y-8 animate-in fade-in">
+    <div className="w-full py-4 pb-32 text-white space-y-8 animate-in fade-in">
       
       {/* En-tête & Fil d'Ariane */}
       <div className="space-y-3">

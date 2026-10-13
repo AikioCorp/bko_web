@@ -327,9 +327,9 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
         {/* Scrollable Page Content */}
         <main 
           ref={contentRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 no-scrollbar relative"
+          className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 no-scrollbar relative"
         >
-          <div className="max-w-7xl mx-auto w-full">
+          <div className="w-full">
             {children}
           </div>
         </main>

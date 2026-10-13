@@ -327,7 +327,7 @@ export default function NewEpisodeWizard() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto py-4 pb-32 text-white space-y-8 animate-in fade-in">
+    <div className="w-full py-4 pb-32 text-white space-y-8 animate-in fade-in">
       
       {/* Fil d'Ariane & Émission parente */}
       <div className="space-y-2">

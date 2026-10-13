@@ -385,7 +385,7 @@ function ExploreMain() {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-7 animate-fade-in text-white select-none pb-36">
+    <div className="p-4 sm:p-6 md:p-8 w-full space-y-7 animate-fade-in text-white select-none pb-36">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-24 right-6 z-[90] px-4 py-2.5 rounded-xl bg-[#1E1E1E] border border-[#333333] text-white text-xs font-semibold shadow-2xl animate-fade-in flex items-center gap-2">

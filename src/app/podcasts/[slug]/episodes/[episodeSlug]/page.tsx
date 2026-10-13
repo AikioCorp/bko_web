@@ -159,7 +159,7 @@ export default function EpisodePage() {
   const hasAccess = !ep.isPremium || ep.viewer?.hasActiveSubscription || ep.viewer?.isPurchased;
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-8 space-y-8">
+    <div className="w-full px-4 sm:px-6 md:px-8 py-8 space-y-8">
       <Link href={`/podcasts/${ep.podcast.slug}`} className="text-xs text-[#B8B8B8] hover:text-white">
         ← {ep.podcast.name}
       </Link>

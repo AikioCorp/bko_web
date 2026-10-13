@@ -234,7 +234,7 @@ export default function NewPodcastWizard() {
   // ==========================================
   if (currentScreen === "CHOICE") {
     return (
-      <div className="w-full max-w-5xl mx-auto py-4 pb-28 text-white space-y-8 animate-in fade-in">
+      <div className="w-full py-4 pb-28 text-white space-y-8 animate-in fade-in">
         
         {/* Navigation & Header */}
         <div className="space-y-3">

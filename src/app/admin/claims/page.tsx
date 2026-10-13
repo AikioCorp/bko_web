@@ -219,7 +219,7 @@ export default function AdminClaimsPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-16">
+    <div className="space-y-8 w-full pb-16">
       {/* Toast */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#1A1A1A] border border-[#333333] text-white px-5 py-3 rounded-xl shadow-2xl text-sm flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200">

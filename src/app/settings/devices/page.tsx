@@ -55,7 +55,7 @@ export default function DevicesPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full px-4 sm:px-6 py-6 space-y-8">
       <div className="flex justify-between items-center border-b border-[#1E2638] pb-6">
         <div>
           <h1 className="text-2xl font-black text-white">Appareils Connectés</h1>

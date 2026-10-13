@@ -179,7 +179,7 @@ export default function NewEpisodePage() {
   const scheduleOk = publishMode !== "SCHEDULE" || (when && new Date(when) > new Date());
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+    <div className="w-full py-4 space-y-6">
       <Link href={`/studio/podcasts/${podcastId}`} className="text-xs text-gray-400 hover:text-white">
         ← Retour au podcast
       </Link>

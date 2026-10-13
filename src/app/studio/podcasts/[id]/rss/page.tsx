@@ -134,7 +134,7 @@ export default function PodcastRssPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+    <div className="w-full py-4 space-y-8">
       {/* En-tête */}
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-2">
         <div className="flex items-center space-x-2 text-[#E5A93C]">

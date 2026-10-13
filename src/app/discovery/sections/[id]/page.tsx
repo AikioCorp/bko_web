@@ -216,7 +216,7 @@ export default function SectionDiscoveryPage() {
     <div className="min-h-screen bg-[#0B0B0B] text-white pb-36">
       {/* 1. HEADER ÉTENDU AVEC NAVIGATION & CONTEXTE */}
       <div className="sticky top-0 z-30 bg-[#0B0B0B]/95 backdrop-blur-md border-b border-[#1E1E1E]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             <button
               onClick={() => {
@@ -296,7 +296,7 @@ export default function SectionDiscoveryPage() {
       </div>
 
       {/* 2. CORPS PRINCIPAL DE LA PAGE */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 pt-8">
         {/* État de chargement initial */}
         {isLoading && (
           <div className="space-y-6">

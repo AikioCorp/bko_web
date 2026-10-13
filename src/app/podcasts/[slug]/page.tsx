@@ -171,7 +171,7 @@ export default function PodcastPage() {
 
   if (status === "loading") {
     return (
-      <div className="w-full max-w-6xl mx-auto px-4 py-16 space-y-8 animate-pulse">
+      <div className="w-full px-4 py-16 space-y-8 animate-pulse">
         <div className="flex flex-col md:flex-row gap-8 items-start">
           <div className="w-48 h-48 md:w-56 md:h-56 rounded-2xl bg-[#181818] shrink-0" />
           <div className="flex-1 space-y-4 w-full">
@@ -216,7 +216,7 @@ export default function PodcastPage() {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-8 space-y-10 animate-fade-in text-white select-none pb-36">
+    <div className="w-full px-4 sm:px-6 md:px-8 py-8 space-y-10 animate-fade-in text-white select-none pb-36">
       {/* Toast Notification */}
       {notice && (
         <div className="fixed bottom-24 right-6 z-[90] px-4 py-2.5 rounded-xl bg-[#1E1E1E] border border-[#333333] text-white text-xs font-semibold shadow-2xl animate-fade-in flex items-center gap-2">

@@ -64,7 +64,7 @@ export default function NewPodcastPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
+    <div className="w-full py-4">
       <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-8 space-y-6 shadow-2xl">
         <div className="space-y-1 border-b border-[#1E2638] pb-4">
           <span className="text-[#E5A93C] text-[10px] font-bold uppercase tracking-wider">Créer une Émission</span>

@@ -136,14 +136,14 @@ export default function EditEpisodePage() {
       setLinkPreview(null);
     }, "Source ajoutée.");
 
-  if (error && !ep) return <div className="max-w-4xl mx-auto px-4 py-8"><ErrorBanner message={error} onRetry={load} /></div>;
+  if (error && !ep) return <div className="w-full py-4"><ErrorBanner message={error} onRetry={load} /></div>;
   if (!ep) return <Loading />;
 
   const status = ep.status;
   const readOnly = status === "ARCHIVED";
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <div className="w-full py-4 space-y-6">
       <Link href={`/studio/podcasts/${ep.podcastId}`} className="text-xs text-gray-400 hover:text-white">
         ← {ep.podcast.name}
       </Link>
