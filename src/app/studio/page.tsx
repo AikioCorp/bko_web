@@ -92,7 +92,7 @@ export default function StudioDashboardPage() {
   });
 
   const { data: podcastsData } = useSWR("/creator/podcasts", fetcher);
-  const podcasts = podcastsData?.items || [];
+  const podcasts = Array.isArray(podcastsData) ? podcastsData : podcastsData?.items || [];
 
   const hasAnyPodcast = (data?.podcastsCount ?? 0) > 0 || podcasts.length > 0;
 
@@ -115,6 +115,10 @@ export default function StudioDashboardPage() {
   }
 
   // ÉTAT VIDE : Le créateur n'a pas encore de podcast
+  if (error) return <div role="alert" className="p-6">
+    Impossible de charger votre Studio.
+    <button className="ml-3 text-[#FFBF00]" onClick={() => mutate()}>Réessayer</button>
+  </div>;
   if (!hasAnyPodcast) {
     return (
       <div ref={pageRef} className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-5 px-4">
@@ -128,6 +132,7 @@ export default function StudioDashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <Link href="/studio/claims" className="text-[#FFBF00] text-sm">Revendiquer une émission existante</Link>
           <Button className="bg-[#1C1C1C] hover:bg-[#2A2A2A] text-white border border-[#333333] text-sm h-10 px-4" asChild>
             <Link href="/studio/import-rss">
               <Rss className="w-4 h-4 mr-2 text-amber-500" />

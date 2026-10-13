@@ -3,13 +3,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuthStore, UserProfile } from "@/store/authStore";
+import useSWR from "swr";
+import { useAuthStore } from "@/store/authStore";
+import { usePlayerStore, PlayerEpisode } from "@/store/playerStore";
 import { fetchApi } from "@/lib/api";
 import {
   User, Mail, Phone, Shield, ShieldCheck, ShieldAlert,
   Crown, Mic2, Headphones, Laptop, Smartphone, Trash2,
   LogOut, Camera, Loader2, CheckCircle2, AlertCircle,
-  ExternalLink, Save, Key, BadgeCheck, Sparkles, Clock, Globe
+  ExternalLink, Save, BadgeCheck, Sparkles, Clock, Globe,
+  Bookmark, Radio, Play, Pause, ListMusic, AlertTriangle,
+  X, ChevronRight, LayoutDashboard, Settings2
 } from "lucide-react";
 
 interface UnifiedProfileViewProps {
@@ -25,12 +29,16 @@ interface UserDevice {
   ipAddress?: string | null;
 }
 
+const fetcher = (url: string) => fetchApi(url).then((res) => res.data);
+
 export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileViewProps) {
   const { user, isAuthenticated, logout, updateUser } = useAuthStore();
+  const { currentEpisode, isPlaying, playEpisode, togglePlay } = usePlayerStore();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<"general" | "roles" | "devices">("general");
+  // Active tab: default to "dashboard" for a rich experience matching mobile, with tabs for settings
+  const [activeTab, setActiveTab] = useState<"dashboard" | "general" | "devices" | "roles">("dashboard");
 
   // Form states
   const [fullName, setFullName] = useState("");
@@ -48,6 +56,44 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
   const [revokingDeviceId, setRevokingDeviceId] = useState<string | null>(null);
   const [isLoggingOutAll, setIsLoggingOutAll] = useState(false);
 
+  // NATIVE MODALS STATES (Replaces browser confirm)
+  const [showDeleteAvatarModal, setShowDeleteAvatarModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLogoutAllModal, setShowLogoutAllModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  
+  // Delete account confirmation
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
+
+  // Dashboard Data fetching (matching mobile app profile screen)
+  const { data: savedData, isLoading: isLoadingSaved } = useSWR(isAuthenticated ? "/me/saved" : null, fetcher, { revalidateOnFocus: false });
+  const { data: followingData, isLoading: isLoadingFollowing } = useSWR(isAuthenticated ? "/me/following" : null, fetcher, { revalidateOnFocus: false });
+  const { data: playlistsData, isLoading: isLoadingPlaylists } = useSWR(isAuthenticated ? "/me/playlists" : null, fetcher, { revalidateOnFocus: false });
+  const { data: historyData, isLoading: isLoadingHistory } = useSWR(isAuthenticated ? "/me/history" : null, fetcher, { revalidateOnFocus: false });
+  const { data: continueListeningData } = useSWR(isAuthenticated ? "/me/continue-listening" : null, fetcher, { revalidateOnFocus: false });
+
+  const savedList = Array.isArray(savedData) ? savedData : [];
+  const followingList = Array.isArray(followingData) ? followingData : [];
+  const playlistsList = Array.isArray(playlistsData) ? playlistsData : [];
+  const historyList = Array.isArray(historyData) ? historyData : [];
+  const continueList = Array.isArray(continueListeningData) ? continueListeningData : [];
+
+  // Listening statistics calculations
+  const totalListeningSeconds = historyList.reduce((acc: number, item: any) => acc + (item.positionSeconds || 0), 0);
+  const completedEpisodesCount = historyList.filter((item: any) => item.completed).length;
+
+  const formatListeningTime = (seconds: number) => {
+    if (!seconds || seconds <= 0) return "0 min";
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours} h ${minutes > 0 ? `${minutes} min` : ""}`;
+    }
+    return `${minutes} min`;
+  };
+
   useEffect(() => {
     if (user) {
       setFullName(user.fullName || "");
@@ -55,7 +101,7 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
     }
   }, [user]);
 
-  // Load devices on mount or when tab switches to devices
+  // Load devices when on devices tab or initial
   useEffect(() => {
     if (activeTab === "devices" || activeTab === "general") {
       loadDevices();
@@ -70,7 +116,6 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
         setDevices(res.data);
       }
     } catch (_) {
-      // Silently fall back
     } finally {
       setIsLoadingDevices(false);
     }
@@ -85,7 +130,7 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
           </div>
           <h2 className="text-xl font-black text-white">Connexion requise</h2>
           <p className="text-xs text-[#888888]">
-            Veuillez vous connecter avec votre compte pour accéder aux paramètres de votre profil.
+            Veuillez vous connecter avec votre compte pour accéder à votre espace et à vos réglages.
           </p>
           <Link
             href="/login"
@@ -157,7 +202,6 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
     setAvatarError(null);
 
     try {
-      // 1. Get presigned URL
       const initRes = await fetchApi("/media/images/upload-url", {
         method: "POST",
         body: JSON.stringify({
@@ -173,7 +217,6 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
 
       const { uploadUrl, publicUrl } = initRes.data;
 
-      // 2. Direct binary PUT
       const uploadRes = await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type || "image/jpeg" },
@@ -184,7 +227,6 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
         throw new Error(`Erreur lors du téléversement (${uploadRes.status}).`);
       }
 
-      // 3. Update profile
       const patchRes = await fetchApi("/me", {
         method: "PATCH",
         body: JSON.stringify({ avatar: publicUrl }),
@@ -203,9 +245,9 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
     }
   };
 
-  // Remove Avatar
-  const handleRemoveAvatar = async () => {
-    if (!confirm("Voulez-vous supprimer votre photo de profil ?")) return;
+  // NATIVE: Remove Avatar (Triggered from in-app modal)
+  const confirmRemoveAvatar = async () => {
+    setShowDeleteAvatarModal(false);
     setIsUploadingAvatar(true);
     try {
       const res = await fetchApi("/me", {
@@ -238,9 +280,9 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
     }
   };
 
-  // Disconnect all other devices
-  const handleLogoutAll = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir déconnecter TOUS vos autres appareils actifs ?")) return;
+  // NATIVE: Disconnect all other devices (Triggered from in-app modal)
+  const confirmLogoutAll = async () => {
+    setShowLogoutAllModal(false);
     setIsLoggingOutAll(true);
     try {
       await fetchApi("/auth/logout-all", { method: "POST" });
@@ -254,11 +296,63 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
     }
   };
 
+  // NATIVE: Delete Account (Triggered from in-app modal)
+  const confirmDeleteAccount = async () => {
+    if (deleteConfirmationText.trim().toUpperCase() !== "SUPPRIMER") {
+      setDeleteAccountError("Veuillez saisir exactement le mot SUPPRIMER pour confirmer.");
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    setDeleteAccountError(null);
+
+    try {
+      const res = await fetchApi("/me", {
+        method: "DELETE",
+      });
+
+      if (res.success) {
+        setShowDeleteAccountModal(false);
+        logout();
+        router.push("/?accountDeleted=true");
+      } else {
+        throw new Error(res.message || "Erreur lors de la suppression du compte.");
+      }
+    } catch (err: any) {
+      setDeleteAccountError(err.message || "Impossible de supprimer le compte pour le moment.");
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
   const initialLetter = (user.fullName || "A").trim().charAt(0).toUpperCase();
 
+  // Helper to play episode
+  const handlePlayEpisode = (ep: any, startPosition: number = 0) => {
+    const playerEp: PlayerEpisode = {
+      id: ep.id,
+      slug: ep.slug || ep.id,
+      title: ep.title,
+      cover: ep.coverImageUrl || ep.podcast?.coverImageUrl || null,
+      durationSeconds: ep.durationSeconds || 0,
+      podcast: {
+        slug: ep.podcast?.slug || "",
+        name: ep.podcast?.name || "Podcast",
+        cover: ep.podcast?.coverImageUrl || "",
+      },
+      mediaSources: ep.mediaSources || [],
+    };
+
+    if (currentEpisode?.id === ep.id) {
+      togglePlay();
+    } else {
+      playEpisode(playerEp, "AUDIO", startPosition);
+    }
+  };
+
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 pb-16">
-      {/* Hidden file input */}
+    <div className="w-full max-w-5xl mx-auto space-y-6 pb-20">
+      {/* Hidden file input for avatar */}
       <input
         ref={fileInputRef}
         type="file"
@@ -301,6 +395,7 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
       {/* Main Identity Hero Card */}
       <div className="bg-[#121212] border border-[#262626] rounded-2xl p-6 sm:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          
           {/* Avatar Area with interactive picker */}
           <div className="relative group shrink-0">
             <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-[#1A1A1A] border-2 border-[#333333] flex items-center justify-center overflow-hidden relative shadow-lg">
@@ -407,13 +502,13 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
                     className="inline-flex items-center gap-1.5 bg-white/5 text-[#A3A3A3] border border-white/10 text-[11px] font-bold px-3 py-1 rounded-lg uppercase tracking-wide"
                   >
                     <Headphones className="w-3 h-3 text-[#A3A3A3]" />
-                    Auditeur
+                    Auditeur Membre
                   </span>
                 );
               })}
             </div>
 
-            {/* Avatar action buttons */}
+            {/* Avatar action buttons (Native Modal trigger, zero browser confirm) */}
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-2">
               <button
                 type="button"
@@ -427,12 +522,12 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
               {user.avatar && (
                 <button
                   type="button"
-                  onClick={handleRemoveAvatar}
+                  onClick={() => setShowDeleteAvatarModal(true)}
                   disabled={isUploadingAvatar}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1A1A] hover:bg-[#261717] border border-[#333333] text-[#f85149] rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  Supprimer
+                  Supprimer la photo
                 </button>
               )}
             </div>
@@ -445,15 +540,10 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
             )}
           </div>
 
-          {/* Quick Sign out button at top right */}
+          {/* Quick Sign out button at top right (Native modal) */}
           <div className="shrink-0 self-center sm:self-start">
             <button
-              onClick={() => {
-                if (confirm("Voulez-vous vous déconnecter de votre compte ?")) {
-                  logout();
-                  router.push("/");
-                }
-              }}
+              onClick={() => setShowLogoutModal(true)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -462,8 +552,21 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
           </div>
         </div>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation (Matching mobile features) */}
         <div className="border-t border-[#262626] pt-6 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setActiveTab("dashboard")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+              activeTab === "dashboard"
+                ? "bg-[#FFBF00] text-black shadow"
+                : "bg-[#181818] text-[#888888] hover:text-white border border-[#262626]"
+            }`}
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Mon Espace (Tableau de bord)</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveTab("general")}
@@ -474,20 +577,7 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
             }`}
           >
             <User className="w-3.5 h-3.5" />
-            <span>Identité & Profil</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("roles")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === "roles"
-                ? "bg-white text-black shadow"
-                : "bg-[#181818] text-[#888888] hover:text-white border border-[#262626]"
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span>Rôles & Privilèges ({user.roles.length})</span>
+            <span>Modifier mon profil</span>
           </button>
 
           <button
@@ -500,7 +590,20 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
             }`}
           >
             <Laptop className="w-3.5 h-3.5" />
-            <span>Sécurité & Appareils ({devices.length})</span>
+            <span>Sécurité & Appareils ({devices.length || 1})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("roles")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+              activeTab === "roles"
+                ? "bg-white text-black shadow"
+                : "bg-[#181818] text-[#888888] hover:text-white border border-[#262626]"
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span>Rôles & Studio ({user.roles.length})</span>
           </button>
         </div>
       </div>
@@ -523,7 +626,350 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
         </div>
       )}
 
-      {/* TAB 1: IDENTITÉ & INFORMATIONS */}
+      {/* ===================================================================== */}
+      {/* TAB 1: MON ESPACE (DASHBOARD COMME LE MOBILE) */}
+      {/* ===================================================================== */}
+      {activeTab === "dashboard" && (
+        <div className="space-y-6">
+          
+          {/* 4 Raccourcis Rapides avec compteurs réels (Exactement comme le mobile !) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            {/* Raccourci 1: Enregistrés */}
+            <Link
+              href="/library?tab=saved"
+              className="bg-[#121212] hover:bg-[#161616] border border-[#222222] hover:border-[#333333] p-4 rounded-2xl flex flex-col justify-between transition-all group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#1C1C1C] border border-[#2A2A2A] flex items-center justify-center text-[#FFBF00] group-hover:scale-105 transition-transform">
+                <Bookmark className="w-5 h-5" />
+              </div>
+              <div className="mt-4">
+                <div className="text-2xl font-black text-white tracking-tight">
+                  {isLoadingSaved ? "..." : savedList.length}
+                </div>
+                <div className="text-xs text-[#888888] font-medium mt-0.5 flex items-center justify-between">
+                  <span>À écouter plus tard</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#555555] group-hover:text-white transition-colors" />
+                </div>
+              </div>
+            </Link>
+
+            {/* Raccourci 2: Suivis */}
+            <Link
+              href="/library?tab=following"
+              className="bg-[#121212] hover:bg-[#161616] border border-[#222222] hover:border-[#333333] p-4 rounded-2xl flex flex-col justify-between transition-all group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#1C1C1C] border border-[#2A2A2A] flex items-center justify-center text-[#38BDF8] group-hover:scale-105 transition-transform">
+                <Radio className="w-5 h-5" />
+              </div>
+              <div className="mt-4">
+                <div className="text-2xl font-black text-white tracking-tight">
+                  {isLoadingFollowing ? "..." : followingList.length}
+                </div>
+                <div className="text-xs text-[#888888] font-medium mt-0.5 flex items-center justify-between">
+                  <span>Émissions suivies</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#555555] group-hover:text-white transition-colors" />
+                </div>
+              </div>
+            </Link>
+
+            {/* Raccourci 3: Playlists */}
+            <Link
+              href="/library?tab=playlists"
+              className="bg-[#121212] hover:bg-[#161616] border border-[#222222] hover:border-[#333333] p-4 rounded-2xl flex flex-col justify-between transition-all group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#1C1C1C] border border-[#2A2A2A] flex items-center justify-center text-[#34D399] group-hover:scale-105 transition-transform">
+                <ListMusic className="w-5 h-5" />
+              </div>
+              <div className="mt-4">
+                <div className="text-2xl font-black text-white tracking-tight">
+                  {isLoadingPlaylists ? "..." : playlistsList.length}
+                </div>
+                <div className="text-xs text-[#888888] font-medium mt-0.5 flex items-center justify-between">
+                  <span>Mes playlists</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#555555] group-hover:text-white transition-colors" />
+                </div>
+              </div>
+            </Link>
+
+            {/* Raccourci 4: Temps d'écoute cumulé */}
+            <Link
+              href="/library?tab=history"
+              className="bg-[#121212] hover:bg-[#161616] border border-[#222222] hover:border-[#333333] p-4 rounded-2xl flex flex-col justify-between transition-all group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#1C1C1C] border border-[#2A2A2A] flex items-center justify-center text-[#F472B6] group-hover:scale-105 transition-transform">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="mt-4">
+                <div className="text-2xl font-black text-white tracking-tight truncate">
+                  {isLoadingHistory ? "..." : formatListeningTime(totalListeningSeconds)}
+                </div>
+                <div className="text-xs text-[#888888] font-medium mt-0.5 flex items-center justify-between">
+                  <span>Temps d'écoute total</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#555555] group-hover:text-white transition-colors" />
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          {/* Section: Reprendre l'écoute (In-progress episodes) */}
+          {continueList.length > 0 && (
+            <div className="bg-[#121212] border border-[#222222] rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-[#202020] pb-3">
+                <div className="flex items-center gap-2">
+                  <Play className="w-4 h-4 text-[#FFBF00]" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Reprendre l'écoute ({continueList.length})
+                  </h3>
+                </div>
+                <Link href="/library?tab=history" className="text-xs text-[#888888] hover:text-white">
+                  Tout voir
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {continueList.slice(0, 4).map((item: any) => {
+                  const ep = item.episode || item;
+                  const progressPct = ep.durationSeconds && item.positionSeconds
+                    ? Math.min(100, Math.round((item.positionSeconds / ep.durationSeconds) * 100))
+                    : 0;
+
+                  return (
+                    <div
+                      key={item.id || ep.id}
+                      className="p-3.5 bg-[#171717] hover:bg-[#1C1C1C] border border-[#262626] rounded-xl flex items-center gap-3.5 transition-colors group"
+                    >
+                      <div className="relative w-14 h-14 rounded-lg bg-[#222222] overflow-hidden shrink-0">
+                        {ep.coverImageUrl || ep.podcast?.coverImageUrl ? (
+                          <img
+                            src={ep.coverImageUrl || ep.podcast?.coverImageUrl}
+                            alt={ep.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-[#666666]">
+                            BKO
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handlePlayEpisode(ep, item.positionSeconds || 0)}
+                          className="absolute inset-0 bg-black/50 flex items-center justify-center text-[#FFBF00] opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Play className="w-6 h-6 fill-current" />
+                        </button>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-white truncate group-hover:text-[#FFBF00] transition-colors">
+                          {ep.title}
+                        </h4>
+                        <p className="text-[11px] text-[#888888] truncate mt-0.5">
+                          {ep.podcast?.name || "Podcast"}
+                        </p>
+                        
+                        {/* Progress Bar */}
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 h-1 bg-[#282828] rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-[#FFBF00]"
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-[#777777] font-mono shrink-0">
+                            {progressPct}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePlayEpisode(ep, item.positionSeconds || 0)}
+                        className="w-8 h-8 rounded-full bg-[#FFBF00] text-black flex items-center justify-center shrink-0 hover:scale-105 active:scale-95 transition-transform"
+                        title="Reprendre"
+                      >
+                        <Play className="w-4 h-4 fill-current ml-0.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Section: Votre Activité & Bilan d'écoute */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 bg-[#121212] border border-[#222222] rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-[#202020] pb-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#FFBF00]" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Activité d'écoute réelle
+                  </h3>
+                </div>
+                <span className="text-xs text-[#888888]">
+                  Calculé sur vos sessions synchronisées
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 text-center py-2">
+                <div className="bg-[#171717] border border-[#242424] p-4 rounded-xl">
+                  <span className="text-2xl font-black text-white block">
+                    {historyList.length}
+                  </span>
+                  <span className="text-[11px] text-[#888888] font-medium mt-1 block">
+                    Épisodes découverts
+                  </span>
+                </div>
+                <div className="bg-[#171717] border border-[#242424] p-4 rounded-xl">
+                  <span className="text-2xl font-black text-[#34D399] block">
+                    {completedEpisodesCount}
+                  </span>
+                  <span className="text-[11px] text-[#888888] font-medium mt-1 block">
+                    Épisodes terminés
+                  </span>
+                </div>
+                <div className="bg-[#171717] border border-[#242424] p-4 rounded-xl">
+                  <span className="text-2xl font-black text-[#FFBF00] block truncate">
+                    {formatListeningTime(totalListeningSeconds)}
+                  </span>
+                  <span className="text-[11px] text-[#888888] font-medium mt-1 block">
+                    Temps cumulé
+                  </span>
+                </div>
+              </div>
+
+              {historyList.length > 0 ? (
+                <div className="pt-2">
+                  <span className="text-xs text-[#888888] font-semibold block mb-2">
+                    Dernières écoutes :
+                  </span>
+                  <div className="space-y-2">
+                    {historyList.slice(0, 3).map((item: any) => {
+                      const ep = item.episode || item;
+                      return (
+                        <div
+                          key={item.id || ep.id}
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-[#161616] border border-[#222222] text-xs"
+                        >
+                          <div className="min-w-0 flex-1 pr-3">
+                            <span className="font-bold text-white truncate block">
+                              {ep.title}
+                            </span>
+                            <span className="text-[11px] text-[#777777]">
+                              {item.lastPlayedAt ? new Date(item.lastPlayedAt).toLocaleDateString("fr-FR") : "Récemment"}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handlePlayEpisode(ep, item.positionSeconds || 0)}
+                            className="text-[#FFBF00] hover:underline text-[11px] font-bold shrink-0 flex items-center gap-1"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            Réécouter
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-[#777777] text-center py-4">
+                  Aucun historique d'écoute pour l'instant. Lancez un épisode pour enrichir votre espace !
+                </p>
+              )}
+            </div>
+
+            {/* Quick Shortcuts & Creator Access */}
+            <div className="space-y-4">
+              <div className="bg-[#121212] border border-[#222222] rounded-2xl p-6 space-y-3">
+                <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#FFBF00]" />
+                  Pass & Studio
+                </h3>
+
+                <div className="space-y-2.5 pt-1">
+                  <Link
+                    href="/premium"
+                    className="flex items-center justify-between p-3 rounded-xl bg-[#171717] hover:bg-[#202020] border border-[#262626] text-xs font-bold text-white transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Crown className="w-4 h-4 text-[#FFBF00]" />
+                      Pass Premium
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#666666]" />
+                  </Link>
+
+                  {isCreator ? (
+                    <Link
+                      href="/studio"
+                      className="flex items-center justify-between p-3 rounded-xl bg-[#171717] hover:bg-[#202020] border border-[#262626] text-xs font-bold text-white transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Mic2 className="w-4 h-4 text-[#34D399]" />
+                        Mon Studio Créateur
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[#666666]" />
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/become-creator"
+                      className="flex items-center justify-between p-3 rounded-xl bg-[#171717] hover:bg-[#202020] border border-[#262626] text-xs font-bold text-white transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Mic2 className="w-4 h-4 text-[#FFBF00]" />
+                        Devenir Créateur
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[#666666]" />
+                    </Link>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("general")}
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#171717] hover:bg-[#202020] border border-[#262626] text-xs font-bold text-white transition-colors text-left"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Settings2 className="w-4 h-4 text-[#A0A0A0]" />
+                      Modifier mes infos
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#666666]" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Subscribed shows preview */}
+              {followingList.length > 0 && (
+                <div className="bg-[#121212] border border-[#222222] rounded-2xl p-6 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                      <Radio className="w-4 h-4 text-[#38BDF8]" />
+                      Podcasts suivis
+                    </h3>
+                    <Link href="/library?tab=following" className="text-[11px] text-[#888888] hover:text-white">
+                      Voir tout ({followingList.length})
+                    </Link>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {followingList.slice(0, 5).map((pod: any) => (
+                      <Link
+                        key={pod.id}
+                        href={`/podcasts/${pod.slug}`}
+                        className="text-xs font-medium text-[#CCCCCC] bg-[#181818] hover:bg-[#222222] px-2.5 py-1 rounded-lg border border-[#262626] transition-colors truncate max-w-[150px]"
+                      >
+                        {pod.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* TAB 2: IDENTITÉ & INFORMATIONS */}
+      {/* ===================================================================== */}
       {activeTab === "general" && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Main Edit Form */}
@@ -626,7 +1072,7 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
               </h3>
               <div className="space-y-3 text-xs">
                 <div className="flex items-center justify-between pb-2 border-b border-[#262626]">
-                  <span className="text-[#888888]">Identifiant Bko</span>
+                  <span className="text-[#888888]">Identifiant</span>
                   <span className="font-mono text-white text-[11px] truncate max-w-[120px]">{user.id}</span>
                 </div>
                 <div className="flex items-center justify-between pb-2 border-b border-[#262626]">
@@ -648,53 +1094,186 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
               </div>
             </div>
 
-            <div className="bg-[#121212] border border-[#262626] rounded-2xl p-6 space-y-3">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#FFBF00]" />
-                Accès Rapides
-              </h3>
-              <div className="space-y-2">
-                {isAdmin && (
-                  <Link
-                    href="/admin/dashboard"
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#181818] hover:bg-[#202020] border border-[#262626] text-xs font-bold text-white transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Shield className="w-3.5 h-3.5 text-[#818CF8]" />
-                      Console d'administration
-                    </span>
-                    <ExternalLink className="w-3 h-3 text-[#666666]" />
-                  </Link>
-                )}
-                {isCreator && (
-                  <Link
-                    href="/studio"
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#181818] hover:bg-[#202020] border border-[#262626] text-xs font-bold text-white transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Mic2 className="w-3.5 h-3.5 text-[#34D399]" />
-                      Studio & Podcasts
-                    </span>
-                    <ExternalLink className="w-3 h-3 text-[#666666]" />
-                  </Link>
-                )}
-                <Link
-                  href="/library"
-                  className="flex items-center justify-between p-3 rounded-xl bg-[#181818] hover:bg-[#202020] border border-[#262626] text-xs font-bold text-white transition-colors"
-                >
-                  <span className="flex items-center gap-2">
-                    <Headphones className="w-3.5 h-3.5 text-[#A3A3A3]" />
-                    Ma bibliothèque d'écoute
-                  </span>
-                  <ExternalLink className="w-3 h-3 text-[#666666]" />
-                </Link>
-              </div>
+            {/* Redirection vers Sécurité / Suppression de compte */}
+            <div className="bg-[#181212] border border-red-950/40 rounded-2xl p-5 space-y-2">
+              <span className="text-xs font-bold text-red-400 block">
+                Supprimer votre compte ?
+              </span>
+              <p className="text-[11px] text-[#888888]">
+                Vous pouvez gérer la suppression définitive de votre compte dans l'onglet Sécurité.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("devices");
+                  setTimeout(() => {
+                    document.getElementById("danger-zone")?.scrollIntoView({ behavior: "smooth" });
+                  }, 100);
+                }}
+                className="text-xs text-red-400 hover:text-red-300 font-bold underline inline-block pt-1"
+              >
+                Accéder à la zone de suppression →
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* TAB 2: RÔLES & PRIVILÈGES */}
+      {/* ===================================================================== */}
+      {/* TAB 3: SÉCURITÉ, APPAREILS & ZONE DE DANGER (SUPPRIMER LE COMPTE) */}
+      {/* ===================================================================== */}
+      {activeTab === "devices" && (
+        <div className="space-y-6">
+          <div className="bg-[#121212] border border-[#262626] rounded-2xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#262626] pb-4">
+              <div>
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <Laptop className="w-4 h-4 text-[#FFBF00]" />
+                  Appareils & Sessions Connectées
+                </h2>
+                <p className="text-xs text-[#888888] mt-1">
+                  Surveillez et révoquez l'accès aux appareils actuellement connectés à votre compte.
+                </p>
+              </div>
+
+              {devices.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setShowLogoutAllModal(true)}
+                  disabled={isLoggingOutAll}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 shrink-0 self-start sm:self-auto"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Déconnecter tous les autres appareils</span>
+                </button>
+              )}
+            </div>
+
+            {isLoadingDevices ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
+                <Loader2 className="w-6 h-6 text-[#FFBF00] animate-spin" />
+                <p className="text-xs text-[#888888]">Chargement de vos appareils...</p>
+              </div>
+            ) : devices.length === 0 ? (
+              <div className="py-8 text-center space-y-2 bg-[#181818] border border-[#262626] rounded-xl p-6">
+                <Laptop className="w-6 h-6 text-[#666666] mx-auto" />
+                <p className="text-xs text-white font-bold">Aucune autre session active détectée</p>
+                <p className="text-[11px] text-[#888888]">Votre compte est actuellement utilisé uniquement sur cette fenêtre.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {devices.map((device, index) => {
+                  const isMobile =
+                    device.deviceType === "ANDROID" ||
+                    device.deviceType === "IOS" ||
+                    device.deviceType?.toLowerCase().includes("mobile");
+
+                  return (
+                    <div
+                      key={device.id || index}
+                      className="bg-[#181818] border border-[#262626] rounded-xl p-4 flex items-center justify-between gap-4 transition-colors hover:border-[#333333]"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-[#202020] border border-[#333333] flex items-center justify-center text-[#FFBF00] shrink-0">
+                          {isMobile ? (
+                            <Smartphone className="w-5 h-5" />
+                          ) : (
+                            <Laptop className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-white">
+                              {device.deviceName || (isMobile ? "Appareil Mobile" : "Navigateur Web")}
+                            </h4>
+                            {index === 0 && (
+                              <span className="px-2 py-0.5 rounded-full bg-[#238636]/15 border border-[#238636]/30 text-[#3fb950] text-[9.5px] font-black uppercase">
+                                Session en cours
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[#777777] mt-0.5">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              Dernière activité : {new Date(device.lastActiveAt).toLocaleString("fr-FR")}
+                            </span>
+                            {device.ipAddress && (
+                              <span className="flex items-center gap-1 font-mono">
+                                <Globe className="w-3 h-3" />
+                                {device.ipAddress}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {index !== 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRevokeDevice(device.id)}
+                          disabled={revokingDeviceId === device.id}
+                          title="Révoquer cet appareil"
+                          className="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                        >
+                          {revokingDeviceId === device.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ZONE DE DANGER : SUPPRIMER LE COMPTE (Comme demandé expressément par l'utilisateur !) */}
+          <div id="danger-zone" className="bg-[#181212] border border-red-900/40 rounded-2xl p-6 sm:p-8 space-y-5">
+            <div className="border-b border-red-950/60 pb-4">
+              <h2 className="text-base font-bold text-red-400 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+                Zone de Danger &bull; Suppression définitive du compte
+              </h2>
+              <p className="text-xs text-[#AAAAAA] mt-1">
+                La suppression de votre compte est définitive. Toutes vos données seront effacées irrévocablement.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-[#888888] leading-relaxed">
+                Lorsque vous supprimez votre compte :
+              </p>
+              <ul className="text-xs text-[#AAAAAA] list-disc list-inside space-y-1">
+                <li>Votre profil public, nom et photo seront supprimés.</li>
+                <li>Vos playlists personnelles, podcasts suivis et épisodes sauvegardés seront effacés.</li>
+                <li>Votre historique d'écoute et vos temps de lecture seront anonymisés.</li>
+                <li>Toutes vos sessions sur tous vos appareils mobiles et ordinateurs seront révoquées immédiatement.</li>
+              </ul>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteConfirmationText("");
+                  setDeleteAccountError(null);
+                  setShowDeleteAccountModal(true);
+                }}
+                className="px-5 py-2.5 bg-red-600/15 hover:bg-red-600/25 border border-red-600/30 text-red-400 hover:text-red-300 font-bold text-xs rounded-xl transition-colors flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4 text-red-500" />
+                <span>Supprimer mon compte définitivement</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* TAB 4: RÔLES & PRIVILÈGES */}
+      {/* ===================================================================== */}
       {activeTab === "roles" && (
         <div className="space-y-6">
           <div className="bg-[#121212] border border-[#262626] rounded-2xl p-6 sm:p-8 space-y-6">
@@ -840,112 +1419,200 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
         </div>
       )}
 
-      {/* TAB 3: SÉCURITÉ & APPAREILS */}
-      {activeTab === "devices" && (
-        <div className="space-y-6">
-          <div className="bg-[#121212] border border-[#262626] rounded-2xl p-6 sm:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#262626] pb-4">
-              <div>
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <Laptop className="w-4 h-4 text-[#FFBF00]" />
-                  Appareils & Sessions Connectées
-                </h2>
-                <p className="text-xs text-[#888888] mt-1">
-                  Surveillez et révoquez l'accès aux appareils actuellement connectés à votre compte.
-                </p>
-              </div>
-
-              {devices.length > 1 && (
-                <button
-                  type="button"
-                  onClick={handleLogoutAll}
-                  disabled={isLoggingOutAll}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 shrink-0 self-start sm:self-auto"
-                >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Déconnecter tous les autres appareils</span>
-                </button>
-              )}
+      {/* ===================================================================== */}
+      {/* NATIVE MODAL 1: SUPPRESSION DE LA PHOTO DE PROFIL */}
+      {/* ===================================================================== */}
+      {showDeleteAvatarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
             </div>
 
-            {isLoadingDevices ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
-                <Loader2 className="w-6 h-6 text-[#FFBF00] animate-spin" />
-                <p className="text-xs text-[#888888]">Chargement de vos appareils...</p>
-              </div>
-            ) : devices.length === 0 ? (
-              <div className="py-8 text-center space-y-2 bg-[#181818] border border-[#262626] rounded-xl p-6">
-                <Laptop className="w-6 h-6 text-[#666666] mx-auto" />
-                <p className="text-xs text-white font-bold">Aucune autre session active détectée</p>
-                <p className="text-[11px] text-[#888888]">Votre compte est actuellement utilisé uniquement sur cette fenêtre.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {devices.map((device, index) => {
-                  const isMobile =
-                    device.deviceType === "ANDROID" ||
-                    device.deviceType === "IOS" ||
-                    device.deviceType?.toLowerCase().includes("mobile");
+            <div className="text-center space-y-1.5">
+              <h3 className="text-base font-bold text-white">
+                Supprimer votre photo de profil ?
+              </h3>
+              <p className="text-xs text-[#888888] leading-relaxed">
+                Votre avatar personnalisé sera supprimé. Votre profil affichera l'initiale de votre nom par défaut.
+              </p>
+            </div>
 
-                  return (
-                    <div
-                      key={device.id || index}
-                      className="bg-[#181818] border border-[#262626] rounded-xl p-4 flex items-center justify-between gap-4 transition-colors hover:border-[#333333]"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-xl bg-[#202020] border border-[#333333] flex items-center justify-center text-[#FFBF00] shrink-0">
-                          {isMobile ? (
-                            <Smartphone className="w-5 h-5" />
-                          ) : (
-                            <Laptop className="w-5 h-5" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-white">
-                              {device.deviceName || (isMobile ? "Appareil Mobile" : "Navigateur Web")}
-                            </h4>
-                            {index === 0 && (
-                              <span className="px-2 py-0.5 rounded-full bg-[#238636]/15 border border-[#238636]/30 text-[#3fb950] text-[9.5px] font-black uppercase">
-                                Session en cours
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[#777777] mt-0.5">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              Dernière activité : {new Date(device.lastActiveAt).toLocaleString("fr-FR")}
-                            </span>
-                            {device.ipAddress && (
-                              <span className="flex items-center gap-1 font-mono">
-                                <Globe className="w-3 h-3" />
-                                {device.ipAddress}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteAvatarModal(false)}
+                className="w-full py-2.5 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] text-white text-xs font-bold transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmRemoveAvatar}
+                className="w-full py-2.5 rounded-xl bg-[#DA3633] hover:bg-[#B62324] text-white text-xs font-bold transition-colors shadow-sm"
+              >
+                Supprimer la photo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-                      {index !== 0 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRevokeDevice(device.id)}
-                          disabled={revokingDeviceId === device.id}
-                          title="Révoquer cet appareil"
-                          className="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
-                        >
-                          {revokingDeviceId === device.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+      {/* ===================================================================== */}
+      {/* NATIVE MODAL 2: DÉCONNEXION */}
+      {/* ===================================================================== */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+              <LogOut className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1.5">
+              <h3 className="text-base font-bold text-white">
+                Se déconnecter ?
+              </h3>
+              <p className="text-xs text-[#888888] leading-relaxed">
+                Voulez-vous vraiment fermer votre session sur cet appareil ? Vous pourrez vous reconnecter à tout moment.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="w-full py-2.5 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] text-white text-xs font-bold transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  logout();
+                  router.push("/");
+                }}
+                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shadow-sm"
+              >
+                Déconnexion
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* NATIVE MODAL 3: RÉVOQUER TOUTES LES SESSIONS */}
+      {/* ===================================================================== */}
+      {showLogoutAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1.5">
+              <h3 className="text-base font-bold text-white">
+                Déconnecter tous les autres appareils ?
+              </h3>
+              <p className="text-xs text-[#888888] leading-relaxed">
+                Toutes les sessions actives sur vos téléphones, ordinateurs et tablettes seront révoquées immédiatement.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutAllModal(false)}
+                className="w-full py-2.5 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] text-white text-xs font-bold transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogoutAll}
+                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shadow-sm"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* NATIVE MODAL 4: SUPPRESSION DÉFINITIVE DU COMPTE */}
+      {/* ===================================================================== */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#141414] border border-red-900/50 rounded-2xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative">
+            
+            <button
+              onClick={() => setShowDeleteAccountModal(false)}
+              className="absolute top-4 right-4 text-[#888888] hover:text-white p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-red-600/20 border border-red-600/30 text-red-500 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-black text-white">
+                Supprimer votre compte définitivement
+              </h3>
+              <p className="text-xs text-[#AAAAAA] leading-relaxed">
+                Cette action est <strong className="text-red-400">irréversible</strong>. Vos données d'écoute, favoris, abonnements et profils associés seront détruits.
+              </p>
+            </div>
+
+            <div className="bg-[#1A1111] border border-red-900/30 rounded-xl p-3.5 text-xs space-y-2">
+              <span className="font-bold text-red-300 block">
+                Pour confirmer, tapez le mot <strong className="font-mono text-white bg-black/40 px-1.5 py-0.5 rounded border border-red-900/40">SUPPRIMER</strong> ci-dessous :
+              </span>
+              <input
+                type="text"
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                placeholder="SUPPRIMER"
+                className="w-full bg-[#120B0B] border border-red-900/50 rounded-lg py-2.5 px-3 text-xs font-mono font-bold text-white placeholder-red-900/60 outline-none focus:border-red-500 transition-colors"
+                autoFocus
+              />
+            </div>
+
+            {deleteAccountError && (
+              <p className="text-xs text-red-400 bg-red-950/30 p-2.5 rounded-lg border border-red-900/40 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{deleteAccountError}</span>
+              </p>
             )}
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDeleteAccountModal(false)}
+                disabled={isDeletingAccount}
+                className="w-full py-2.5 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] text-white text-xs font-bold transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteAccount}
+                disabled={isDeletingAccount || deleteConfirmationText.trim().toUpperCase() !== "SUPPRIMER"}
+                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:bg-red-950 disabled:text-red-800 disabled:border-transparent text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
+              >
+                {isDeletingAccount ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Suppression...</span>
+                  </>
+                ) : (
+                  <span>Supprimer mon compte</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

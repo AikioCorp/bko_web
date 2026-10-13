@@ -8,7 +8,7 @@ import Image from "next/image";
 import { Mic, Globe, TrendingUp, Users, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 export default function BecomeCreatorPage() {
-  const { user, isAuthenticated, setAuth } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const router = useRouter();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -17,11 +17,7 @@ export default function BecomeCreatorPage() {
   const handleUpgrade = async () => {
     setIsUpgrading(true);
     try {
-      if (user && !(user.roles || []).includes("CREATOR")) {
-        const updatedUser = { ...user, roles: [...(user.roles || []), "CREATOR"] };
-        setAuth(updatedUser, useAuthStore.getState().accessToken || "", undefined);
-      }
-      router.push("/studio");
+      router.push("/studio/onboarding");
     } catch (e) {
       console.error(e);
     } finally {
@@ -35,7 +31,7 @@ export default function BecomeCreatorPage() {
       <section className="relative px-6 py-20 md:py-32 flex flex-col items-center justify-center text-center w-full">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1C1C1C] border border-[#2E2E2E] text-xs font-semibold text-[#FFBF00] mb-8">
           <Mic className="w-3.5 h-3.5" />
-          <span>Rejoignez le réseau des créateurs maliens</span>
+          <span>Rejoignez le réseau des créateurs</span>
         </div>
         
         <h1 className="text-4xl md:text-6xl font-headline font-extrabold leading-tight mb-6">
@@ -44,11 +40,11 @@ export default function BecomeCreatorPage() {
         </h1>
         
         <p className="text-base md:text-lg text-[#B8B8B8] max-w-2xl mb-10 leading-relaxed">
-          Rejoignez Bamako Podcast en tant que créateur. Hébergez vos émissions gratuitement, que ce soit en format audio ou vidéo, atteignez une audience engagée et monétisez votre contenu.
+          Rejoignez Bamako Podcast en tant que créateur. Hébergez vos émissions gratuitement, que ce soit en format audio ou vidéo, atteignez une audience engagée et suivez vos écoutes.
         </p>
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          {mounted && isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">{isUpgrading ? "Activation..." : "Activer mon espace Studio"}<ArrowRight className="w-4 h-4" /></button> : mounted ? <Link href="/login?tab=register" className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">Créer mon podcast gratuitement<ArrowRight className="w-4 h-4" /></Link> : null}
+          {mounted && isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">{isUpgrading ? "Activation..." : "Activer mon espace Studio"}<ArrowRight className="w-4 h-4" /></button> : mounted ? <Link href="/login?tab=register&redirect=%2Fstudio%2Fonboarding" className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">Créer mon podcast gratuitement<ArrowRight className="w-4 h-4" /></Link> : null}
           <Link href="#studios" className="px-8 py-3.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-white font-semibold text-sm transition-all w-full sm:w-auto justify-center">
             Voir notre Studio Physique
           </Link>
@@ -163,9 +159,10 @@ export default function BecomeCreatorPage() {
           <p className="text-[#1A1A1A] font-medium mb-10 max-w-xl mx-auto">
             La création de votre espace podcast prend moins de 2 minutes. Démarrez dès aujourd'hui et construisez votre communauté.
           </p>
-          {mounted && isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="inline-flex px-10 py-4 rounded-full bg-[#0B0B0B] text-white hover:bg-[#1A1A1A] hover:scale-105 font-extrabold text-sm transition-all shadow-xl active:scale-95">{isUpgrading ? "Activation..." : "Activer mon Studio maintenant"}</button> : mounted ? <Link href="/login?tab=register" className="inline-flex px-10 py-4 rounded-full bg-[#0B0B0B] text-white hover:bg-[#1A1A1A] hover:scale-105 font-extrabold text-sm transition-all shadow-xl active:scale-95">Créer mon compte créateur</Link> : null}
+          {mounted && isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="inline-flex px-10 py-4 rounded-full bg-[#0B0B0B] text-white hover:bg-[#1A1A1A] hover:scale-105 font-extrabold text-sm transition-all shadow-xl active:scale-95">{isUpgrading ? "Activation..." : "Activer mon Studio maintenant"}</button> : mounted ? <Link href="/login?tab=register&redirect=%2Fstudio%2Fonboarding" className="inline-flex px-10 py-4 rounded-full bg-[#0B0B0B] text-white hover:bg-[#1A1A1A] hover:scale-105 font-extrabold text-sm transition-all shadow-xl active:scale-95">Créer mon compte créateur</Link> : null}
         </div>
       </section>
     </div>
   );
 }
+
