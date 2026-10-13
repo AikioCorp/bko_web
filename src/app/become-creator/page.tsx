@@ -33,16 +33,16 @@ export default function BecomeCreatorPage() {
           <Mic className="w-3.5 h-3.5" />
           <span>Rejoignez le réseau des créateurs</span>
         </div>
-        
+
         <h1 className="text-4xl md:text-6xl font-headline font-extrabold leading-tight mb-6">
           Faites entendre votre voix.<br className="hidden md:block" />
           <span className="text-[#FFBF00]">Partagez votre histoire en audio & vidéo.</span>
         </h1>
-        
+
         <p className="text-base md:text-lg text-[#B8B8B8] max-w-2xl mb-10 leading-relaxed">
           Rejoignez Bamako Podcast en tant que créateur. Hébergez vos émissions gratuitement, que ce soit en format audio ou vidéo, atteignez une audience engagée et suivez vos écoutes.
         </p>
-        
+
         <div className="flex flex-col sm:flex-row items-center gap-4">
           {mounted && isAuthenticated ? <button onClick={handleUpgrade} disabled={isUpgrading} className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">{isUpgrading ? "Activation..." : "Activer mon espace Studio"}<ArrowRight className="w-4 h-4" /></button> : mounted ? <Link href="/login?tab=register&redirect=%2Fstudio%2Fonboarding" className="px-8 py-3.5 rounded-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto justify-center">Créer mon podcast gratuitement<ArrowRight className="w-4 h-4" /></Link> : null}
           <Link href="#studios" className="px-8 py-3.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-white font-semibold text-sm transition-all w-full sm:w-auto justify-center">
@@ -106,7 +106,7 @@ export default function BecomeCreatorPage() {
             <span className="text-[#757575]">Notre studio vous ouvre ses portes.</span>
           </h2>
           <p className="text-[#B8B8B8] text-base leading-relaxed">
-            Nous disposons de notre propre studio d'enregistrement professionnel à Bamako. 
+            Nous disposons de notre propre studio d'enregistrement professionnel à Bamako.
             En tant que créateur sur notre plateforme, vous bénéficiez de notre expertise et d'un accompagnement technique sur-mesure pour vos enregistrements audios et vidéos.
           </p>
           <ul className="space-y-4 pt-4 mb-8">
@@ -123,13 +123,13 @@ export default function BecomeCreatorPage() {
               Espace climatisé, insonorisé et prêt à filmer
             </li>
           </ul>
-          
+
           <Link href="/tarifs" className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-white font-semibold text-sm transition-all shadow-md active:scale-95">
             Voir nos forfaits d'enregistrement
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-        
+
         <div className="lg:w-1/2 w-full grid grid-cols-2 gap-4">
           <div className="space-y-4 pt-8">
             <div className="relative h-48 rounded-2xl overflow-hidden bg-[#1C1C1C] border border-[#2E2E2E]">
@@ -165,4 +165,3 @@ export default function BecomeCreatorPage() {
     </div>
   );
 }
-

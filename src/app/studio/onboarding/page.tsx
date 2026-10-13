@@ -2,16 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Mic, 
-  Image as ImageIcon, 
-  CheckCircle2, 
-  ArrowRight, 
-  ArrowLeft, 
-  UploadCloud, 
-  Radio, 
-  Sparkles, 
-  Globe, 
+import {
+  Mic,
+  Image as ImageIcon,
+  CheckCircle2,
+  ArrowRight,
+  ArrowLeft,
+  UploadCloud,
+  Radio,
+  Sparkles,
+  Globe,
   Loader2,
   AlertCircle,
   HelpCircle,
@@ -149,7 +149,7 @@ export default function CreatorOnboardingPage() {
   return (
     <div className="min-h-[calc(100vh-80px)] bg-[#0B0B0B] text-white flex flex-col items-center justify-center p-4 sm:p-6 select-none">
       <div className="w-full max-w-2xl bg-[#121212] border border-[#222222] rounded-3xl p-6 sm:p-10 shadow-2xl relative">
-        
+
         {/* Étape & Progression */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
