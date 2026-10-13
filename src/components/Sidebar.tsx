@@ -4,10 +4,22 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Bookmark, Radio, Smartphone, ShieldCheck, Sparkles, Download, ArrowRight, Mic } from "lucide-react";
+import {
+  Home,
+  Compass,
+  Bookmark,
+  Radio,
+  Smartphone,
+  ShieldCheck,
+  Sparkles,
+  Download,
+  ArrowRight,
+  Mic,
+  Clock,
+  Crown,
+} from "lucide-react";
 import { useConsoleAccess } from "@/hooks/useConsoleAccess";
 import { AppDownloadModal } from "./modals/AppDownloadModal";
-
 import { useAuthStore } from "@/store/authStore";
 
 export const Sidebar: React.FC = () => {
@@ -31,6 +43,7 @@ export const Sidebar: React.FC = () => {
   const showConsole = hasConsole || isAdmin;
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Navigation Principale (Sobre, épurée, sans gros pavé de monétisation en tête)
   const navItems = [
     {
       label: "Accueil",
@@ -50,20 +63,35 @@ export const Sidebar: React.FC = () => {
       icon: Bookmark,
       exact: false,
     },
+    ...(isAuthenticated
+      ? [
+          {
+            label: "Historique",
+            href: "/library?tab=history",
+            icon: Clock,
+            exact: false,
+          },
+        ]
+      : []),
     {
       label: "Notre Studio (Tarifs)",
       href: "/tarifs",
       icon: Mic,
       exact: false,
     },
-    // Creator space or Become a Creator
+    // Espace Créateur ou Appel à devenir créateur
     ...(isCreator
       ? [{ label: "Espace Créateurs / Studio", href: "/studio", icon: Radio, exact: false }]
       : [{ label: "Devenir Créateur", href: "/become-creator", icon: Sparkles, exact: false }]
     ),
-    // Visible uniquement pour les comptes ayant accès à la console d'administration.
-    ...(showConsole ? [{ label: "Console d'administration", href: "/admin/dashboard", icon: ShieldCheck, exact: false }] : []),
+    // Console d'administration
+    ...(showConsole
+      ? [{ label: "Console d'administration", href: "/admin/dashboard", icon: ShieldCheck, exact: false }]
+      : []
+    ),
   ];
+
+  const isPremiumActive = pathname === "/premium";
 
   return (
     <aside className="w-64 bg-[#0F0F0F] border-r border-[#1F1F1F] flex flex-col justify-between shrink-0 h-full p-4 overflow-y-auto scrollbar-none select-none">
@@ -96,7 +124,7 @@ export const Sidebar: React.FC = () => {
                 href={item.href}
                 className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
                   isActive
-                    ? "bg-[#1E1E1E] text-[#FFBF00] font-semibold shadow-sm"
+                    ? "bg-[#1E1E1E] text-[#FFBF00] font-semibold"
                     : "text-[#B8B8B8] hover:text-white hover:bg-[#161616]"
                 }`}
               >
@@ -112,8 +140,26 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* Bottom App Mobile Download Callout */}
-      <div className="pt-4 border-t border-[#1C1C1C] pb-24 md:pb-28">
+      {/* Bottom Section: Lien discret Premium + Téléchargement App */}
+      <div className="pt-4 border-t border-[#1C1C1C] pb-24 md:pb-28 space-y-2.5">
+        {/* Lien discret Premium en bas */}
+        <Link
+          href="/premium"
+          className={`flex items-center justify-between px-3 py-2 rounded-xl text-[11px] font-medium transition-all border ${
+            isPremiumActive
+              ? "bg-[#1A1810] border-[#FFBF00]/50 text-[#FFBF00] font-bold"
+              : "bg-[#121212] hover:bg-[#181818] border-[#222222] text-[#888888] hover:text-white"
+          }`}
+          title="Pass & Abonnements Bamako Podcast"
+        >
+          <div className="flex items-center gap-2">
+            <Crown className={`w-3.5 h-3.5 ${isPremiumActive ? "text-[#FFBF00]" : "text-[#777777]"}`} />
+            <span>Formules Premium</span>
+          </div>
+          <span className="text-[10px] text-[#FFBF00] font-semibold">Pass</span>
+        </Link>
+
+        {/* App Mobile Callout */}
         <button
           onClick={() => setIsModalOpen(true)}
           className="w-full text-left bg-[#141414] hover:bg-[#1A1A1A] border border-[#222222] hover:border-[#FFBF00]/40 rounded-xl p-3 space-y-2 transition-all group cursor-pointer"

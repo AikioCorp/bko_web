@@ -2,9 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, MoreVertical, EyeOff, ThumbsDown } from "lucide-react";
 import { usePlayerStore } from "@/store/playerStore";
 import { formatDate, formatDuration, toPlayerEpisode } from "@/lib/playback";
+import { fetchApi } from "@/lib/api";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type PodcastLite = {
   id?: string;
@@ -16,6 +23,7 @@ export type PodcastLite = {
   primaryLanguage?: { name: string; code?: string } | null;
   categories?: { category: { name: string; slug: string } }[];
   _count?: { episodes: number; followers: number };
+  recommendationReason?: string;
 };
 
 export type EpisodeLite = {
@@ -28,7 +36,8 @@ export type EpisodeLite = {
   publishedAt?: string | null;
   defaultMode?: "AUDIO" | "VIDEO";
   mediaSources: any[];
-  podcast: { slug: string; name: string; cover: string };
+  podcast: { id?: string; slug: string; name: string; cover: string };
+  recommendationReason?: string;
 };
 
 export function Section({
@@ -79,10 +88,21 @@ export function PodcastCard({ p }: { p: PodcastLite }) {
   );
 }
 
-export function EpisodeCard({ ep, resumeAt = 0, progressPct }: { ep: EpisodeLite; resumeAt?: number; progressPct?: number }) {
+export function EpisodeCard({
+  ep,
+  resumeAt = 0,
+  progressPct,
+  onFeedback,
+}: {
+  ep: EpisodeLite;
+  resumeAt?: number;
+  progressPct?: number;
+  onFeedback?: () => void;
+}) {
   const { currentEpisode, isPlaying, playEpisode, togglePlay } = usePlayerStore();
   const current = currentEpisode?.id === ep.id;
   const playable = ep.mediaSources.length > 0;
+  const [hidden, setHidden] = React.useState(false);
 
   const play = () => {
     if (current) return togglePlay();
@@ -90,8 +110,35 @@ export function EpisodeCard({ ep, resumeAt = 0, progressPct }: { ep: EpisodeLite
     playEpisode(toPlayerEpisode(ep, ep.podcast), mode, resumeAt);
   };
 
+  const handleNotInterested = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await fetchApi("/recommendations/feedback", {
+        method: "POST",
+        body: JSON.stringify({ targetType: "EPISODE", targetId: ep.id, action: "NOT_INTERESTED" }),
+      });
+      setHidden(true);
+      onFeedback?.();
+    } catch (_) {}
+  };
+
+  const handleHidePodcast = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!ep.podcast?.id) return;
+    try {
+      await fetchApi("/recommendations/feedback", {
+        method: "POST",
+        body: JSON.stringify({ targetType: "PODCAST", targetId: ep.podcast.id, action: "HIDE_PODCAST" }),
+      });
+      setHidden(true);
+      onFeedback?.();
+    } catch (_) {}
+  };
+
+  if (hidden) return null;
+
   return (
-    <div className={`flex gap-4 p-3 rounded-2xl border ${current ? "border-[#FFBF00]/40 bg-[#FFBF00]/5" : "border-[#1F1F1F] bg-[#121212]"}`}>
+    <div className={`relative group/card flex gap-4 p-3 rounded-2xl border ${current ? "border-[#FFBF00]/40 bg-[#FFBF00]/5" : "border-[#1F1F1F] bg-[#121212]"}`}>
       <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-[#1C1C1C] shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={ep.cover || ep.podcast.cover} alt="" loading="lazy" className="w-full h-full object-cover" />
@@ -106,12 +153,19 @@ export function EpisodeCard({ ep, resumeAt = 0, progressPct }: { ep: EpisodeLite
           </span>
         </button>
       </div>
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-[11px] text-[#8A8A8A] truncate">
-          <Link href={`/podcasts/${ep.podcast.slug}`} className="hover:text-white">{ep.podcast.name}</Link>
-          {ep.publishedAt ? ` • ${formatDate(ep.publishedAt)}` : ""}
-          {ep.durationSeconds ? ` • ${formatDuration(ep.durationSeconds)}` : ""}
-        </p>
+      <div className="min-w-0 flex-1 space-y-1 pr-6">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="text-[11px] text-[#8A8A8A] truncate">
+            <Link href={`/podcasts/${ep.podcast.slug}`} className="hover:text-white">{ep.podcast.name}</Link>
+            {ep.publishedAt ? ` • ${formatDate(ep.publishedAt)}` : ""}
+            {ep.durationSeconds ? ` • ${formatDuration(ep.durationSeconds)}` : ""}
+          </p>
+          {ep.recommendationReason && (
+            <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-medium bg-[#1F1F1F] text-[#FFBF00] border border-[#2A2A2A]">
+              {ep.recommendationReason}
+            </span>
+          )}
+        </div>
         <Link href={`/podcasts/${ep.podcast.slug}/episodes/${ep.slug}`} className="block text-sm font-bold text-white hover:text-[#FFBF00] line-clamp-2">
           {ep.title}
         </Link>
@@ -120,6 +174,26 @@ export function EpisodeCard({ ep, resumeAt = 0, progressPct }: { ep: EpisodeLite
             <div className="h-full bg-[#FFBF00]" style={{ width: `${Math.min(100, progressPct)}%` }} />
           </div>
         )}
+      </div>
+
+      <div className="absolute top-2 right-2 opacity-0 group-hover/card:opacity-100 focus-within:opacity-100 transition-opacity">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="p-1 rounded-lg text-[#888888] hover:text-white hover:bg-[#1F1F1F] outline-none">
+            <MoreVertical className="w-4 h-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-[#141414] border-[#2A2A2A] text-white">
+            <DropdownMenuItem onClick={handleNotInterested} className="text-xs cursor-pointer hover:bg-[#202020] gap-2">
+              <ThumbsDown className="w-3.5 h-3.5 text-[#888888]" />
+              Pas intéressé
+            </DropdownMenuItem>
+            {ep.podcast?.id && (
+              <DropdownMenuItem onClick={handleHidePodcast} className="text-xs cursor-pointer hover:bg-[#202020] gap-2 text-red-400">
+                <EyeOff className="w-3.5 h-3.5" />
+                Masquer cette émission
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

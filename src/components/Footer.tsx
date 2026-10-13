@@ -22,11 +22,10 @@ export const Footer: React.FC = () => {
           <div className="space-y-3">
             <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Découvrir</h4>
             <ul className="space-y-2">
-              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Explorer</Link></li>
-              <li><Link href="/podcasts" className="hover:text-[#FFBF00] transition-colors">Podcasts</Link></li>
-              <li><Link href="/categories" className="hover:text-[#FFBF00] transition-colors">Catégories</Link></li>
-              <li><Link href="/collections" className="hover:text-[#FFBF00] transition-colors">Collections Éditoriales</Link></li>
-              <li><Link href="/#telecharger-app" className="text-[#FFBF00] hover:underline transition-colors font-semibold">Application Mobile 📱</Link></li>
+              <li><Link href="/explore?view=episodes" className="hover:text-[#FFBF00] transition-colors">Tous les épisodes</Link></li>
+              <li><Link href="/explore?view=podcasts" className="hover:text-[#FFBF00] transition-colors">Toutes les émissions</Link></li>
+              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Thématiques & Catégories</Link></li>
+              <li><Link href="/library" className="hover:text-[#FFBF00] transition-colors">Bibliothèque & Favoris</Link></li>
             </ul>
           </div>
 
@@ -34,40 +33,29 @@ export const Footer: React.FC = () => {
           <div className="space-y-3">
             <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Créateurs</h4>
             <ul className="space-y-2">
-              <li><Link href="/studio" className="hover:text-[#FFBF00] transition-colors">Espace Créateur</Link></li>
-              <li><Link href="/studio" className="hover:text-[#FFBF00] transition-colors">Devenir créateur</Link></li>
-              <li><Link href="/podcasts" className="hover:text-[#FFBF00] transition-colors">Revendiquer un podcast</Link></li>
+              <li><Link href="/become-creator" className="hover:text-[#FFBF00] transition-colors">Devenir créateur</Link></li>
+              <li><Link href="/studio" className="hover:text-[#FFBF00] transition-colors">Espace Studio & Publication</Link></li>
+              <li><Link href="/tarifs" className="hover:text-[#FFBF00] transition-colors">Tarifs d'enregistrement</Link></li>
             </ul>
           </div>
 
           {/* Column 3: Bko Podcast & Studio Physique */}
           <div className="space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Bamako Podcast</h4>
+            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Studio & Partenariats</h4>
             <ul className="space-y-2">
-              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">À propos</Link></li>
-              <li><span className="text-[#666666]">Studio Bamako (Badalabougou)</span></li>
-              <li>
-                <a
-                  href="https://bamakopodcast.studio"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-[#FFBF00] transition-colors inline-flex items-center gap-1"
-                >
-                  <span>Réserver le studio</span>
-                  <span className="text-[10px]">↗</span>
-                </a>
-              </li>
+              <li><Link href="/tarifs" className="hover:text-[#FFBF00] transition-colors">Studio Bamako (Badalabougou)</Link></li>
+              <li><Link href="/tarifs" className="text-[#FFBF00] hover:underline transition-colors font-semibold">Réserver une session 🎙️</Link></li>
+              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Annoncer & Sponsoriser</Link></li>
             </ul>
           </div>
 
           {/* Column 4: Support & Légal */}
           <div className="space-y-3">
-            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Aide & Légal</h4>
+            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">Plateforme</h4>
             <ul className="space-y-2">
-              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Centre d'aide</Link></li>
-              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Signaler un problème</Link></li>
-              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Confidentialité</Link></li>
-              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Conditions d'utilisation</Link></li>
+              <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Catalogue certifié</Link></li>
+              <li><Link href="/library" className="hover:text-[#FFBF00] transition-colors">Historique d'écoute</Link></li>
+              <li><span className="text-[#666666]">Mali & Diaspora</span></li>
             </ul>
           </div>
         </div>

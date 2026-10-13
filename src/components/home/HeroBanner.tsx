@@ -88,7 +88,7 @@ export function HeroBanner({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative overflow-hidden rounded-3xl border border-[#242424] bg-[#101010] min-h-[460px] lg:h-[480px]">
+      <div className="relative overflow-hidden rounded-3xl border border-[#242424] bg-[#101010] h-[480px]">
         {/* Backdrop: la pochette floutée, voile uni */}
         <img
           key={`bg-${ep.id}`}
@@ -100,8 +100,9 @@ export function HeroBanner({
         <div className="absolute inset-0 bg-[#0B0B0B]/60" />
 
         <div key={`c-${ep.id}`} className="relative z-10 h-full grid lg:grid-cols-[1.1fr_1fr] gap-8 items-center px-6 md:px-20 py-10 pb-14 animate-fade-in">
-          <div className="min-w-0 space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 space-y-4">
+            {/* Badges (fixed slot height: 28px) */}
+            <div className="h-7 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full bg-[#FFBF00] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-black">
                 {slide.label}
               </span>
@@ -117,42 +118,51 @@ export function HeroBanner({
               )}
             </div>
 
-            {ep.podcast?.name && (
-              <Link
-                href={`/podcasts/${ep.podcast.slug}`}
-                className="block text-xs font-bold uppercase tracking-widest text-[#FFBF00] hover:underline truncate"
-              >
-                {ep.podcast.name}
-              </Link>
-            )}
+            {/* Podcast name (fixed slot height: 20px) */}
+            <div className="h-5 flex items-center">
+              {ep.podcast?.name && ep.podcast.name.toUpperCase() !== "BAMAKO PODCAST" ? (
+                <Link
+                  href={`/podcasts/${ep.podcast?.slug || ""}`}
+                  className="block text-xs font-bold uppercase tracking-widest text-[#FFBF00] hover:underline truncate"
+                >
+                  {ep.podcast.name}
+                </Link>
+              ) : null}
+            </div>
 
-            <h1
-              className={`${titleSize(title.length)} font-black leading-[1.1] tracking-tight text-white line-clamp-3 font-headline`}
-            >
-              {title}
-            </h1>
+            {/* Title (fixed slot height: 76px - exactly 2 lines) */}
+            <div className="h-[76px] flex items-center">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black leading-tight tracking-tight text-white line-clamp-2 font-headline">
+                {title}
+              </h1>
+            </div>
 
-            {desc && (
-              <p className="max-w-xl text-sm md:text-base leading-relaxed text-white/70 line-clamp-3">
-                {desc}
+            {/* Description (fixed slot height: 44px - exactly 2 lines) */}
+            <div className="h-[44px] flex items-start">
+              <p className="max-w-xl text-xs sm:text-sm md:text-base leading-relaxed text-white/70 line-clamp-2">
+                {desc || "Découvrez cet épisode complet et de nombreux autres contenus disponibles à l'écoute."}
               </p>
-            )}
+            </div>
 
-            {(slide.reason || minutes) && (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-white/60">
-                {slide.reason && <span className="text-[#FFBF00]">{slide.reason}</span>}
-                {slide.reason && minutes && <span>•</span>}
-                {minutes && <span>{minutes} min</span>}
-              </div>
-            )}
+            {/* Reason & Duration metadata (fixed slot height: 20px) */}
+            <div className="h-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-white/60">
+              <span className="text-[#FFBF00]">{slide.reason || "Recommandé pour vous"}</span>
+              {minutes && (
+                <>
+                  <span>•</span>
+                  <span>{minutes} min</span>
+                </>
+              )}
+            </div>
 
-            <div className="flex flex-wrap items-center gap-3 pt-1">
+            {/* Bottom Actions (fixed slot height: 48px) */}
+            <div className="h-12 flex flex-wrap items-center gap-3 pt-1">
               <button
                 onClick={() => onPlay(ep)}
                 className="inline-flex items-center gap-2 rounded-full bg-[#FFBF00] px-6 py-3 text-sm font-extrabold text-black transition hover:bg-[#E5AB00] active:scale-95"
               >
                 {active ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}
-                {active ? "En lecture" : "Écouter"}
+                {active ? "En lecture" : slide.kind === "resume" ? "Reprendre" : "Écouter"}
               </button>
               <Link
                 href={`/podcasts/${ep.podcast?.slug || ""}`}
@@ -171,9 +181,23 @@ export function HeroBanner({
             </div>
           </div>
 
-          <div className="hidden lg:block">
-            <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
-              <img key={`fg-${ep.id}`} src={cover} alt={title} className="h-full w-full object-cover" />
+          <div className="hidden lg:flex justify-end items-center">
+            <div className="relative aspect-square w-full max-w-[320px] xl:max-w-[340px] overflow-hidden rounded-2xl border border-[#262626] bg-[#141414] shadow-2xl group">
+              <img
+                key={`fg-${ep.id}`}
+                src={cover}
+                alt={title}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <button
+                onClick={() => onPlay(ep)}
+                className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                aria-label={active ? "Mettre en pause" : "Écouter l'épisode"}
+              >
+                <div className="w-14 h-14 rounded-full bg-[#FFBF00] text-[#0B0B0B] flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-transform">
+                  {active ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current ml-0.5" />}
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -184,18 +208,31 @@ export function HeroBanner({
             <button
               onClick={() => go(-1)}
               aria-label="Précédent"
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white hover:bg-[#FFBF00] hover:text-black transition"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-[#333333] bg-[#141414]/80 text-white hover:bg-[#FFBF00] hover:text-[#0B0B0B] hover:border-[#FFBF00] transition cursor-pointer"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={() => go(1)}
               aria-label="Suivant"
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white hover:bg-[#FFBF00] hover:text-black transition"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-[#333333] bg-[#141414]/80 text-white hover:bg-[#FFBF00] hover:text-[#0B0B0B] hover:border-[#FFBF00] transition cursor-pointer"
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-5 w-5" />
             </button>
 
+            {/* Indicateurs de progression / slides */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setIndex(i)}
+                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                    i === index ? "w-7 bg-[#FFBF00]" : "w-2 bg-white/25 hover:bg-white/50"
+                  }`}
+                  aria-label={`Slide ${i + 1}`}
+                />
+              ))}
+            </div>
           </>
         )}
       </div>

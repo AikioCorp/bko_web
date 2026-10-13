@@ -2,7 +2,8 @@
 import { getAccessToken } from "@/lib/token";
 import { API_BASE_URL } from "@/lib/api";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { fetchApi } from '@/lib/api';
 import { useRouter } from "next/navigation";
 import { Mic, ArrowRight, Image as ImageIcon } from "lucide-react";
 
@@ -10,7 +11,10 @@ export default function NewPodcastPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [cover, setCover] = useState("");
-  const [countryId, setCountryId] = useState("ML");
+  const [countryId, setCountryId] = useState("");
+  const [countries, setCountries] = useState<Array<{id: string; name: string}>>([]);
+  useEffect(() => { fetchApi('/countries').then(res => setCountries(res.data || []))
+    .catch(() => setError('Impossible de charger les pays. Rechargez la page.')); }, []);
   const [primaryLanguageCode, setPrimaryLanguageCode] = useState("fr");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,6 +23,7 @@ export default function NewPodcastPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!countryId) { setError('Choisissez le pays de votre émission.'); return; }
     setError("");
     setLoading(true);
 
@@ -38,7 +43,8 @@ export default function NewPodcastPage() {
         body: JSON.stringify({
           name,
           description,
-          cover: cover || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=600&auto=format&fit=crop",
+          cover,
+          status: 'DRAFT',
           countryId,
           primaryLanguageCode,
         }),
@@ -73,6 +79,14 @@ export default function NewPodcastPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label htmlFor="podcast-country" className="block text-sm mb-2">Pays de l’émission</label>
+            <select id="podcast-country" value={countryId} required
+              onChange={e => setCountryId(e.target.value)} className="w-full bg-[#0B0B0B] border border-[#262626] rounded-xl p-3">
+              <option value="">Choisir un pays</option>
+              {countries.map(country => <option key={country.id} value={country.id}>{country.name}</option>)}
+            </select>
+          </div>
           <div>
             <label className="block text-xs font-bold text-gray-300 mb-1">Nom du Podcast *</label>
             <input

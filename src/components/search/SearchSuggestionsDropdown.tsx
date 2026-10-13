@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { formatPodcastSubtitle } from "@/lib/utils";
 
 interface SearchSuggestionsDropdownProps {
   query: string;
@@ -168,7 +169,9 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
                     </div>
                     <div className="min-w-0 flex-1">
                       <h5 className="font-bold truncate">{p.name}</h5>
-                      <p className="text-[10px] text-[#8B949E] truncate">{p.organization?.name || "Bko Podcast"}</p>
+                      {formatPodcastSubtitle(p) && (
+                        <p className="text-[10px] text-[#8B949E] truncate">{formatPodcastSubtitle(p)}</p>
+                      )}
                     </div>
                   </div>
                 );
@@ -187,7 +190,7 @@ export const SearchSuggestionsDropdown: React.FC<SearchSuggestionsDropdownProps>
                   <div
                     key={ep.id}
                     onClick={() =>
-                      handleSelect(`/podcasts/${ep.podcast?.slug || "voix-de-bamako"}/episodes/${ep.slug}`)
+                      handleSelect(`/podcasts/${ep.podcast?.slug || "podcast"}/episodes/${ep.slug}`)
                     }
                     className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                       isSelected

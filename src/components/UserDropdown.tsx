@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, LogIn, UserPlus, ShieldCheck, Radio, Bookmark, LogOut } from "lucide-react";
+import { User, LogIn, UserPlus, ShieldCheck, Radio, Bookmark, LogOut, Crown } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 
 export function UserDropdown() {
@@ -139,6 +139,14 @@ export function UserDropdown() {
                 >
                   <Bookmark className="w-3.5 h-3.5" />
                   <span>Ma Bibliothèque</span>
+                </Link>
+                <Link
+                  href="/settings/subscription"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-[#FFBF00] hover:bg-[#1E1E1E] transition-colors font-medium"
+                >
+                  <Crown className="w-3.5 h-3.5 text-[#FFBF00]" />
+                  <span>Mon Abonnement</span>
                 </Link>
               </div>
 

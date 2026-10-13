@@ -3,12 +3,15 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Play, Pause, Share2, Bookmark, BookmarkCheck, ListMusic } from "lucide-react";
+import { Play, Pause, Share2, Bookmark, BookmarkCheck, ListMusic, Smartphone, Crown, Lock } from "lucide-react";
 import { studioApi } from "@/lib/studioApi";
+import { fetchApi } from "@/lib/api";
 import { formatClock, formatDate, formatDuration, shareOrCopy, toPlayerEpisode } from "@/lib/playback";
 import { usePlayerStore } from "../../../../../store/playerStore";
 import { useAuthStore } from "../../../../../store/authStore";
 import { ReportButton } from "@/components/public/ReportButton";
+import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
+import { EpisodePaywallCard } from "@/components/player/EpisodePaywallCard";
 
 type Episode = {
   id: string;
@@ -22,10 +25,17 @@ type Episode = {
   mediaSources: any[];
   defaultMode: "AUDIO" | "VIDEO";
   podcast: { id: string; slug: string; name: string; cover: string };
+  isPremium?: boolean;
+  premiumPrice?: number | null;
   season?: { number: number; title?: string | null } | null;
   people: { role: string; person: { name: string; slug: string } }[];
   topics: { topic: { name: string; slug: string } }[];
-  viewer: { isSaved: boolean; progress: { positionSeconds: number; completed: boolean } | null } | null;
+  viewer: {
+    isSaved: boolean;
+    hasActiveSubscription?: boolean;
+    isPurchased?: boolean;
+    progress: { positionSeconds: number; completed: boolean } | null;
+  } | null;
 };
 type Chapter = { id: string; title: string; startTimeMs: number };
 type Segment = { id: string; startTimeMs: number; text: string; speakerLabel?: string | null };
@@ -103,6 +113,9 @@ export default function EpisodePage() {
     playEpisode(toPlayerEpisode(ep, ep.podcast), ep.defaultMode, atMs > 0 ? atMs / 1000 : resume);
   };
 
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
+  const [isQueueingDownload, setIsQueueingDownload] = useState(false);
+
   const toggleSave = async () => {
     if (!isAuthenticated) return login();
     const next = !saved;
@@ -115,11 +128,35 @@ export default function EpisodePage() {
     }
   };
 
+  const handleRemoteDownload = async () => {
+    if (!isAuthenticated) return login();
+    if (!ep) return;
+    setIsQueueingDownload(true);
+    try {
+      const res = await fetchApi('/downloads/remote-queue', {
+        method: 'POST',
+        body: JSON.stringify({ episodeId: ep.id, clientSource: 'WEB' }),
+      });
+      if (res.data?.hasActiveMobile === false) {
+        setIsAppModalOpen(true);
+        flash("Aucun téléphone connecté. Connectez-vous sur l'application mobile pour lancer le téléchargement !");
+      } else {
+        flash(res.data?.message || "Téléchargement programmé sur votre téléphone !");
+      }
+    } catch (e: any) {
+      flash(e.message || "Impossible de programmer le téléchargement.");
+    } finally {
+      setIsQueueingDownload(false);
+    }
+  };
+
   const tabs = [
     { k: "about", l: "À propos" },
     ...(chapters.length ? [{ k: "chapters", l: `Chapitres (${chapters.length})` }] : []),
     ...(segments.length ? [{ k: "transcript", l: "Transcription" }] : []),
   ] as { k: "about" | "chapters" | "transcript"; l: string }[];
+
+  const hasAccess = !ep.isPremium || ep.viewer?.hasActiveSubscription || ep.viewer?.isPurchased;
 
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-8 space-y-8">
@@ -129,24 +166,50 @@ export default function EpisodePage() {
 
       <header className="flex flex-col md:flex-row md:items-end gap-5 sm:gap-8 md:gap-10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ep.cover || ep.podcast.cover} alt="" className="w-32 h-32 sm:w-56 sm:h-56 md:w-64 md:h-64 shadow-2xl rounded-2xl object-cover bg-[#1C1C1C] shrink-0" />
+        <div className="relative shrink-0">
+          <img src={ep.cover || ep.podcast.cover} alt="" className="w-32 h-32 sm:w-56 sm:h-56 md:w-64 md:h-64 shadow-2xl rounded-2xl object-cover bg-[#1C1C1C]" />
+          {ep.isPremium && (
+            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-[#0B0B0B] border border-[#FFBF00] text-[#FFBF00] text-xs font-bold flex items-center gap-1.5 shadow-lg">
+              <Crown className="w-3.5 h-3.5 fill-[#FFBF00]" />
+              <span>PREMIUM</span>
+            </div>
+          )}
+        </div>
         <div className="space-y-2 min-w-0">
-          <p className="text-[11px] text-[#8A8A8A]">
-            {ep.season ? `Saison ${ep.season.number} • ` : ""}
-            {ep.episodeNumber ? `Épisode ${ep.episodeNumber} • ` : ""}
-            {formatDate(ep.publishedAt)}
-            {ep.durationSeconds ? ` • ${formatDuration(ep.durationSeconds)}` : ""}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {ep.isPremium && (
+              <span className="px-2.5 py-0.5 rounded-full bg-[#1F1B0B] border border-[#FFBF00]/50 text-[#FFBF00] text-[11px] font-bold flex items-center gap-1">
+                <Crown className="w-3 h-3 fill-current" />
+                Épisode Premium ({ep.premiumPrice ? `${ep.premiumPrice.toLocaleString('fr-FR')} FCFA` : "Inclus dans le Pass"})
+              </span>
+            )}
+            <p className="text-[11px] text-[#8A8A8A]">
+              {ep.season ? `Saison ${ep.season.number} • ` : ""}
+              {ep.episodeNumber ? `Épisode ${ep.episodeNumber} • ` : ""}
+              {formatDate(ep.publishedAt)}
+              {ep.durationSeconds ? ` • ${formatDuration(ep.durationSeconds)}` : ""}
+            </p>
+          </div>
           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight font-extrabold text-white">{ep.title}</h1>
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <button
-              onClick={() => start()}
-              disabled={!playable}
-              className="inline-flex items-center gap-2 bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-5 py-2.5 rounded-full disabled:opacity-40"
-            >
-              {isCurrent && isPlaying ? <Pause className="w-4 h-4 fill-current stroke-none" /> : <Play className="w-4 h-4 fill-current stroke-none" />}
-              {isCurrent && isPlaying ? "Pause" : ep.viewer?.progress && !ep.viewer.progress.completed && ep.viewer.progress.positionSeconds > 10 ? "Reprendre" : "Écouter"}
-            </button>
+            {hasAccess ? (
+              <button
+                onClick={() => start()}
+                disabled={!playable}
+                className="inline-flex items-center gap-2 bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-5 py-2.5 rounded-full disabled:opacity-40 hover:bg-[#E5AB00] transition-colors"
+              >
+                {isCurrent && isPlaying ? <Pause className="w-4 h-4 fill-current stroke-none" /> : <Play className="w-4 h-4 fill-current stroke-none" />}
+                {isCurrent && isPlaying ? "Pause" : ep.viewer?.progress && !ep.viewer.progress.completed && ep.viewer.progress.positionSeconds > 10 ? "Reprendre" : "Écouter"}
+              </button>
+            ) : (
+              <a
+                href="#paywall-section"
+                className="inline-flex items-center gap-2 bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-5 py-2.5 rounded-full hover:bg-[#E5AB00] transition-colors shadow-lg"
+              >
+                <Lock className="w-4 h-4 stroke-[2.5]" />
+                <span>Débloquer cet épisode</span>
+              </a>
+            )}
             
             <button onClick={() => addToQueue(toPlayerEpisode(ep, ep.podcast))} className="text-[#B8B8B8] hover:text-[#FFBF00] p-2" aria-label="Ajouter à la file d'attente">
               <ListMusic className="w-5 h-5" />
@@ -163,12 +226,41 @@ export default function EpisodePage() {
             >
               <Share2 className="w-3.5 h-3.5" /> Partager
             </button>
+            <button
+              onClick={handleRemoteDownload}
+              disabled={isQueueingDownload}
+              title="Télécharger sur mon téléphone (Écoute hors-ligne mobile)"
+              className="inline-flex items-center gap-1.5 text-xs text-[#B8B8B8] hover:text-[#FFBF00] bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] px-3.5 py-1.5 rounded-full transition-colors"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-[#FFBF00]" />
+              <span>{isQueueingDownload ? "Envoi..." : "Télécharger sur mobile"}</span>
+            </button>
             <ReportButton targetType="EPISODE" targetId={ep.id} />
             {notice && <span className="text-xs text-[#FFBF00]" role="status">{notice}</span>}
           </div>
           {!playable && <p className="text-xs text-red-300">Aucune source de lecture disponible pour cet épisode.</p>}
         </div>
       </header>
+
+      {/* Paywall Banner if episode is gated */}
+      {!hasAccess && (
+        <div id="paywall-section">
+          <EpisodePaywallCard
+            episode={{
+              id: ep.id,
+              title: ep.title,
+              slug: ep.slug,
+              isPremium: ep.isPremium,
+              premiumPrice: ep.premiumPrice,
+              podcast: {
+                name: ep.podcast.name,
+                slug: ep.podcast.slug,
+              },
+            }}
+            onAccessGranted={load}
+          />
+        </div>
+      )}
 
       {tabs.length > 1 && (
         <div className="flex gap-1 border-b border-[#262626]" role="tablist">
@@ -242,6 +334,13 @@ export default function EpisodePage() {
           ))}
         </ul>
       )}
+
+      <AppDownloadModal
+        isOpen={isAppModalOpen}
+        onClose={() => setIsAppModalOpen(false)}
+        title="Téléchargement sur Mobile"
+        subtitle="Le téléchargement de fichiers est réservé à l'application mobile. Connectez-vous sur votre téléphone pour synchroniser vos épisodes hors-ligne !"
+      />
     </div>
   );
 }

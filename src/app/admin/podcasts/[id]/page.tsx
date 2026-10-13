@@ -116,6 +116,29 @@ export default function AdminPodcastDetailsPage() {
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+    const handlePublish = async () => {
+    if (!id) return;
+    setIsSaving(true);
+    setErrorMsg(null);
+    try {
+      const res = await adminApi(`/admin/podcasts/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ ...editData, status: "PUBLISHED" }),
+      });
+      if (res.success) {
+        setHasUnsavedChanges(false);
+        setIsEditingInfo(false);
+        mutate();
+      } else {
+        setErrorMsg(res.message || "Erreur lors de la publication");
+      }
+    } catch (e: any) {
+      setErrorMsg("Erreur de connexion");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!id) return;
     setIsSaving(true);
@@ -617,6 +640,14 @@ export default function AdminPodcastDetailsPage() {
                     <p className="text-sm font-medium text-white">{podcast.publishedAt}</p>
                   </div>
                 </div>
+                {podcast.status === "DRAFT" && (
+                  <div className="pt-4 mt-4 border-t border-[#2A2A2A]">
+                    <Button onClick={handlePublish} disabled={isSaving} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold">
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Publier le podcast
+                    </Button>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -778,7 +809,7 @@ export default function AdminPodcastDetailsPage() {
                     <tbody className="divide-y divide-[#2A2A2A]">
                       {episodes.map((ep: any) => (
                         <tr key={ep.id} className="hover:bg-[#2A2A2A]/30 transition-colors group">
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 w-full max-w-[200px] sm:max-w-[300px] lg:max-w-[500px]">
                             <div className="flex items-center gap-4">
                               <img src={ep.cover || podcast.cover} alt={ep.title} className="w-12 h-12 rounded-lg object-cover border border-[#2A2A2A]" />
                               <div>

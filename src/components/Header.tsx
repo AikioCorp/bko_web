@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, Plus, User, LogIn, UserPlus, LogOut, Radio, Menu, ShieldCheck, Bookmark, Smartphone } from "lucide-react";
+import { Search, Plus, User, LogIn, UserPlus, LogOut, Radio, Menu, ShieldCheck, Bookmark, Smartphone, Crown } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { BkoLogo } from "./ui/BkoLogo";
 import { NotificationBell } from "./NotificationBell";

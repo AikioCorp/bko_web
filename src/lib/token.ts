@@ -50,6 +50,10 @@ export function clearStoredTokens() {
 export function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
     const storedRefresh = getStoredRefreshToken();
+    if (!storedRefresh && !memoryAccessToken) {
+      clearStoredTokens();
+      return Promise.resolve(null);
+    }
     refreshPromise = (nativeFetch()(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
       credentials: "include",
@@ -114,6 +118,10 @@ if (typeof window !== "undefined" && !(window as any).__bkoFetchPatched) {
 
     const res = await base(input, withToken(token));
     if (res.status !== 401) return res;
+
+    // Si la requête initiale n'avait aucun token et qu'aucun refresh token n'est stocké,
+    // ce 401 signifie que l'endpoint requiert une connexion (visiteur invité). Ne pas tenter de refresh.
+    if (!token && !getStoredRefreshToken()) return res;
 
     const fresh = await refreshAccessToken();
     return fresh ? base(input, withToken(fresh)) : res;
