@@ -235,53 +235,16 @@ function AuthComponent() {
       const json = await res.json();
 
       if (json.success) {
-        const loginRes = await fetch(`${API_BASE_URL}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ identifier: registerEmail.trim(), password: registerPassword }),
-        });
-        const loginJson = await loginRes.json();
-        
-        if (loginJson.success && loginJson.data) {
-          const userObj = {
-            id: loginJson.data.id,
-            email: loginJson.data.email,
-            fullName: loginJson.data.fullName,
-            avatar: loginJson.data.avatar,
-            roles: loginJson.data.roles,
-            permissions: [],
-          };
-          setIsNavigating(true);
-          setAuth(userObj as any, loginJson.data.accessToken);
-          router.push(searchParams.get("redirect") || "/onboarding");
-        } else {
-          router.push(`/login?tab=login`);
-        }
+        // Redirection vers l'étape de validation OTP
+        const testCode = json.data?.testOtpCode || json.data?.otpCode;
+        const codeQuery = testCode ? `&code=${encodeURIComponent(testCode)}` : "";
+        const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : "";
+        router.push(`/verify-otp?email=${encodeURIComponent(registerEmail.trim())}${codeQuery}${redirectQuery}`);
       } else {
-        // Fallback demo register & auth
-        const mockUser = {
-          id: "usr-new",
-          email: registerEmail,
-          fullName: fullName || "Nouvel Auditeur",
-          roles: isCreator ? ["LISTENER", "CREATOR"] : ["LISTENER"],
-          permissions: [],
-        };
-        setIsNavigating(true);
-        setAuth(mockUser as any, "mock-new-token");
-        router.push(isCreator ? "/studio" : "/onboarding");
+        setError(json.message || "Erreur lors de la création du compte.");
       }
-    } catch (err) {
-      const mockUser = {
-        id: "usr-new",
-        email: registerEmail,
-        fullName: fullName || "Nouvel Auditeur",
-        roles: isCreator ? ["LISTENER", "CREATOR"] : ["LISTENER"],
-        permissions: [],
-      };
-      setIsNavigating(true);
-      setAuth(mockUser as any, "mock-new-token");
-      router.push(isCreator ? "/studio" : "/onboarding");
+    } catch (err: any) {
+      setError(err?.message || "Impossible de joindre le serveur. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
