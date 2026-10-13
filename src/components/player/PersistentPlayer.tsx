@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -153,12 +153,10 @@ export const PersistentPlayer = () => {
     if (kind === "video" && videoRef.current) videoRef.current.currentTime = seekRequest.time;
   }, [seekRequest, kind]);
 
-  if (!currentEpisode) return null;
-
-  const total = duration || currentEpisode.durationSeconds || 0;
+  const total = duration || currentEpisode?.durationSeconds || 0;
   const progressPercent = total ? Math.min(100, Math.max(0, (currentTime / total) * 100)) : 0;
   const controllable = kind === "audio" || kind === "video";
-  const episodeHref = `/podcasts/${currentEpisode.podcast.slug}/episodes/${currentEpisode.slug}`;
+  const episodeHref = currentEpisode ? `/podcasts/${currentEpisode.podcast.slug}/episodes/${currentEpisode.slug}` : "";
 
   const fmt = (s: number) => {
     if (!isFinite(s) || s < 0) return "0:00";
@@ -237,10 +235,12 @@ export const PersistentPlayer = () => {
           <iframe src={embedUrl} title={currentEpisode.title} width="100%" height={152} allow="autoplay; encrypted-media" />
         )}
         {kind === "audio" && (
-          <audio key={activeSource?.id} ref={audioRef} src={safeHttp(activeSource?.externalUrl) ?? undefined} preload="metadata" onLoadedMetadata={(e: any) => { const a = e.currentTarget; if (startAt > 0 && handledSeek.current === 0 && a.currentTime === 0) a.currentTime = startAt; if (isFinite(a.duration)) setProgress(a.currentTime, a.duration); if (isPlaying) a.play().catch(() => pause()); }} onTimeUpdate={(e: any) => onMediaProgress(e.currentTarget.currentTime, isFinite(e.currentTarget.duration) ? e.currentTarget.duration : total)} onEnded={onMediaEnded} onError={() => pause()} />
+          <audio ref={audioRef} src={safeHttp(activeSource?.externalUrl) ?? undefined} preload="metadata" onLoadedMetadata={(e: any) => { const a = e.currentTarget; if (startAt > 0 && handledSeek.current === 0 && a.currentTime === 0) a.currentTime = startAt; if (isFinite(a.duration)) setProgress(a.currentTime, a.duration); }} onTimeUpdate={(e: any) => onMediaProgress(e.currentTarget.currentTime, isFinite(e.currentTarget.duration) ? e.currentTarget.duration : total)} onEnded={onMediaEnded} onError={() => pause()} />
         )}
       </div>
 
+      {currentEpisode && (
+      <>
       {isExpanded && (
         <div className="fixed inset-0 z-[60] bg-[#0B0B0B] flex flex-col animate-in slide-in-from-bottom-8 duration-300">
           <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-lg mx-auto w-full relative">
@@ -397,6 +397,8 @@ export const PersistentPlayer = () => {
           </div>
         )}
       </div>
+      </>
+      )}
     </>
   );
 };
