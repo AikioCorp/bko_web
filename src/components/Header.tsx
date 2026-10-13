@@ -181,13 +181,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
 
       {/* Right Actions: App Mobile CTA + Publier (Creator Only) + Login Icon with Hover Popover */}
       <div className="flex items-center gap-3 shrink-0">
-        <Link
-          href="/premium"
-          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1A1608] hover:bg-[#25200C] border border-[#FFBF00]/40 text-[#FFBF00] text-xs font-semibold transition-all shadow-sm"
-        >
-          <Crown className="w-3.5 h-3.5 text-[#FFBF00]" />
-          <span>Pass Premium</span>
-        </Link>
         {/* Call-to-Action to download Mobile App */}
         <button
           onClick={() => setIsAppModalOpen(true)}
