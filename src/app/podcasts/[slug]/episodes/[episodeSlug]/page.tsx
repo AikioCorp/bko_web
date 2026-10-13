@@ -56,6 +56,8 @@ export default function EpisodePage() {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [tab, setTab] = useState<"about" | "chapters" | "transcript">("about");
   const [notice, setNotice] = useState("");
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
+  const [isQueueingDownload, setIsQueueingDownload] = useState(false);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -112,9 +114,6 @@ export default function EpisodePage() {
     }
     playEpisode(toPlayerEpisode(ep, ep.podcast), ep.defaultMode, atMs > 0 ? atMs / 1000 : resume);
   };
-
-  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
-  const [isQueueingDownload, setIsQueueingDownload] = useState(false);
 
   const toggleSave = async () => {
     if (!isAuthenticated) return login();

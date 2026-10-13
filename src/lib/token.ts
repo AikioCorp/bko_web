@@ -67,6 +67,21 @@ export function refreshAccessToken(): Promise<string | null> {
           setAccessToken(json.data.accessToken, json.data.refreshToken);
           return memoryAccessToken;
         }
+
+        if (json?.error?.code === "ACCOUNT_SUSPENDED") {
+          clearStoredTokens();
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("bko_suspended_details", JSON.stringify(json.error?.details || {}));
+            try {
+              const { usePlayerStore } = await import("@/store/playerStore");
+              usePlayerStore.getState().pause();
+            } catch (_) {}
+            if (window.location.pathname !== "/suspended") {
+              window.location.href = "/suspended";
+            }
+          }
+          return null;
+        }
         
         // Refresh failed, session is dead
         const hadSession = !!storedRefresh || !!memoryAccessToken;
@@ -74,7 +89,7 @@ export function refreshAccessToken(): Promise<string | null> {
         
         // Redirige vers le login UNIQUEMENT si une session existait et a expiré.
         // Un visiteur invité doit pouvoir parcourir le site sans être renvoyé au login.
-        if (hadSession && typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+        if (hadSession && typeof window !== "undefined" && !window.location.pathname.includes("/login") && !window.location.pathname.includes("/suspended")) {
           window.location.href = "/login";
         }
         

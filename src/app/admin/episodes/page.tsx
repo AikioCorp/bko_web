@@ -6,6 +6,7 @@ import useSWR from "swr";
 import {
   Search, Headphones, Loader2, ChevronLeft, ChevronRight, Edit2, Trash2,
   Eye, CheckCircle2, FileEdit, Clock, Archive, Plus, AlertTriangle, ImageIcon,
+  ArrowUpDown, Filter, Bookmark, DownloadCloud,
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -20,12 +21,21 @@ const STATUS: Record<string, { label: string; cls: string }> = {
 };
 
 const TABS = [
-  { id: "", label: "Tous" },
-  { id: "PUBLISHED", label: "Publiés" },
-  { id: "DRAFT", label: "Brouillons" },
-  { id: "PENDING_REVIEW", label: "À valider" },
-  { id: "SCHEDULED", label: "Programmés" },
-  { id: "ARCHIVED", label: "Archivés" },
+  { id: "", label: "Tous", countKey: "ALL" },
+  { id: "PUBLISHED", label: "Publiés", countKey: "PUBLISHED" },
+  { id: "DRAFT", label: "Brouillons", countKey: "DRAFT" },
+  { id: "PENDING_REVIEW", label: "À valider", countKey: "PENDING_REVIEW" },
+  { id: "SCHEDULED", label: "Programmés", countKey: "SCHEDULED" },
+  { id: "ARCHIVED", label: "Archivés", countKey: "ARCHIVED" },
+];
+
+const SORT_OPTIONS = [
+  { id: "newest", label: "Plus récents" },
+  { id: "most_listened", label: "Les plus écoutés" },
+  { id: "most_saved", label: "Les plus téléchargés" },
+  { id: "duration_desc", label: "Durée la plus longue" },
+  { id: "duration_asc", label: "Durée la plus courte" },
+  { id: "oldest", label: "Plus anciens" },
 ];
 
 const LIMIT = 25;
@@ -40,6 +50,8 @@ function fmtDuration(s?: number | null) {
 export default function AdminEpisodesPage() {
   const { isAuthenticated } = useAuthStore();
   const [status, setStatus] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [podcastId, setPodcastId] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [page, setPage] = useState(1);
@@ -52,11 +64,16 @@ export default function AdminEpisodesPage() {
     const t = setTimeout(() => setDebounced(search.trim()), 350);
     return () => clearTimeout(t);
   }, [search]);
-  useEffect(() => setPage(1), [debounced, status]);
 
-  const key = isAuthenticated ? ["/admin/episodes", debounced, status, page] : null;
-  const { data, isLoading, error, mutate } = useSWR(key, ([url, q, s, p]: any) =>
-    adminApi(`${url}?page=${p}&limit=${LIMIT}&search=${encodeURIComponent(q)}&status=${s}`).then((r: any) => {
+  useEffect(() => {
+    setPage(1);
+  }, [debounced, status, sortBy, podcastId]);
+
+  const key = isAuthenticated ? ["/admin/episodes", debounced, status, sortBy, podcastId, page] : null;
+  const { data, isLoading, error, mutate } = useSWR(key, ([url, q, s, sb, pid, p]: any) =>
+    adminApi(
+      `${url}?page=${p}&limit=${LIMIT}&search=${encodeURIComponent(q)}&status=${s}&sortBy=${sb}&podcastId=${pid}`
+    ).then((r: any) => {
       if (!r.success) throw new Error(r.message);
       return r.data;
     })
@@ -64,6 +81,8 @@ export default function AdminEpisodesPage() {
 
   const items: any[] = data?.data || [];
   const total: number = data?.total || 0;
+  const counts: Record<string, number> = data?.counts || {};
+  const podcasts: Array<{ id: string; name: string; slug: string }> = data?.podcasts || [];
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
   const notify = (type: "success" | "error", text: string) => {
@@ -110,12 +129,12 @@ export default function AdminEpisodesPage() {
             Épisodes
           </h1>
           <p className="text-sm text-[#888888] mt-1">
-            {total.toLocaleString("fr-FR")} épisode{total > 1 ? "s" : ""} sur l'ensemble du catalogue.
+            {total.toLocaleString("fr-FR")} épisode{total > 1 ? "s" : ""} sur l&apos;ensemble du catalogue.
           </p>
         </div>
         <Link
           href="/admin/podcasts"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FFBF00] hover:bg-[#E5A800] text-black text-xs font-bold self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FFBF00] hover:bg-[#E5A800] text-black text-xs font-bold self-start sm:self-auto transition-colors"
         >
           <Plus className="w-4 h-4" />
           Ajouter via une émission
@@ -123,43 +142,103 @@ export default function AdminEpisodesPage() {
       </div>
 
       {feedback && (
-        <div className={`p-3.5 rounded-xl text-xs font-bold border ${feedback.type === "success" ? "bg-[#238636]/15 text-[#3fb950] border-[#238636]/30" : "bg-red-500/15 text-red-400 border-red-500/30"}`}>
+        <div
+          className={`p-3.5 rounded-xl text-xs font-bold border ${
+            feedback.type === "success"
+              ? "bg-[#238636]/15 text-[#3fb950] border-[#238636]/30"
+              : "bg-red-500/15 text-red-400 border-red-500/30"
+          }`}
+        >
           {feedback.text}
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {TABS.map((t) => (
+      {/* Onglets de Statut avec compteurs dynamiques */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+        {TABS.map((t) => {
+          const tabCount = counts[t.countKey];
+          return (
             <button
               key={t.id}
               onClick={() => setStatus(t.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 border transition-colors ${
-                status === t.id ? "bg-white text-black border-white" : "bg-[#141414] text-[#888888] hover:text-white border-[#262626]"
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 border transition-colors flex items-center gap-1.5 ${
+                status === t.id
+                  ? "bg-white text-black border-white"
+                  : "bg-[#141414] text-[#888888] hover:text-white border-[#262626]"
               }`}
             >
-              {t.label}
+              <span>{t.label}</span>
+              {typeof tabCount === "number" && (
+                <span
+                  className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
+                    status === t.id ? "bg-black/10 text-black" : "bg-[#202020] text-[#AAAAAA]"
+                  }`}
+                >
+                  {tabCount.toLocaleString("fr-FR")}
+                </span>
+              )}
             </button>
-          ))}
-        </div>
-        <div className="relative w-full lg:w-80">
+          );
+        })}
+      </div>
+
+      {/* Barre de Filtres & Recherche */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Recherche */}
+        <div className="relative sm:col-span-2 lg:col-span-2">
           <Search className="w-4 h-4 text-[#666666] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher un épisode ou une émission…"
-            className="w-full bg-[#141414] border border-[#262626] rounded-xl py-2.5 pl-10 pr-3 text-xs text-white outline-none focus:border-[#FFBF00]"
+            className="w-full bg-[#141414] border border-[#262626] rounded-xl py-2.5 pl-10 pr-3 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors"
           />
+        </div>
+
+        {/* Filtrer par Émission */}
+        <div className="relative">
+          <select
+            value={podcastId}
+            onChange={(e) => setPodcastId(e.target.value)}
+            className="w-full bg-[#141414] border border-[#262626] rounded-xl py-2.5 px-3 text-xs text-white outline-none focus:border-[#FFBF00] appearance-none cursor-pointer"
+          >
+            <option value="">Toutes les émissions</option>
+            {podcasts.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <Filter className="w-3.5 h-3.5 text-[#666666] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+
+        {/* Trier par */}
+        <div className="relative">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full bg-[#141414] border border-[#262626] rounded-xl py-2.5 px-3 text-xs text-white outline-none focus:border-[#FFBF00] appearance-none cursor-pointer"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <ArrowUpDown className="w-3.5 h-3.5 text-[#666666] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
       </div>
 
+      {/* Tableau des épisodes */}
       <div className="bg-[#111111] border border-[#222222] rounded-2xl overflow-hidden">
         {isLoading ? (
           <div className="h-64 flex items-center justify-center">
             <Loader2 className="w-7 h-7 text-[#FFBF00] animate-spin" />
           </div>
         ) : error ? (
-          <div className="h-48 flex items-center justify-center text-sm text-red-400">Erreur de chargement des épisodes.</div>
+          <div className="h-48 flex items-center justify-center text-sm text-red-400">
+            Erreur de chargement des épisodes.
+          </div>
         ) : items.length === 0 ? (
           <div className="h-48 flex flex-col items-center justify-center text-center gap-2">
             <Headphones className="w-7 h-7 text-[#555555]" />
@@ -176,35 +255,64 @@ export default function AdminEpisodesPage() {
                   <th className="px-3 py-3 font-semibold">Statut</th>
                   <th className="px-3 py-3 font-semibold hidden lg:table-cell">Durée</th>
                   <th className="px-3 py-3 font-semibold hidden lg:table-cell">Écoutes</th>
+                  <th className="px-3 py-3 font-semibold hidden xl:table-cell">Téléchargements</th>
                   <th className="px-3 py-3 font-semibold hidden xl:table-cell">Créé le</th>
                   <th className="px-5 py-3 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1A1A1A]">
                 {items.map((ep) => {
-                  const st = STATUS[ep.status] || { label: ep.status, cls: "bg-[#262626] text-[#A3A3A3] border-[#333333]" };
+                  const st = STATUS[ep.status] || {
+                    label: ep.status,
+                    cls: "bg-[#262626] text-[#A3A3A3] border-[#333333]",
+                  };
                   const cover = ep.coverImageUrl || ep.cover || ep.podcast?.cover;
+                  const listens = ep.plays ?? ep._count?.plays ?? ep._count?.histories ?? 0;
+                  const downloads = ep._count?.savedBy ?? 0;
+
                   return (
                     <tr key={ep.id} className="hover:bg-[#151515] transition-colors">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-10 h-10 rounded-lg bg-[#1C1C1C] border border-[#2A2A2A] overflow-hidden shrink-0 flex items-center justify-center">
-                            {cover ? <img src={cover} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-4 h-4 text-[#555555]" />}
+                            {cover ? (
+                              <img src={cover} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <ImageIcon className="w-4 h-4 text-[#555555]" />
+                            )}
                           </div>
                           <div className="min-w-0">
-                            <Link href={`/admin/episodes/${ep.id}`} className="font-bold text-white hover:text-[#FFBF00] truncate block max-w-[260px]">
+                            <Link
+                              href={`/admin/episodes/${ep.id}`}
+                              className="font-bold text-white hover:text-[#FFBF00] truncate block max-w-[260px]"
+                            >
                               {ep.title}
                             </Link>
-                            {ep.isPremium && <span className="text-[10px] font-bold text-[#FFBF00]">PREMIUM</span>}
+                            {ep.isPremium && (
+                              <span className="text-[10px] font-bold text-[#FFBF00]">PREMIUM</span>
+                            )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-[#AAAAAA] hidden md:table-cell truncate max-w-[180px]">{ep.podcast?.name || "—"}</td>
-                      <td className="px-3 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-bold ${st.cls}`}>{st.label}</span>
+                      <td className="px-3 py-3 text-[#AAAAAA] hidden md:table-cell truncate max-w-[180px]">
+                        {ep.podcast?.name || "—"}
                       </td>
-                      <td className="px-3 py-3 text-[#AAAAAA] hidden lg:table-cell">{fmtDuration(ep.durationSeconds)}</td>
-                      <td className="px-3 py-3 text-[#AAAAAA] hidden lg:table-cell">{(ep._count?.histories ?? 0).toLocaleString("fr-FR")}</td>
+                      <td className="px-3 py-3">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-bold ${st.cls}`}
+                        >
+                          {st.label}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-[#AAAAAA] hidden lg:table-cell">
+                        {fmtDuration(ep.durationSeconds)}
+                      </td>
+                      <td className="px-3 py-3 text-white font-medium hidden lg:table-cell">
+                        {listens.toLocaleString("fr-FR")}
+                      </td>
+                      <td className="px-3 py-3 text-[#AAAAAA] hidden xl:table-cell">
+                        {downloads.toLocaleString("fr-FR")}
+                      </td>
                       <td className="px-3 py-3 text-[#777777] hidden xl:table-cell">
                         {ep.createdAt ? new Date(ep.createdAt).toLocaleDateString("fr-FR") : "—"}
                       </td>
@@ -215,9 +323,13 @@ export default function AdminEpisodesPage() {
                               onClick={() => publish(ep)}
                               disabled={busyId === ep.id}
                               title="Publier"
-                              className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 disabled:opacity-50"
+                              className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 disabled:opacity-50 transition-colors"
                             >
-                              {busyId === ep.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                              {busyId === ep.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              )}
                             </button>
                           )}
                           {ep.podcast?.slug && ep.status === "PUBLISHED" && (
@@ -225,15 +337,23 @@ export default function AdminEpisodesPage() {
                               href={`/podcasts/${ep.podcast.slug}/episodes/${ep.slug}`}
                               target="_blank"
                               title="Voir sur le site"
-                              className="p-2 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] text-[#AAAAAA]"
+                              className="p-2 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] text-[#AAAAAA] transition-colors"
                             >
                               <Eye className="w-3.5 h-3.5" />
                             </Link>
                           )}
-                          <Link href={`/admin/episodes/${ep.id}`} title="Modifier" className="p-2 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] text-[#FFBF00]">
+                          <Link
+                            href={`/admin/episodes/${ep.id}`}
+                            title="Modifier"
+                            className="p-2 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] text-[#FFBF00] transition-colors"
+                          >
                             <Edit2 className="w-3.5 h-3.5" />
                           </Link>
-                          <button onClick={() => setToDelete(ep)} title="Supprimer" className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400">
+                          <button
+                            onClick={() => setToDelete(ep)}
+                            title="Supprimer"
+                            className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+                          >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -248,12 +368,22 @@ export default function AdminEpisodesPage() {
 
         {total > LIMIT && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-[#222222] text-xs text-[#888888]">
-            <span>Page {page} / {totalPages}</span>
+            <span>
+              Page {page} / {totalPages}
+            </span>
             <div className="flex items-center gap-2">
-              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="p-2 rounded-lg bg-[#1C1C1C] disabled:opacity-40 hover:bg-[#262626] text-white">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="p-2 rounded-lg bg-[#1C1C1C] disabled:opacity-40 hover:bg-[#262626] text-white transition-colors"
+              >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="p-2 rounded-lg bg-[#1C1C1C] disabled:opacity-40 hover:bg-[#262626] text-white">
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="p-2 rounded-lg bg-[#1C1C1C] disabled:opacity-40 hover:bg-[#262626] text-white transition-colors"
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -261,23 +391,29 @@ export default function AdminEpisodesPage() {
         )}
       </div>
 
+      {/* Modal confirmation suppression */}
       {toDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl max-w-sm w-full p-6 space-y-5">
-            <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-6 h-6" />
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-[#141414] border border-[#262626] rounded-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-400">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="font-bold text-white text-base">Supprimer cet épisode ?</h3>
             </div>
-            <div className="text-center space-y-1.5">
-              <h3 className="text-base font-bold text-white">Supprimer cet épisode ?</h3>
-              <p className="text-xs text-[#888888] leading-relaxed">
-                « {toDelete.title} » sera supprimé définitivement ainsi que ses médias associés.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => setToDelete(null)} disabled={deleting} className="py-2.5 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] text-white text-xs font-bold">
+            <p className="text-xs text-[#888888] leading-relaxed">
+              Vous êtes sur le point de supprimer définitivement « <span className="text-white font-semibold">{toDelete.title}</span> ». Cette action est irréversible.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setToDelete(null)}
+                className="px-4 py-2 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-xs font-semibold text-white transition-colors"
+              >
                 Annuler
               </button>
-              <button onClick={confirmDelete} disabled={deleting} className="py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-60">
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-semibold text-white flex items-center gap-2 disabled:opacity-50 transition-colors"
+              >
                 {deleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Supprimer
               </button>

@@ -14,6 +14,7 @@ export interface UserProfile {
   fullName: string;
   avatar?: string | null;
   phoneNumber?: string | null;
+  hasPassword?: boolean;
   roles: string[];
   permissions: string[];
   languagePreferences?: Array<{ languageCode: string }>;
@@ -120,6 +121,22 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
             const res = await fetch(`${API_BASE_URL}/me`, { credentials: "include" });
             const json = await res.json();
+            if (json?.error?.code === "ACCOUNT_SUSPENDED") {
+              clearStoredTokens();
+              if (typeof window !== "undefined") {
+                localStorage.removeItem(USER_KEY);
+                sessionStorage.setItem("bko_suspended_details", JSON.stringify(json.error?.details || {}));
+                try {
+                  const { usePlayerStore } = await import("@/store/playerStore");
+                  usePlayerStore.getState().pause();
+                } catch (_) {}
+                if (window.location.pathname !== "/suspended") {
+                  window.location.href = "/suspended";
+                }
+              }
+              set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
+              return;
+            }
             if (json.success && json.data) {
               if (typeof window !== "undefined") {
                 localStorage.setItem(USER_KEY, JSON.stringify(json.data));

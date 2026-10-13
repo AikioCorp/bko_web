@@ -38,10 +38,23 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
   }
 
   if (!res.ok || json?.success === false) {
+    if (json?.error?.code === "ACCOUNT_SUSPENDED" && typeof window !== "undefined") {
+      try {
+        const { clearStoredTokens } = await import("@/lib/token");
+        const { usePlayerStore } = await import("@/store/playerStore");
+        clearStoredTokens();
+        sessionStorage.setItem("bko_suspended_details", JSON.stringify(json.error.details || {}));
+        usePlayerStore.getState().pause();
+      } catch (_) {}
+      if (window.location.pathname !== "/suspended") {
+        window.location.href = "/suspended";
+      }
+    }
     const errorMsg = json?.error?.message || json?.message || `Erreur requête (${res.status})`;
     const err = new Error(errorMsg);
     (err as any).status = res.status;
     (err as any).data = json;
+    (err as any).code = json?.error?.code;
     throw err;
   }
 

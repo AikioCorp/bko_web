@@ -47,9 +47,13 @@ import {
   MessageSquare,
   ShieldAlert,
   Flame,
-  FileBadge
+  FileBadge,
+  Edit3,
+  KeyRound
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AdminEditUserModal } from "@/components/admin/AdminEditUserModal";
+import { AdminPasswordModal } from "@/components/admin/AdminPasswordModal";
 
 function classNames(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(" ");
@@ -112,6 +116,8 @@ export default function User360Page() {
   const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
   const [isRolesModalOpen, setIsRolesModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // État formulaire d'attribution d'abonnement
   const [selectedPlanId, setSelectedPlanId] = useState("");
@@ -440,15 +446,31 @@ export default function User360Page() {
 
           {/* Boutons d'Action Super Admin */}
           <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-2.5 shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0 border-[#1E1E1E]">
-            <Button
-              onClick={() => {
-                setSelectedPlanId(subscriptionPlans?.[0]?.id || "");
-                setIsGrantModalOpen(true);
-              }}
-              className="bg-[#FFBF00] hover:bg-[#E6AC00] text-black font-semibold text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow-sm"
-            >
-              <CreditCard className="w-3.5 h-3.5" /> Attribuer un abonnement
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                onClick={() => {
+                  setSelectedPlanId(subscriptionPlans?.[0]?.id || "");
+                  setIsGrantModalOpen(true);
+                }}
+                className="bg-[#FFBF00] hover:bg-[#E6AC00] text-black font-semibold text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow-sm"
+              >
+                <CreditCard className="w-3.5 h-3.5" /> Attribuer un abonnement
+              </Button>
+
+              <Button
+                onClick={() => setIsEditModalOpen(true)}
+                className="bg-[#181818] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs h-9 px-3 rounded-xl flex items-center gap-1.5"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-[#FFBF00]" /> Modifier profil
+              </Button>
+
+              <Button
+                onClick={() => setIsPasswordModalOpen(true)}
+                className="bg-[#181818] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs h-9 px-3 rounded-xl flex items-center gap-1.5"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-[#FFBF00]" /> Mot de passe
+              </Button>
+            </div>
 
             {!isCurrent && (
               <div className="flex items-center gap-2">
@@ -1564,6 +1586,28 @@ export default function User360Page() {
           </div>
         </div>
       )}
+
+      {/* Modale d'édition utilisateur */}
+      <AdminEditUserModal
+        isOpen={isEditModalOpen}
+        user={profile}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={async (updated) => {
+          await mutate();
+          showToast(`Informations de ${updated.fullName || updated.email} mises à jour.`);
+        }}
+      />
+
+      {/* Modale de réinitialisation / mot de passe */}
+      <AdminPasswordModal
+        isOpen={isPasswordModalOpen}
+        user={profile}
+        onClose={() => setIsPasswordModalOpen(false)}
+        onSuccess={async () => {
+          await mutate();
+          showToast("Mot de passe mis à jour avec succès.");
+        }}
+      />
     </div>
   );
 }

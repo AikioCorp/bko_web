@@ -17,6 +17,10 @@ import {
   ShieldCheck,
   AlertCircle,
   LogOut,
+  Sparkles,
+  CheckCircle2,
+  ArrowRight,
+  RotateCcw,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { API_BASE_URL } from "@/lib/api";
@@ -133,6 +137,10 @@ function AuthComponent() {
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpMessage, setOtpMessage] = useState("");
 
   // Register form state
   const [fullName, setFullName] = useState("");
@@ -203,6 +211,73 @@ function AuthComponent() {
       } else {
         setError(err?.message || "Erreur de communication avec le serveur.");
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequestOtpLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    const trimmed = identifier.trim();
+    if (!trimmed) {
+      setError("Veuillez saisir votre adresse email ou votre numéro de téléphone.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/otp-login/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: trimmed }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setOtpSent(true);
+        setOtpMessage(json.data?.message || "Un code de connexion a été envoyé.");
+      } else {
+        setError(json.message || "Impossible d'envoyer le code de connexion.");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Erreur de communication avec le serveur.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtpLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    const trimmed = identifier.trim();
+    const code = otpCode.trim();
+    if (!code || code.length !== 6) {
+      setError("Veuillez saisir le code à 6 chiffres reçu.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/otp-login/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          identifier: trimmed,
+          otpCode: code,
+          deviceType: "WEB",
+          deviceName: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 50) : "Navigateur Web",
+        }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setIsNavigating(true);
+        setAuth(json.data.user, json.data.accessToken, json.data.refreshToken);
+        const destination = getDestinationForUser(json.data.user?.roles || [], redirect);
+        router.push(destination);
+      } else {
+        setError(json.message || "Code incorrect ou expiré.");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Erreur de communication avec le serveur.");
     } finally {
       setLoading(false);
     }
@@ -360,82 +435,224 @@ function AuthComponent() {
         {/* TAB 1: CONNEXION */}
         {/* ========================================================================= */}
         {activeTab === "login" ? (
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            {/* Field: Identifiant */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <label className="font-bold text-white">Identifiant</label>
-                <span className="text-[11px] text-[#757575]">Mali (+223) & International</span>
-              </div>
-              <div className="relative flex items-center">
-                <span className="absolute left-3.5 text-[#757575] font-semibold text-xs sm:text-sm">@</span>
-                <input
-                  type="text"
-                  required
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="amadou@mail.com ou +223 70 00 00 00"
-                  className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 pl-9 pr-4 outline-none transition-colors"
-                />
-              </div>
+          <div className="space-y-4">
+            {/* Sous-sélecteur de méthode de connexion */}
+            <div className="flex rounded-xl bg-[#0E0E0E] p-1 border border-[#262626]">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("password");
+                  setError("");
+                }}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  loginMode === "password"
+                    ? "bg-[#242424] text-white shadow"
+                    : "text-[#888888] hover:text-white"
+                }`}
+              >
+                Mot de passe
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("otp");
+                  setError("");
+                }}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  loginMode === "otp"
+                    ? "bg-[#242424] text-[#FFBF00] shadow"
+                    : "text-[#888888] hover:text-[#FFBF00]"
+                }`}
+              >
+                <Sparkles className="w-3 h-3 text-[#FFBF00]" />
+                <span>Code par email</span>
+              </button>
             </div>
 
-            {/* Field: Mot de passe */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <label className="font-bold text-white">Mot de passe</label>
-                <Link href="/forgot-password" className="text-[11px] text-[#FFBF00] hover:underline">
-                  Mot de passe oublié ?
-                </Link>
-              </div>
-              <div className="relative flex items-center">
-                <Key className="w-4 h-4 text-[#757575] absolute left-3.5" />
-                <input
-                  type={showLoginPassword ? "text" : "password"}
-                  required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 pl-10 pr-10 outline-none transition-colors"
-                />
+            {/* FORMULAIRE 1 : CONNEXION PAR MOT DE PASSE */}
+            {loginMode === "password" ? (
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                {/* Field: Identifiant */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <label className="font-bold text-white">Identifiant</label>
+                    <span className="text-[11px] text-[#757575]">Mali (+223) & International</span>
+                  </div>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3.5 text-[#757575] font-semibold text-xs sm:text-sm">@</span>
+                    <input
+                      type="text"
+                      required
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="amadou@mail.com ou +223 70 00 00 00"
+                      className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 pl-9 pr-4 outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                {/* Field: Mot de passe */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <label className="font-bold text-white">Mot de passe</label>
+                    <Link
+                      href="/forgot-password"
+                      className="text-xs font-semibold text-[#FFBF00] hover:text-[#FFD043] hover:underline transition-colors flex items-center gap-1"
+                    >
+                      <span>Mot de passe oublié ?</span>
+                    </Link>
+                  </div>
+                  <div className="relative flex items-center">
+                    <Key className="w-4 h-4 text-[#757575] absolute left-3.5" />
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 pl-10 pr-10 outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-3.5 text-[#757575] hover:text-white"
+                    >
+                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Remember Me & Recovery */}
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer text-[#B8B8B8] hover:text-white">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="accent-[#FFBF00] rounded"
+                    />
+                    <span>Se souvenir de moi</span>
+                  </label>
+
+                  <div className="flex items-center gap-1 text-[11px] text-[#757575]">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#FFBF00]" />
+                    <span>Session chiffrée</span>
+                  </div>
+                </div>
+
+                {/* Primary CTA Submit */}
                 <button
-                  type="button"
-                  onClick={() => setShowLoginPassword(!showLoginPassword)}
-                  className="absolute right-3.5 text-[#757575] hover:text-white"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold py-3 sm:py-3.5 rounded-xl text-xs sm:text-sm shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
-                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <span>▶</span>
+                  <span>{loading ? "Connexion en cours..." : "Se connecter"}</span>
                 </button>
+              </form>
+            ) : (
+              /* FORMULAIRE 2 : CONNEXION SANS MOT DE PASSE (OTP DIRECT) */
+              <div className="space-y-4">
+                {!otpSent ? (
+                  <form onSubmit={handleRequestOtpLogin} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <label className="font-bold text-white">Adresse e-mail</label>
+                        <span className="text-[11px] text-[#757575]">Sans mot de passe</span>
+                      </div>
+                      <div className="relative flex items-center">
+                        <Mail className="w-4 h-4 text-[#757575] absolute left-3.5" />
+                        <input
+                          type="email"
+                          required
+                          value={identifier}
+                          onChange={(e) => setIdentifier(e.target.value)}
+                          placeholder="votre.email@exemple.com"
+                          className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 sm:py-3 pl-10 pr-4 outline-none transition-colors"
+                        />
+                      </div>
+                      <p className="text-[11px] text-[#757575] leading-relaxed pt-1">
+                        Un code sécurisé à 6 chiffres vous sera envoyé par e-mail pour vous connecter instantanément.
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold py-3 sm:py-3.5 rounded-xl text-xs sm:text-sm shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>{loading ? "Envoi du code..." : "Recevoir mon code de connexion"}</span>
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyOtpLogin} className="space-y-4">
+                    <div className="p-3 bg-[#238636]/15 border border-[#238636]/30 text-[#3fb950] text-xs rounded-xl flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>{otpMessage || "Code de connexion envoyé à " + identifier}</span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <label className="font-bold text-white">Code de sécurité à 6 chiffres</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOtpSent(false);
+                            setOtpCode("");
+                            setError("");
+                          }}
+                          className="text-[11px] text-[#FFBF00] hover:underline"
+                        >
+                          Changer d'email
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        maxLength={6}
+                        pattern="[0-9]{6}"
+                        autoFocus
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="123456"
+                        className="w-full bg-[#0E0E0E] border border-[#262626] focus:border-[#FFBF00] text-center font-mono tracking-widest text-lg sm:text-xl font-bold text-white placeholder-[#444444] rounded-xl py-2.5 sm:py-3 px-4 outline-none transition-colors"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading || otpCode.length !== 6}
+                      className="w-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold py-3 sm:py-3.5 rounded-xl text-xs sm:text-sm shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                      <span>{loading ? "Vérification..." : "Valider et me connecter"}</span>
+                    </button>
+
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={handleRequestOtpLogin}
+                        disabled={loading}
+                        className="text-xs text-[#888888] hover:text-[#FFBF00] transition-colors inline-flex items-center gap-1.5"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Renvoyer un nouveau code</span>
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
+            )}
+
+            {/* Séparateur pour options tierces */}
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-[#242424]" />
+              <span className="flex-shrink mx-3 text-[10px] text-[#666666] uppercase font-bold tracking-wider">
+                ou continuer avec
+              </span>
+              <div className="flex-grow border-t border-[#242424]" />
             </div>
-
-            {/* Remember Me & Security */}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1">
-              <label className="flex items-center gap-2 cursor-pointer text-[#B8B8B8] hover:text-white">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="accent-[#FFBF00] rounded"
-                />
-                <span>Se souvenir de moi</span>
-              </label>
-
-              <div className="flex items-center gap-1 text-[11px] text-[#757575]">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#FFBF00]" />
-                <span>Session sécurisée</span>
-              </div>
-            </div>
-
-            {/* Primary CTA Submit */}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold py-3 sm:py-3.5 rounded-xl text-xs sm:text-sm shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-            >
-              <span>▶</span>
-              <span>{loading ? "Connexion en cours..." : "Se connecter"}</span>
-            </button>
 
             {/* Google Sign In */}
             <GoogleLoginButton mode="login" />
@@ -468,7 +685,7 @@ function AuthComponent() {
               <span>•</span>
               <Link href="/explore" className="hover:underline">Confidentialité</Link>
             </div>
-          </form>
+          </div>
         ) : (
           /* ========================================================================= */
           /* TAB 2: INSCRIPTION */

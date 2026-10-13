@@ -32,9 +32,12 @@ import {
   ChevronRight,
   Filter,
   X,
-  Activity
+  Activity,
+  Edit3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AdminEditUserModal } from "@/components/admin/AdminEditUserModal";
+import { AdminPasswordModal } from "@/components/admin/AdminPasswordModal";
 
 function classNames(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(" ");
@@ -124,6 +127,10 @@ export default function UsersPage() {
   const [userToSuspend, setUserToSuspend] = useState<any>(null);
   const [quickSuspendReason, setQuickSuspendReason] = useState("");
   const [isQuickSuspending, setIsQuickSuspending] = useState(false);
+
+  // Modale d'édition et mot de passe
+  const [userToEdit, setUserToEdit] = useState<any>(null);
+  const [userToResetPassword, setUserToResetPassword] = useState<any>(null);
 
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -631,6 +638,24 @@ export default function UsersPage() {
                             </>
                           ) : null}
 
+                          {/* Bouton Modifier l'utilisateur */}
+                          <button
+                            title="Modifier les informations de l'utilisateur"
+                            onClick={() => setUserToEdit(user)}
+                            className="p-2 rounded-lg bg-[#141414] hover:bg-[#202020] text-[#888888] hover:text-[#FFBF00] border border-[#242424] hover:border-[#FFBF00]/40 transition-colors"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+
+                          {/* Bouton Mot de passe & Sécurité */}
+                          <button
+                            title="Gérer / Réinitialiser le mot de passe"
+                            onClick={() => setUserToResetPassword(user)}
+                            className="p-2 rounded-lg bg-[#141414] hover:bg-[#202020] text-[#888888] hover:text-[#FFBF00] border border-[#242424] hover:border-[#FFBF00]/40 transition-colors"
+                          >
+                            <KeyRound className="w-4 h-4" />
+                          </button>
+
                           {/* Bouton Vue 360° */}
                           <Link
                             href={`/admin/users/${user.id}`}
@@ -761,6 +786,26 @@ export default function UsersPage() {
                     <Activity className="w-4 h-4" />
                     <span>Ouvrir la Vue 360° Complète (Abonnements & Écoutes)</span>
                   </Link>
+                </div>
+
+                {/* Actions rapides d'édition et mot de passe */}
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setUserToEdit(selectedUser)}
+                    className="py-2 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#2E2E2E] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#FFBF00]" />
+                    <span>Modifier profil</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserToResetPassword(selectedUser)}
+                    className="py-2 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#2E2E2E] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <KeyRound className="w-3.5 h-3.5 text-[#FFBF00]" />
+                    <span>Mot de passe</span>
+                  </button>
                 </div>
               </div>
 
@@ -1187,6 +1232,31 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      {/* Modale d'édition utilisateur */}
+      <AdminEditUserModal
+        isOpen={Boolean(userToEdit)}
+        user={userToEdit}
+        onClose={() => setUserToEdit(null)}
+        onSuccess={async (updated) => {
+          await mutate();
+          if (selectedUser?.id === updated.id) {
+            setSelectedUser((prev: any) => ({ ...prev, ...updated }));
+          }
+          showToast(`Informations de ${updated.fullName || updated.email} mises à jour.`);
+        }}
+      />
+
+      {/* Modale de réinitialisation / mot de passe */}
+      <AdminPasswordModal
+        isOpen={Boolean(userToResetPassword)}
+        user={userToResetPassword}
+        onClose={() => setUserToResetPassword(null)}
+        onSuccess={async () => {
+          await mutate();
+          showToast("Mot de passe mis à jour avec succès.");
+        }}
+      />
     </div>
   );
 }

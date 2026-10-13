@@ -13,7 +13,8 @@ import {
   LogOut, Camera, Loader2, CheckCircle2, AlertCircle,
   ExternalLink, Save, BadgeCheck, Sparkles, Clock, Globe,
   Bookmark, Radio, Play, Pause, ListMusic, AlertTriangle,
-  X, ChevronRight, LayoutDashboard, Settings2
+  X, ChevronRight, LayoutDashboard, Settings2,
+  Key, Lock, Eye, EyeOff
 } from "lucide-react";
 
 interface UnifiedProfileViewProps {
@@ -45,6 +46,15 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  
+  // Password management states
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Avatar upload states
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -181,6 +191,51 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
       setFeedbackMsg({ type: "error", text: err.message || "Impossible de mettre à jour le profil." });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Password Update or Setup Handler
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMsg(null);
+
+    if (newPassword.length < 8) {
+      setPasswordMsg({ type: "error", text: "Le nouveau mot de passe doit contenir au moins 8 caractères." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ type: "error", text: "Les deux mots de passe ne correspondent pas." });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const res = await fetchApi("/me/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: user?.hasPassword ? currentPassword : undefined,
+          newPassword,
+        }),
+      });
+
+      if (res.success) {
+        setPasswordMsg({
+          type: "success",
+          text: user?.hasPassword
+            ? "Votre mot de passe a été modifié avec succès."
+            : "Votre mot de passe a été défini avec succès ! Vous pouvez désormais vous connecter directement avec votre email et ce mot de passe.",
+        });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        updateUser({ hasPassword: true });
+      } else {
+        setPasswordMsg({ type: "error", text: res.message || "Erreur lors de la mise à jour du mot de passe." });
+      }
+    } catch (err: any) {
+      setPasswordMsg({ type: "error", text: err.message || "Impossible de mettre à jour le mot de passe." });
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -1124,6 +1179,130 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
       {/* ===================================================================== */}
       {activeTab === "devices" && (
         <div className="space-y-6">
+          {/* CARTE: MOT DE PASSE & SÉCURITÉ DE CONNEXION */}
+          <div className="bg-[#121212] border border-[#262626] rounded-2xl p-6 sm:p-8 space-y-6">
+            <div className="border-b border-[#262626] pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-base font-bold text-white flex items-center gap-2">
+                    <Key className="w-4 h-4 text-[#FFBF00]" />
+                    <span>{user.hasPassword ? "Modifier mon mot de passe" : "Définir un mot de passe"}</span>
+                  </h2>
+                  <p className="text-xs text-[#888888] mt-1">
+                    {user.hasPassword
+                      ? "Mettez à jour le mot de passe utilisé pour vous connecter sur vos différents appareils."
+                      : "Vous êtes actuellement connecté via Google. Définissez un mot de passe pour pouvoir vous connecter directement avec votre adresse e-mail sur n'importe quel ordinateur ou téléphone."}
+                  </p>
+                </div>
+                <div className="shrink-0">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
+                    user.hasPassword
+                      ? "bg-[#238636]/15 border border-[#238636]/30 text-[#3fb950]"
+                      : "bg-[#FFBF00]/15 border border-[#FFBF00]/30 text-[#FFBF00]"
+                  }`}>
+                    {user.hasPassword ? "Mot de passe actif" : "Connexion Google uniquement"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {passwordMsg && (
+              <div
+                className={`p-3.5 rounded-xl border text-xs flex items-center gap-2.5 ${
+                  passwordMsg.type === "success"
+                    ? "bg-[#238636]/15 border-[#238636]/40 text-[#3fb950]"
+                    : "bg-red-500/10 border-red-500/30 text-red-400"
+                }`}
+              >
+                {passwordMsg.type === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                )}
+                <span>{passwordMsg.text}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-xl">
+              {user.hasPassword && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">Mot de passe actuel</label>
+                  <div className="relative flex items-center">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      required
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full bg-[#181818] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 px-3.5 pr-10 outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-3 text-[#757575] hover:text-white"
+                    >
+                      {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">
+                    {user.hasPassword ? "Nouveau mot de passe" : "Créer un mot de passe"}
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Min. 8 caractères"
+                      className="w-full bg-[#181818] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 px-3.5 pr-10 outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 text-[#757575] hover:text-white"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">Confirmer le mot de passe</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Répétez le mot de passe"
+                    className="w-full bg-[#181818] border border-[#262626] focus:border-[#FFBF00] text-white placeholder-[#555555] text-xs sm:text-sm rounded-xl py-2.5 px-3.5 outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isUpdatingPassword}
+                  className="px-5 py-2.5 bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-extrabold text-xs rounded-xl shadow transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isUpdatingPassword ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span>{user.hasPassword ? "Mettre à jour le mot de passe" : "Enregistrer le mot de passe"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
           <div className="bg-[#121212] border border-[#262626] rounded-2xl p-6 sm:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#262626] pb-4">
               <div>
