@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { MessageSquare, X, Send, Sparkles, Headphones, Minus } from "lucide-react";
+import { MessageSquare, X, Send, Sparkles, Headphones } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { usePlayerStore } from "@/store/playerStore";
 import { useRouter } from "next/navigation";
+import { fetchApi } from "@/lib/api";
 
 interface ChatMessage {
   id: string;
@@ -12,12 +14,12 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-const N8N_CHAT_WEBHOOK = "https://bko-n8n.salika.tech/webhook/9881143d-a47b-4638-a326-8679506ff3f0/chat";
-const INACTIVITY_DELAY_MS = 2 * 60 * 1000; // 2 minutes
+const INACTIVITY_DELAY_MS = 3 * 60 * 1000; // 3 minutes d'inactivité
 
 export function AliChatBubble() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const isAudioPlaying = usePlayerStore((s) => s.isPlaying);
   const firstName = user?.fullName ? user.fullName.split(" ")[0] : "";
 
   // État d'ouverture et pastille
@@ -42,6 +44,20 @@ export function AliChatBubble() {
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSentInactivityRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Suivi de l'état de l'application (onglet actif / inactif)
+  const isDocumentVisibleRef = useRef(true);
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      isDocumentVisibleRef.current = !document.hidden;
+      // Si l'utilisateur quitte l'onglet, annuler la relance
+      if (document.hidden && inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
 
   // Initialisation session et position par défaut
   useEffect(() => {
@@ -91,78 +107,85 @@ export function AliChatBubble() {
     }
   }, [messages, isOpen]);
 
-  // Envoi du signal d'inactivité
-  const triggerInactivityFollowUp = useCallback(async () => {
-    if (hasSentInactivityRef.current || isLoading) return;
+  /**
+   * 4. RELANCE APRÈS INACTIVITÉ (3 MINUTES)
+   * Affiche la relance DIRECTEMENT en local sans appel au modèle pour économiser l'API et supprimer toute latence.
+   * Conditions strictes :
+   * - Annulée si audio en cours de lecture
+   * - Annulée si chat fermé ou app en arrière-plan
+   * - Annulée si saisie ou requête en cours
+   * - 1 seule relance max
+   */
+  const triggerInactivityFollowUp = useCallback(() => {
+    // Verrous stricts d'annulation
+    if (
+      hasSentInactivityRef.current ||
+      isLoading ||
+      !isOpen || // Annulé si chat fermé
+      !isDocumentVisibleRef.current || // Annulé si onglet en arrière-plan
+      isAudioPlaying // Annulé si lecture audio en cours !
+    ) {
+      return;
+    }
+
     hasSentInactivityRef.current = true;
 
-    try {
-      const payload = {
-        action: "sendMessage",
-        sessionId: sessionIdRef.current,
-        chatInput: firstName ? `[INACTIVITE_DETECTEE] Prénom: ${firstName}` : "[INACTIVITE_DETECTEE]",
-      };
+    const followUpText = firstName
+      ? `Hey ${firstName}, tu es toujours là ? 🙂`
+      : "Hey, tu es toujours là ? 🙂";
 
-      const res = await fetch(N8N_CHAT_WEBHOOK, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: "msg_idle_" + Date.now(),
+        sender: "ali",
+        text: followUpText,
+        timestamp: new Date(),
+      },
+    ]);
+  }, [firstName, isLoading, isOpen, isAudioPlaying]);
 
-      if (res.ok) {
-        const data = await res.json();
-        const replyText = data.output || data.text || "Hey, tu es toujours là ? 🙂";
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: "msg_" + Date.now(),
-            sender: "ali",
-            text: replyText,
-            timestamp: new Date(),
-          },
-        ]);
-
-        // Si le chat est fermé, incrémenter la pastille dorée
-        if (!isOpen) {
-          setUnreadCount((c) => c + 1);
-        }
-      }
-    } catch {
-      // Échec silencieux
-    }
-  }, [firstName, isLoading, isOpen]);
-
-  // Réarmement du chronomètre d'inactivité
+  // Réarmement du chronomètre d'inactivité (3 minutes)
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
     }
     hasSentInactivityRef.current = false;
+
+    // Ne pas armer si chat fermé, audio en cours ou onglet caché
+    if (!isOpen || isAudioPlaying || !isDocumentVisibleRef.current) {
+      return;
+    }
+
     inactivityTimerRef.current = setTimeout(() => {
       triggerInactivityFollowUp();
     }, INACTIVITY_DELAY_MS);
-  }, [triggerInactivityFollowUp]);
+  }, [isOpen, isAudioPlaying, triggerInactivityFollowUp]);
 
-  // Pause du chronomètre quand l'utilisateur tape
+  // Pause / report du chronomètre quand l'utilisateur tape
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
-    // Quand l'utilisateur tape activement, on repousse le timer
+    // Toute saisie annule et reporte le timer
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
+    }
+    if (isOpen && !isAudioPlaying) {
       inactivityTimerRef.current = setTimeout(() => {
         triggerInactivityFollowUp();
       }, INACTIVITY_DELAY_MS);
     }
   };
 
-  // Envoi d'un message utilisateur
+  /**
+   * 3. TRANSMISSION SÉCURISÉE VIA LE BACKEND (ZERO TRUST)
+   * Le client passe par /api/v1/advisor/chat avec le JWT Session Bearer.
+   * L'identité est résolue et vérifiée côté serveur.
+   */
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const text = inputValue.trim();
     if (!text || isLoading) return;
 
-    // Reset du champ et ajout immédiat
     setInputValue("");
     const userMsg: ChatMessage = {
       id: "msg_user_" + Date.now(),
@@ -173,23 +196,22 @@ export function AliChatBubble() {
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
-    // Annule le timer d'inactivité pendant qu'Ali réfléchit
-    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
 
     try {
-      const res = await fetch(N8N_CHAT_WEBHOOK, {
+      // Appel via le backend sécurisé
+      const res = await fetchApi("/advisor/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "sendMessage",
           sessionId: sessionIdRef.current,
           chatInput: text,
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        const aliReply = data.output || data.text || "Je regarde ça pour toi !";
+      if (res.success && res.data) {
+        const aliReply = res.data.output || "Je regarde ça pour toi !";
         const botMsg: ChatMessage = {
           id: "msg_ali_" + Date.now(),
           sender: "ali",
@@ -198,7 +220,7 @@ export function AliChatBubble() {
         };
         setMessages((prev) => [...prev, botMsg]);
 
-        // Démarre le chronomètre d'inactivité après la réponse d'Ali
+        // Démarre le chronomètre d'inactivité de 3 minutes
         resetInactivityTimer();
       } else {
         setMessages((prev) => [
@@ -206,7 +228,7 @@ export function AliChatBubble() {
           {
             id: "msg_err_" + Date.now(),
             sender: "ali",
-            text: "Désolé, j'ai eu un petit contretemps pour accéder au catalogue. Réessaie dans un instant !",
+            text: res.message || "Désolé, j'ai eu un contretemps pour accéder au catalogue. Réessaie dans un instant !",
             timestamp: new Date(),
           },
         ]);
@@ -228,7 +250,6 @@ export function AliChatBubble() {
 
   // GESTION DU DRAG (GLISSER-DÉPOSER)
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Si on clique sur le bouton alors qu'on glisse
     hasMovedRef.current = false;
     dragStartRef.current = {
       startX: e.clientX,
@@ -285,7 +306,11 @@ export function AliChatBubble() {
 
     const handleDragEnd = () => {
       if (dragStartRef.current && hasMovedRef.current) {
-        localStorage.setItem("bko_ali_bubble_pos", JSON.stringify(position));
+        // Rapprochement physique vers le bord le plus proche (style Apple AssistiveTouch / PiP)
+        const snapX = position.x < window.innerWidth / 2 ? 16 : window.innerWidth - 76;
+        const snapPos = { x: snapX, y: position.y };
+        setPosition(snapPos);
+        localStorage.setItem("bko_ali_bubble_pos", JSON.stringify(snapPos));
       }
       dragStartRef.current = null;
       setIsDragging(false);
@@ -307,44 +332,71 @@ export function AliChatBubble() {
   }, [isDragging, position]);
 
   const toggleChat = () => {
-    // Si on a déplacé la bulle, on n'ouvre pas le chat
     if (hasMovedRef.current) return;
-    setIsOpen((prev) => !prev);
-    if (!isOpen) {
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    if (nextState) {
       setUnreadCount(0);
+      resetInactivityTimer();
+    } else {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
     }
   };
 
-  // Convertisseur de texte Markdown (Gras & Liens)
+  /**
+   * NORMALISATION DES DOMAINES D'ALI
+   * Réécrit toute URL vers le domaine actif (ex: http://x0jn9ljzszcjjvzmiltdx0qd.194.31.52.77.sslip.io)
+   */
+  const normalizeAliText = (text: string): string => {
+    if (!text) return text;
+    const currentOrigin =
+      typeof window !== "undefined" && window.location.origin
+        ? window.location.origin
+        : "http://x0jn9ljzszcjjvzmiltdx0qd.194.31.52.77.sslip.io";
+
+    const domainPattern = /https?:\/\/(?:www\.)?(?:bamakopodcast\.(?:com|studio|ml)|c0mq60vovgz6xkdvi8hkyejk\.194\.31\.52\.77\.sslip\.io)/gi;
+    return text.replace(domainPattern, currentOrigin);
+  };
+
+  /**
+   * INTERCEPTION DES LIENS & NAVIGATION INTERNE NEXT.JS
+   * Prend en charge les liens Markdown [Titre](URL), les URLs directes et le texte en gras.
+   */
   const renderMessageContent = (content: string) => {
-    // Regex pour détecter [Texte](URL) et **Gras**
-    const parts = content.split(/(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*)/g);
+    const normalized = normalizeAliText(content);
+    const parts = normalized.split(/(\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s<>"{}|\\^`]+|\*\*[^*]+\*\*)/g);
 
     return parts.map((part, idx) => {
-      // Détection [Titre](URL)
+      // 1. Lien Markdown [Titre](URL)
       const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (linkMatch) {
-        const linkText = linkMatch[1];
-        const linkUrl = linkMatch[2];
-        const isInternal = linkUrl.startsWith("/") || linkUrl.includes("bamakopodcast.studio");
+        const linkText = normalizeAliText(linkMatch[1]);
+        const rawUrl = normalizeAliText(linkMatch[2]);
+
+        let internalPath: string | null = null;
+        try {
+          if (rawUrl.startsWith("/")) {
+            internalPath = rawUrl;
+          } else if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+            const parsed = new URL(rawUrl);
+            internalPath = parsed.pathname + parsed.search;
+          }
+        } catch {
+          internalPath = rawUrl;
+        }
 
         return (
           <a
             key={idx}
-            href={linkUrl}
+            href={internalPath || rawUrl}
             onClick={(e) => {
-              if (isInternal) {
+              if (internalPath) {
                 e.preventDefault();
-                try {
-                  const path = new URL(linkUrl, "https://www.bamakopodcast.studio").pathname;
-                  router.push(path);
-                } catch {
-                  router.push(linkUrl);
-                }
+                router.push(internalPath);
               }
             }}
             className="text-[#FFBF00] font-semibold underline underline-offset-2 hover:text-[#FFD700] transition-colors"
-            target={isInternal ? "_self" : "_blank"}
+            target={internalPath ? "_self" : "_blank"}
             rel="noopener noreferrer"
           >
             {linkText}
@@ -352,7 +404,38 @@ export function AliChatBubble() {
         );
       }
 
-      // Détection **Gras**
+      // 2. URL directe (https?://...)
+      const rawUrlMatch = part.match(/^https?:\/\/[^\s<>"{}|\\^`]+$/);
+      if (rawUrlMatch) {
+        const rawUrl = normalizeAliText(rawUrlMatch[0]);
+        let internalPath: string | null = null;
+        try {
+          const parsed = new URL(rawUrl);
+          internalPath = parsed.pathname + parsed.search;
+        } catch {
+          internalPath = null;
+        }
+
+        return (
+          <a
+            key={idx}
+            href={internalPath || rawUrl}
+            onClick={(e) => {
+              if (internalPath) {
+                e.preventDefault();
+                router.push(internalPath);
+              }
+            }}
+            className="text-[#FFBF00] font-semibold underline underline-offset-2 hover:text-[#FFD700] transition-colors break-all"
+            target={internalPath ? "_self" : "_blank"}
+            rel="noopener noreferrer"
+          >
+            {rawUrl}
+          </a>
+        );
+      }
+
+      // 3. Texte en gras **Gras**
       const boldMatch = part.match(/^\*\*([^*]+)\*\*$/);
       if (boldMatch) {
         return (
@@ -368,7 +451,7 @@ export function AliChatBubble() {
 
   return (
     <>
-      {/* BULLE FLOTTANTE GLISSABLE (DRAGGABLE) */}
+      {/* BULLE FLOTTANTE GLISSABLE (DRAGGABLE) AVEC BORDURE SOLIDE SANS OMBRE */}
       <div
         style={{
           position: "fixed",
@@ -376,6 +459,7 @@ export function AliChatBubble() {
           top: `${position.y}px`,
           zIndex: 9999,
           touchAction: "none",
+          transition: isDragging ? "none" : "left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)",
         }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
@@ -383,12 +467,12 @@ export function AliChatBubble() {
       >
         <button
           onClick={toggleChat}
-          className="relative w-14 h-14 rounded-full bg-[#141416] border-2 border-[#FFBF00] shadow-2xl flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+          className="relative w-14 h-14 rounded-full bg-[#141416] border-2 border-[#FFBF00] flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-105 active:scale-95 transition-transform"
           aria-label="Discuter avec Ali"
         >
           <Headphones className="w-6 h-6 text-[#FFBF00]" />
 
-          {/* Pastille de notification (Badge doré) */}
+          {/* Pastille de notification dorée */}
           {unreadCount > 0 && !isOpen && (
             <span className="absolute -top-1 -right-1 bg-[#FFBF00] text-[#0E0E10] font-extrabold text-xs w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#141416] animate-bounce">
               {unreadCount}
@@ -421,15 +505,13 @@ export function AliChatBubble() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-[#27272A] transition-colors"
-                aria-label="Fermer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-[#27272A] transition-colors"
+              aria-label="Fermer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Zone des messages */}
@@ -475,7 +557,7 @@ export function AliChatBubble() {
               type="text"
               value={inputValue}
               onChange={handleInputChange}
-              placeholder="Demande un podcast, un thème..."
+              placeholder="Demande un podcast, un thème, tes favoris..."
               className="flex-1 bg-[#121214] border border-[#2E2E34] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-[#71717A] focus:outline-none focus:border-[#FFBF00] transition-colors"
             />
             <button
