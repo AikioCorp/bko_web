@@ -73,12 +73,17 @@ export function AliChatBubble() {
       const savedPos = localStorage.getItem("bko_ali_bubble_pos");
       if (savedPos) {
         try {
-          setPosition(JSON.parse(savedPos));
+          const saved = JSON.parse(savedPos);
+          if (!Number.isFinite(saved.x) || !Number.isFinite(saved.y)) throw new Error('Invalid position');
+          setPosition({
+            x: Math.min(Math.max(10, saved.x), Math.max(10, window.innerWidth - 70)),
+            y: Math.min(Math.max(10, saved.y), Math.max(10, window.innerHeight - 150)),
+          });
         } catch {
-          setPosition({ x: window.innerWidth - 80, y: window.innerHeight - 100 });
+          setPosition({ x: window.innerWidth - 80, y: Math.max(10, window.innerHeight - 150) });
         }
       } else {
-        setPosition({ x: window.innerWidth - 80, y: window.innerHeight - 100 });
+        setPosition({ x: window.innerWidth - 80, y: Math.max(10, window.innerHeight - 150) });
       }
     }
 
@@ -248,91 +253,71 @@ export function AliChatBubble() {
     }
   };
 
-  // GESTION DU DRAG (GLISSER-DÉPOSER)
-  const handleMouseDown = (e: React.MouseEvent) => {
-    hasMovedRef.current = false;
-    dragStartRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      initialX: position.x,
-      initialY: position.y,
-    };
-    setIsDragging(true);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    hasMovedRef.current = false;
-    const touch = e.touches[0];
-    dragStartRef.current = {
-      startX: touch.clientX,
-      startY: touch.clientY,
-      initialX: position.x,
-      initialY: position.y,
-    };
-    setIsDragging(true);
-  };
-
+  // Capture pointer events without reinstalling listeners on every frame.
+  const positionRef = useRef(position);
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dragStartRef.current) return;
-      const dx = e.clientX - dragStartRef.current.startX;
-      const dy = e.clientY - dragStartRef.current.startY;
-
-      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-        hasMovedRef.current = true;
-      }
-
-      const nextX = Math.min(Math.max(10, dragStartRef.current.initialX + dx), window.innerWidth - 70);
-      const nextY = Math.min(Math.max(10, dragStartRef.current.initialY + dy), window.innerHeight - 70);
-
-      setPosition({ x: nextX, y: nextY });
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!dragStartRef.current) return;
-      const touch = e.touches[0];
-      const dx = touch.clientX - dragStartRef.current.startX;
-      const dy = touch.clientY - dragStartRef.current.startY;
-
-      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-        hasMovedRef.current = true;
-      }
-
-      const nextX = Math.min(Math.max(10, dragStartRef.current.initialX + dx), window.innerWidth - 70);
-      const nextY = Math.min(Math.max(10, dragStartRef.current.initialY + dy), window.innerHeight - 70);
-
-      setPosition({ x: nextX, y: nextY });
-    };
-
-    const handleDragEnd = () => {
-      if (dragStartRef.current && hasMovedRef.current) {
-        // Rapprochement physique vers le bord le plus proche (style Apple AssistiveTouch / PiP)
-        const snapX = position.x < window.innerWidth / 2 ? 16 : window.innerWidth - 76;
-        const snapPos = { x: snapX, y: position.y };
-        setPosition(snapPos);
-        localStorage.setItem("bko_ali_bubble_pos", JSON.stringify(snapPos));
-      }
+    const clampToViewport = () => {
+      const latest = positionRef.current;
+      const next = { x: Math.min(Math.max(10, latest.x), Math.max(10, window.innerWidth - 70)),
+        y: Math.min(Math.max(10, latest.y), Math.max(10, window.innerHeight - 150)) };
       dragStartRef.current = null;
       setIsDragging(false);
+      positionRef.current = next;
+      setPosition(next);
     };
-
-    if (isDragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleDragEnd);
-      window.addEventListener("touchmove", handleTouchMove, { passive: true });
-      window.addEventListener("touchend", handleDragEnd);
+    window.addEventListener('resize', clampToViewport);
+    return () => window.removeEventListener('resize', clampToViewport);
+  }, []);
+  useEffect(() => {
+    if (!dragStartRef.current) positionRef.current = position;
+  }, [position]);
+  const dragFrameRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (dragFrameRef.current !== null) cancelAnimationFrame(dragFrameRef.current);
+  }, []);
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    hasMovedRef.current = false;
+    dragStartRef.current = { startX: e.clientX, startY: e.clientY,
+      initialX: positionRef.current.x, initialY: positionRef.current.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const start = dragStartRef.current;
+    if (!start) return;
+    const dx = e.clientX - start.startX, dy = e.clientY - start.startY;
+    if (!hasMovedRef.current && Math.hypot(dx, dy) <= 6) return;
+    hasMovedRef.current = true;
+    setIsDragging(true);
+    positionRef.current = {
+      x: Math.min(Math.max(10, start.initialX + dx), Math.max(10, window.innerWidth - 70)),
+      y: Math.min(Math.max(10, start.initialY + dy), Math.max(10, window.innerHeight - 150)),
+    };
+    if (dragFrameRef.current === null) {
+      dragFrameRef.current = requestAnimationFrame(() => {
+        dragFrameRef.current = null;
+        setPosition(positionRef.current);
+      });
     }
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleDragEnd);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleDragEnd);
-    };
-  }, [isDragging, position]);
+  };
+  const handlePointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragStartRef.current) return;
+    if (dragFrameRef.current !== null) {
+      cancelAnimationFrame(dragFrameRef.current); dragFrameRef.current = null;
+    }
+    if (hasMovedRef.current) {
+      const latest = positionRef.current;
+      const snap = { x: latest.x < window.innerWidth / 2 ? 16 : Math.max(16, window.innerWidth - 76), y: latest.y };
+      positionRef.current = snap; setPosition(snap);
+      try { localStorage.setItem('bko_ali_bubble_pos', JSON.stringify(snap)); } catch {}
+    }
+    dragStartRef.current = null;
+    setIsDragging(false);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+  };
 
   const toggleChat = () => {
-    if (hasMovedRef.current) return;
+    if (hasMovedRef.current) { hasMovedRef.current = false; return; }
     const nextState = !isOpen;
     setIsOpen(nextState);
     if (nextState) {
@@ -355,7 +340,21 @@ export function AliChatBubble() {
         : "http://x0jn9ljzszcjjvzmiltdx0qd.194.31.52.77.sslip.io";
 
     const domainPattern = /https?:\/\/(?:www\.)?(?:bamakopodcast\.(?:com|studio|ml)|c0mq60vovgz6xkdvi8hkyejk\.194\.31\.52\.77\.sslip\.io)/gi;
-    return text.replace(domainPattern, currentOrigin);
+    let cleaned = text.replace(domainPattern, currentOrigin);
+
+    // Nettoyage de fuite technique de tool calling (ex: Calling Execute_a_SQL_query...)
+    if (/Calling\s+[\w_]+/i.test(cleaned) || /Execute_a_SQL_query/i.test(cleaned)) {
+      cleaned = cleaned
+        .replace(/Calling\s+[\w_]+(?:\s+with\s+input:[^}]*}?)?/gi, "")
+        .replace(/Execute_a_SQL_query[^\n]*/gi, "")
+        .replace(/\{\s*['"]?term['"]?\s*:[^}]*\}/gi, "")
+        .trim();
+      if (!cleaned) {
+        cleaned = "Je consulte le catalogue pour toi... Que souhaites-tu découvrir aujourd'hui ?";
+      }
+    }
+
+    return cleaned;
   };
 
   /**
@@ -455,18 +454,24 @@ export function AliChatBubble() {
       <div
         style={{
           position: "fixed",
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          zIndex: 9999,
+          left: 0,
+          top: 0,
+          transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
           touchAction: "none",
-          transition: isDragging ? "none" : "left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)",
+          zIndex: 9999,
+          transition: isDragging ? "none" : "transform 0.2s ease-out",
         }}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onClick={toggleChat}
         className="select-none"
       >
         <button
-          onClick={toggleChat}
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') hasMovedRef.current = false;
+          }}
           className="relative w-14 h-14 rounded-full bg-[#141416] border-2 border-[#FFBF00] flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-105 active:scale-95 transition-transform"
           aria-label="Discuter avec Ali"
         >
