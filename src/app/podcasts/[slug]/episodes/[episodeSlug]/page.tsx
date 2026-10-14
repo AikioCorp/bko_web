@@ -12,6 +12,7 @@ import { useAuthStore } from "../../../../../store/authStore";
 import { ReportButton } from "@/components/public/ReportButton";
 import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 import { EpisodePaywallCard } from "@/components/player/EpisodePaywallCard";
+import { CommentsSection } from "@/components/CommentsSection";
 
 type Episode = {
   id: string;
@@ -22,6 +23,7 @@ type Episode = {
   durationSeconds: number;
   publishedAt?: string | null;
   episodeNumber?: number | null;
+  allowComments?: boolean;
   mediaSources: any[];
   defaultMode: "AUDIO" | "VIDEO";
   podcast: { id: string; slug: string; name: string; cover: string };
@@ -372,6 +374,8 @@ export default function EpisodePage() {
           ))}
         </ul>
       )}
+
+      <CommentsSection episodeId={ep.id} allowComments={ep.allowComments ?? true} />
 
       <AppDownloadModal
         isOpen={isAppModalOpen}

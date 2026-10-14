@@ -7,6 +7,7 @@ import { Sidebar } from "./Sidebar";
 import { PersistentPlayer } from "./player/PersistentPlayer";
 import { StudioShell } from "./studio/StudioShell";
 import { AdminShell } from "./admin/AdminShell";
+import { AliChatBubble } from "./chat/AliChatBubble";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -65,6 +66,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Global Persistent Player */}
       <PersistentPlayer />
+
+      {/* Ali Cultural Advisor Draggable Floating Chat */}
+      <AliChatBubble />
     </>
   );
 }
