@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { 
   Play, Maximize2, Minimize2, MoreHorizontal, RotateCw, Rabbit, Turtle, 
   Share, Code, Pause, Volume2, VolumeX, ListMusic, RotateCcw, X, ExternalLink,
-  Check, Copy, Radio, ChevronDown, Sparkles, SkipForward, Heart
+  Check, Copy, Radio, ChevronDown, Sparkles, SkipForward, Heart, Headphones, Youtube
 } from "lucide-react";
 import { usePlayerStore } from "../../store/playerStore";
 import { useAuthStore } from "../../store/authStore";
@@ -54,6 +54,8 @@ export const PersistentPlayer = () => {
   const {
     currentEpisode,
     activeSource,
+    mode,
+    setMode,
     isPlaying,
     currentTime,
     duration,
@@ -231,6 +233,10 @@ export const PersistentPlayer = () => {
   const controllable = kind === "audio" || kind === "video";
   const episodeHref = currentEpisode ? `/podcasts/${currentEpisode.podcast.slug}/episodes/${currentEpisode.slug}` : "";
 
+  const hasAudio = useMemo(() => currentEpisode?.mediaSources?.some((s) => s.type === "AUDIO"), [currentEpisode]);
+  const hasVideo = useMemo(() => currentEpisode?.mediaSources?.some((s) => s.type === "VIDEO"), [currentEpisode]);
+  const hasDualSources = hasAudio && hasVideo;
+
   const fmt = (s: number) => {
     if (!isFinite(s) || s < 0) return "0:00";
     const h = Math.floor(s / 3600);
@@ -282,7 +288,7 @@ export const PersistentPlayer = () => {
   return (
     <>
       <div className="hidden">
-        {mounted && kind === "video" && (
+        {mounted && kind === "video" && !isExpanded && (
           <ReactPlayer
             src={safeHttp(activeSource?.externalUrl) ?? ""}
             playing={isPlaying}
@@ -370,32 +376,73 @@ export const PersistentPlayer = () => {
               </div>
             </div>
 
-            {/* Pochette avec comportement physique Apple tactile */}
-            <div className="my-auto py-4 flex flex-col items-center w-full">
-              <div
-                onClick={handleTogglePlay}
-                className={`w-full aspect-square max-w-[280px] sm:max-w-[340px] md:max-w-[370px] bg-[#141414] rounded-3xl overflow-hidden border border-[#262626] transition-all duration-700 cursor-pointer relative group ${
-                  isPlaying
-                    ? "shadow-[0_24px_60px_-12px_rgba(0,0,0,0.9)] scale-[1.02]"
-                    : "shadow-2xl scale-[0.98] opacity-90"
-                }`}
-                title={isPlaying ? "Mettre en pause (Espace)" : "Lancer la lecture (Espace)"}
-              >
-                <img
-                  src={currentEpisode.cover || currentEpisode.podcast.cover}
-                  alt={currentEpisode.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
-                  <div className="w-16 h-16 rounded-full bg-[#FFBF00] text-[#0B0B0B] flex items-center justify-center shadow-xl transform transition-transform group-hover:scale-110">
-                    {isPlaying ? (
-                      <Pause className="w-7 h-7 fill-current stroke-none" />
-                    ) : (
-                      <Play className="w-7 h-7 fill-current stroke-none ml-1" />
-                    )}
+            {/* Pochette avec comportement physique Apple tactile ou Lecteur Vidéo */}
+            <div className="my-auto py-2 flex flex-col items-center w-full">
+              {hasDualSources && (
+                <div className="flex items-center p-1 rounded-full bg-[#141414] border border-[#242424] mb-4">
+                  <button
+                    onClick={() => setMode("AUDIO")}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
+                      mode === "AUDIO" ? "bg-[#FFBF00] text-black" : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <Headphones className="w-3.5 h-3.5" />
+                    <span>Écouter en Audio</span>
+                  </button>
+                  <button
+                    onClick={() => setMode("VIDEO")}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
+                      mode === "VIDEO" ? "bg-[#FF0000] text-white" : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <Youtube className="w-3.5 h-3.5" />
+                    <span>Regarder en Vidéo</span>
+                  </button>
+                </div>
+              )}
+
+              {kind === "video" ? (
+                <div className="w-full aspect-video max-w-[480px] bg-black rounded-2xl overflow-hidden border border-[#262626] shadow-2xl relative">
+                  <ReactPlayer
+                    src={safeHttp(activeSource?.externalUrl) ?? ""}
+                    playing={isPlaying}
+                    playbackRate={playbackRate}
+                    volume={volume}
+                    controls={true}
+                    width="100%"
+                    height="100%"
+                    onPlay={() => !usePlayerStore.getState().isPlaying && usePlayerStore.setState({ isPlaying: true })}
+                    onPause={() => usePlayerStore.getState().isPlaying && pause()}
+                    onEnded={onMediaEnded}
+                    onError={() => pause()}
+                  />
+                </div>
+              ) : (
+                <div
+                  onClick={handleTogglePlay}
+                  className={`w-full aspect-square max-w-[280px] sm:max-w-[340px] md:max-w-[370px] bg-[#141414] rounded-3xl overflow-hidden border border-[#262626] transition-all duration-700 cursor-pointer relative group ${
+                    isPlaying
+                      ? "shadow-[0_24px_60px_-12px_rgba(0,0,0,0.9)] scale-[1.02]"
+                      : "shadow-2xl scale-[0.98] opacity-90"
+                  }`}
+                  title={isPlaying ? "Mettre en pause (Espace)" : "Lancer la lecture (Espace)"}
+                >
+                  <img
+                    src={currentEpisode.cover || currentEpisode.podcast.cover}
+                    alt={currentEpisode.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
+                    <div className="w-16 h-16 rounded-full bg-[#FFBF00] text-[#0B0B0B] flex items-center justify-center shadow-xl transform transition-transform group-hover:scale-110">
+                      {isPlaying ? (
+                        <Pause className="w-7 h-7 fill-current stroke-none" />
+                      ) : (
+                        <Play className="w-7 h-7 fill-current stroke-none ml-1" />
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Informations Épisode & Émission (Clickable vers la page podcast) */}
@@ -683,8 +730,30 @@ export const PersistentPlayer = () => {
             </div>
           </div>
 
-          {/* Secondary Actions: Like + Queue + Volume + Close */}
+          {/* Secondary Actions: Mode Switch (Dual source) + Like + Queue + Volume + Close */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 border-l border-[#242424] pl-2 sm:pl-3 shrink-0">
+            {hasDualSources && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMode(mode === "AUDIO" ? "VIDEO" : "AUDIO");
+                }}
+                className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#1C1C1C] hover:bg-[#282828] text-white flex items-center gap-1.5 border border-[#333] transition shrink-0"
+                title={mode === "AUDIO" ? "Basculer vers la vidéo synchronisée" : "Basculer vers l'audio synchronisé"}
+              >
+                {mode === "AUDIO" ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFBF00]" />
+                    <span>Vidéo</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF0000]" />
+                    <span>Audio</span>
+                  </>
+                )}
+              </button>
+            )}
             <button
               onClick={handleToggleLike}
               className={`p-1.5 rounded-full transition-colors ${

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Trash2, CheckCheck } from "lucide-react";
 import { studioApi, timeAgo } from "@/lib/studioApi";
 import { useAuthStore } from "@/store/authStore";
 
@@ -129,6 +130,55 @@ export default function NotificationsPage() {
     }
   };
 
+  const deleteOne = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const previousItems = items;
+    const previousUnread = unread;
+    const notif = items?.find((n) => n.id === id);
+    const wasUnread = notif && !notif.readAt;
+
+    // Mise à jour optimiste
+    setItems((l) => l?.filter((n) => n.id !== id) ?? null);
+    if (wasUnread) {
+      setUnread((c) => Math.max(0, c - 1));
+    }
+
+    try {
+      await studioApi(`/me/notifications/${id}`, { method: "DELETE" });
+      setActionNotice("Notification supprimée.");
+      setTimeout(() => setActionNotice(null), 3000);
+    } catch (e: any) {
+      setItems(previousItems);
+      setUnread(previousUnread);
+      setActionNotice("Échec de la suppression.");
+      setTimeout(() => setActionNotice(null), 3000);
+    }
+  };
+
+  const clearAll = async () => {
+    if (!items || items.length === 0) return;
+    if (!window.confirm("Voulez-vous vraiment effacer toutes vos notifications ?")) return;
+
+    const previousItems = items;
+    const previousUnread = unread;
+
+    // Mise à jour optimiste
+    setItems([]);
+    setUnread(0);
+
+    try {
+      await studioApi("/me/notifications", { method: "DELETE" });
+      setActionNotice("Toutes les notifications ont été effacées.");
+      setTimeout(() => setActionNotice(null), 3000);
+    } catch (e: any) {
+      setItems(previousItems);
+      setUnread(previousUnread);
+      setActionNotice("Échec de l'effacement des notifications.");
+      setTimeout(() => setActionNotice(null), 3000);
+    }
+  };
+
   if (authLoading) {
     return <div className="p-20 text-center text-sm text-gray-500">Chargement de votre session…</div>;
   }
@@ -149,20 +199,32 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-extrabold text-white">Notifications</h1>
           {loading && items && items.length > 0 && (
             <span className="text-xs text-gray-400 animate-pulse">Actualisation…</span>
           )}
         </div>
-        {unread > 0 && (
-          <button
-            onClick={markAll}
-            className="text-xs text-[#FFBF00] font-bold hover:underline transition"
-          >
-            Tout marquer comme lu ({unread})
-          </button>
+        {items && items.length > 0 && (
+          <div className="flex items-center gap-2">
+            {unread > 0 && (
+              <button
+                onClick={markAll}
+                className="text-xs bg-[#FFBF00]/10 hover:bg-[#FFBF00]/20 text-[#FFBF00] border border-[#FFBF00]/30 font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                Tout lire ({unread})
+              </button>
+            )}
+            <button
+              onClick={clearAll}
+              className="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Tout effacer
+            </button>
+          </div>
         )}
       </div>
 
@@ -206,17 +268,27 @@ export default function NotificationsPage() {
           {items.map((n) => {
             const hasSafeLink = isSafeLink(n.link);
             const inner = (
-              <div className={`px-4 py-3.5 flex gap-3 transition ${n.readAt ? "bg-[#121212]" : "bg-[#FFBF00]/5"}`}>
-                <span
-                  className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${n.readAt ? "bg-transparent" : "bg-[#FFBF00]"}`}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-bold text-white truncate">{n.title}</p>
-                    <span className="text-[11px] text-[#757575] shrink-0">{timeAgo(n.createdAt)}</span>
+              <div className={`px-4 py-3.5 flex items-center justify-between gap-3 group transition ${n.readAt ? "bg-[#121212]" : "bg-[#FFBF00]/5"}`}>
+                <div className="flex gap-3 min-w-0 flex-1 items-start">
+                  <span
+                    className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${n.readAt ? "bg-transparent" : "bg-[#FFBF00]"}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold text-white truncate">{n.title}</p>
+                      <span className="text-[11px] text-[#757575] shrink-0">{timeAgo(n.createdAt)}</span>
+                    </div>
+                    {n.body && <p className="text-xs text-[#B8B8B8] mt-0.5 line-clamp-2">{n.body}</p>}
                   </div>
-                  {n.body && <p className="text-xs text-[#B8B8B8] mt-0.5 line-clamp-2">{n.body}</p>}
                 </div>
+                <button
+                  onClick={(e) => deleteOne(e, n.id)}
+                  className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition shrink-0 ml-1"
+                  title="Supprimer cette notification"
+                  aria-label="Supprimer cette notification"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             );
 

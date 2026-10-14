@@ -135,10 +135,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setProgress: (time, duration) => set((state) => ({ currentTime: time, duration: duration && duration > 0 ? duration : state.duration })),
 
   setMode: (mode) => {
-    const { currentEpisode } = get();
+    const { currentEpisode, currentTime, isPlaying } = get();
     if (!currentEpisode) return;
     const selectedSource = pickSource(currentEpisode, mode);
-    set({ mode, activeSource: selectedSource || null });
+    set((state) => ({
+      mode,
+      activeSource: selectedSource || null,
+      startAt: currentTime,
+      seekRequest: { time: currentTime, n: (state.seekRequest?.n ?? 0) + 1 },
+      isPlaying,
+    }));
   },
 
   setPlaybackRate: (rate) => set({ playbackRate: rate }),

@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell } from "lucide-react";
+import { Bell, Trash2 } from "lucide-react";
 import { studioApi, timeAgo } from "@/lib/studioApi";
 import { useAuthStore } from "@/store/authStore";
 
@@ -108,6 +108,26 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
     }
   };
 
+  const deleteOne = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const previousItems = items;
+    const previousUnread = unread;
+    const target = items?.find((it) => it.id === id);
+    if (!target) return;
+
+    setItems((list) => list?.filter((it) => it.id !== id) ?? null);
+    if (!target.readAt) {
+      setUnread((c) => Math.max(0, c - 1));
+    }
+
+    try {
+      await studioApi(`/me/notifications/${id}`, { method: "DELETE" });
+    } catch {
+      setItems(previousItems);
+      setUnread(previousUnread);
+    }
+  };
+
   return (
     <div className="relative" ref={box}>
       <button
@@ -141,18 +161,32 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
               <p className="p-6 text-center text-xs text-gray-500">Aucune notification pour le moment.</p>
             ) : (
               items.map((n) => (
-                <button
+                <div
                   key={n.id}
-                  onClick={() => openItem(n)}
-                  className={`w-full text-left px-4 py-3 border-b border-[#1c1c1c] hover:bg-[#1A1A1A] flex gap-3 ${n.readAt ? "" : "bg-[#FFBF00]/5"}`}
+                  className={`group relative w-full text-left px-4 py-3 border-b border-[#1c1c1c] hover:bg-[#1A1A1A] flex items-start gap-3 transition-colors ${n.readAt ? "" : "bg-[#FFBF00]/5"}`}
                 >
-                  <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.readAt ? "bg-transparent" : "bg-[#FFBF00]"}`} />
-                  <span className="min-w-0">
-                    <span className="block text-xs font-bold text-white">{n.title}</span>
-                    {n.body && <span className="block text-[11px] text-[#B8B8B8] line-clamp-2">{n.body}</span>}
-                    <span className="block text-[10px] text-[#757575] mt-0.5">{timeAgo(n.createdAt)}</span>
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => openItem(n)}
+                    className="flex-1 min-w-0 flex gap-3 text-left focus:outline-none"
+                  >
+                    <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.readAt ? "bg-transparent" : "bg-[#FFBF00]"}`} />
+                    <span className="min-w-0">
+                      <span className="block text-xs font-bold text-white truncate">{n.title}</span>
+                      {n.body && <span className="block text-[11px] text-[#B8B8B8] line-clamp-2">{n.body}</span>}
+                      <span className="block text-[10px] text-[#757575] mt-0.5">{timeAgo(n.createdAt)}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => deleteOne(e, n.id)}
+                    title="Supprimer la notification"
+                    aria-label="Supprimer la notification"
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-[#262626] transition-all shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               ))
             )}
           </div>
