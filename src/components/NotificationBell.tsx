@@ -13,6 +13,7 @@ type Notif = { id: string; type: string; title: string; body?: string | null; li
 export function NotificationBell({ align = "right" }: { align?: "right" | "left" }) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notif[] | null>(null);
@@ -20,11 +21,22 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Nettoyage au changement de compte ou à la déconnexion
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setItems(null);
+      setUnread(0);
+      setOpen(false);
+    }
+  }, [isAuthenticated, user?.id]);
+
   const refreshCount = useCallback(async () => {
+    if (!isAuthenticated) return;
     try {
-      setUnread((await studioApi<{ unread: number }>("/me/notifications/unread-count")).unread);
+      const res = await studioApi<{ unread: number }>("/me/notifications/unread-count");
+      setUnread(res.unread ?? 0);
     } catch {}
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -43,6 +55,12 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
 
   if (!mounted || !isAuthenticated) return null;
 
+  const isSafeLink = (l?: string | null): boolean => {
+    if (!l) return false;
+    const trimmed = l.trim();
+    return trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/\\");
+  };
+
   const toggle = async () => {
     const next = !open;
     setOpen(next);
@@ -58,20 +76,36 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
   };
 
   const markAll = async () => {
+    const previousItems = items;
+    const previousUnread = unread;
+    setItems((list) => list?.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })) ?? null);
+    setUnread(0);
     try {
       await studioApi("/me/notifications/read", { method: "POST", body: {} });
-      setItems((list) => list?.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })) ?? null);
-      setUnread(0);
-    } catch {}
+    } catch {
+      // Annulation de la mise à jour optimiste en cas d'erreur serveur
+      setItems(previousItems);
+      setUnread(previousUnread);
+    }
   };
 
   const openItem = async (n: Notif) => {
     setOpen(false);
     if (!n.readAt) {
-      studioApi("/me/notifications/read", { method: "POST", body: { ids: [n.id] } }).catch(() => {});
+      const previousItems = items;
+      const previousUnread = unread;
+      setItems((list) => list?.map((it) => (it.id === n.id ? { ...it, readAt: new Date().toISOString() } : it)) ?? null);
       setUnread((c) => Math.max(0, c - 1));
+      try {
+        await studioApi("/me/notifications/read", { method: "POST", body: { ids: [n.id] } });
+      } catch {
+        setItems(previousItems);
+        setUnread(previousUnread);
+      }
     }
-    if (n.link) router.push(n.link);
+    if (isSafeLink(n.link)) {
+      router.push(n.link!);
+    }
   };
 
   return (

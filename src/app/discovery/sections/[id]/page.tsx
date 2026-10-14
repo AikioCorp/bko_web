@@ -33,6 +33,8 @@ import {
   RotateCcw,
   SlidersHorizontal,
   Check,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 
 interface SectionMeta {
@@ -52,6 +54,7 @@ export default function SectionDiscoveryPage() {
 
   const sectionId = (params?.id as string) || "";
   const initialCategory = searchParams.get("category") || "all";
+  const initialCountry = searchParams.get("country") || "all";
   const initialBatchId = searchParams.get("batchId") || "";
 
   const { currentEpisode, isPlaying, playEpisode, togglePlay, addToQueue } =
@@ -69,6 +72,16 @@ export default function SectionDiscoveryPage() {
 
   // Filtre local de format pour les listes d'épisodes : 'ALL' | 'AUDIO' | 'VIDEO'
   const [formatFilter, setFormatFilter] = useState<"ALL" | "AUDIO" | "VIDEO">("ALL");
+  const [episodeView, setEpisodeView] = useState<'list' | 'grid'>('list');
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('bko-episode-view') === 'grid') setEpisodeView('grid');
+    } catch { /* Storage may be unavailable in private browsing. */ }
+  }, []);
+  const chooseView = (view: 'list' | 'grid') => {
+    setEpisodeView(view);
+    try { localStorage.setItem('bko-episode-view', view); } catch {}
+  };
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const limit = 20;
@@ -85,6 +98,7 @@ export default function SectionDiscoveryPage() {
       offset: "0",
       limit: String(limit),
       category: initialCategory,
+      country: initialCountry,
     });
     if (initialBatchId) query.set("batchId", initialBatchId);
 
@@ -113,7 +127,7 @@ export default function SectionDiscoveryPage() {
     return () => {
       isMounted = false;
     };
-  }, [sectionId, initialCategory, initialBatchId]);
+  }, [sectionId, initialCategory, initialCountry, initialBatchId]);
 
   // Chargement paginé
   const loadMore = async () => {
@@ -125,6 +139,7 @@ export default function SectionDiscoveryPage() {
         offset: String(offset),
         limit: String(limit),
         category: initialCategory,
+        country: initialCountry,
       });
       if (initialBatchId) query.set("batchId", initialBatchId);
 
@@ -282,7 +297,7 @@ export default function SectionDiscoveryPage() {
                         : "bg-[#141414] text-[#888888] border-[#242424] hover:text-white hover:border-[#383838]"
                     }`}
                   >
-                    {mode === "ALL" && "Tout le catalogue"}
+                    {mode === "ALL" && "Tous les formats"}
                     {mode === "AUDIO" && "Audio uniquement"}
                     {mode === "VIDEO" && "Vidéo"}
                   </button>
@@ -295,6 +310,18 @@ export default function SectionDiscoveryPage() {
 
       {/* 2. CORPS PRINCIPAL DE LA PAGE */}
       <main className="w-full px-4 sm:px-6 lg:px-8 pt-8">
+        {!isPodcastSection && <div className="flex items-center justify-between gap-4 mb-5">
+          <p className="text-sm text-[#B8B8B8]">Choisissez votre prochaine écoute</p>
+          <div role="group" aria-label="Affichage des épisodes" className="flex items-center gap-1">
+            {(['list', 'grid'] as const).map(view => <button key={view}
+              type="button" aria-label={view === 'list' ? 'Vue liste' : 'Vue grille'}
+              title={view === 'list' ? 'Vue liste' : 'Vue grille'} aria-pressed={episodeView === view}
+              onClick={() => chooseView(view)}
+              className={`min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FFBF00] ${episodeView === view ? 'bg-[#FFBF00] text-black' : 'text-[#B8B8B8] hover:bg-[#242424]'}`}>
+              {view === 'list' ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+            </button>)}
+          </div>
+        </div>}
         {/* État de chargement initial */}
         {isLoading && (
           <div className="space-y-6">
@@ -409,7 +436,9 @@ export default function SectionDiscoveryPage() {
 
         {/* VUE 2 : LISTE D'ÉPISODES (EPISODE_ROW) */}
         {!isLoading && !error && !isPodcastSection && (
-          <div className="space-y-3">
+          <div className={episodeView === 'grid'
+            ? 'grid grid-cols-1 min-[480px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5'
+            : 'max-w-6xl mx-auto divide-y divide-[#242424]'}>
             {filteredEpisodeItems.map((item, idx) => {
               const ep = item.episode || item;
               if (!ep) return null;
@@ -425,7 +454,7 @@ export default function SectionDiscoveryPage() {
 
               const durationMins = ep.durationSeconds
                 ? Math.round(ep.durationSeconds / 60)
-                : 30;
+                : null;
 
               return (
                 <TrackedCard
@@ -438,10 +467,14 @@ export default function SectionDiscoveryPage() {
                   position={item.position ?? idx}
                   reason={item.reason}
                   onClick={() => handlePlay(ep, item.attribution)}
-                  className="group bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#383838] p-3 sm:p-4 rounded-2xl flex flex-row items-center gap-3 sm:gap-4 transition-colors cursor-pointer"
+                  className={episodeView === 'grid'
+                    ? 'group bg-[#141414] hover:bg-[#1A1A1A] rounded-2xl p-4 flex flex-col items-stretch gap-3 transition-colors cursor-pointer min-w-0'
+                    : 'group hover:bg-[#141414] px-2 sm:px-4 py-5 rounded-xl flex flex-row items-center gap-3 sm:gap-5 transition-colors cursor-pointer min-w-0'}
                 >
                   {/* Pochette avec bouton de lecture au survol */}
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 relative bg-[#0B0B0B] border border-[#2A2A2A]">
+                  <div className={episodeView === 'grid'
+                    ? 'w-full aspect-square rounded-xl overflow-hidden shrink-0 relative bg-[#0B0B0B]'
+                    : 'w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shrink-0 relative bg-[#0B0B0B]'}>
                     <img
                       src={
                         ep.cover ||
@@ -452,9 +485,11 @@ export default function SectionDiscoveryPage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
-                    <div
+                    <button type="button"
+                      aria-label={`${isCurrent && isPlaying ? 'Mettre en pause' : 'Lire'} : ${decodeHtmlEntities(ep.title)}`}
+                      onClick={event => { event.stopPropagation(); handlePlay(ep, item.attribution); }}
                       className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
-                        isCurrent && isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        isCurrent && isPlaying ? "opacity-100" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
                       }`}
                     >
                       <div className="w-9 h-9 rounded-full bg-[#FFBF00] text-[#0B0B0B] flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform">
@@ -464,7 +499,7 @@ export default function SectionDiscoveryPage() {
                           <Play className="w-4 h-4 fill-current ml-0.5" />
                         )}
                       </div>
-                    </div>
+                    </button>
                   </div>
 
                   {/* Informations de l'épisode */}
@@ -492,20 +527,23 @@ export default function SectionDiscoveryPage() {
                       )}
                     </div>
 
-                    <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-[#FFBF00] transition-colors line-clamp-1">
+                    <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-[#FFBF00] transition-colors"
+                      style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>
                       {decodeHtmlEntities(ep.title)}
                     </h3>
 
                     {ep.description && (
-                      <p className="text-xs text-[#808080] line-clamp-1 mt-0.5 hidden sm:block">
-                        {decodeHtmlEntities(ep.description)}
+                      <p className="text-sm text-[#A0A0A0] leading-relaxed mt-2"
+                        style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>
+                        {decodeHtmlEntities(ep.description).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220)}
+                        {decodeHtmlEntities(ep.description).length > 220 ? '…' : ''}
                       </p>
                     )}
 
                     <div className="flex items-center gap-2.5 text-xs text-[#666666] mt-1 font-medium">
                       <span className="flex items-center gap-1">
                         <Headphones className="w-3 h-3" />
-                        {durationMins} min
+                        {durationMins == null ? 'Durée inconnue' : `${durationMins} min`}
                       </span>
                       <span>•</span>
                       <span>
@@ -521,7 +559,7 @@ export default function SectionDiscoveryPage() {
 
                   {/* Actions contextuelles */}
                   <div
-                    className="flex items-center gap-1 shrink-0"
+                    className={`flex items-center gap-1 shrink-0 ${episodeView === 'grid' ? 'justify-end pt-2 border-t border-[#242424]' : ''}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
@@ -534,7 +572,7 @@ export default function SectionDiscoveryPage() {
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button className="p-2 sm:p-2.5 text-[#808080] hover:text-white bg-[#1F1F1F] hover:bg-[#2A2A2A] rounded-full transition-colors cursor-pointer">
+                        <button aria-label={`Actions pour ${decodeHtmlEntities(ep.title)}`} className="p-2 sm:p-2.5 text-[#808080] hover:text-white bg-[#1F1F1F] hover:bg-[#2A2A2A] rounded-full transition-colors cursor-pointer">
                           <MoreVertical className="w-4 h-4" />
                         </button>
                       </DropdownMenuTrigger>
