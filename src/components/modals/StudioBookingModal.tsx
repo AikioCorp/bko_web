@@ -14,9 +14,15 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [service, setService] = useState(preselectedService || "Forfait Professionnel (150 000 FCFA)");
+  const [service, setService] = useState(preselectedService || "Enregistrement Brut - Studio Principal / Annexe (20 000 FCFA/h)");
   const [preferredDate, setPreferredDate] = useState("");
   const [notes, setNotes] = useState("");
+
+  React.useEffect(() => {
+    if (preselectedService) {
+      setService(preselectedService);
+    }
+  }, [preselectedService]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -126,13 +132,17 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
                 required
                 className="w-full bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl px-3.5 py-2.5 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors"
               >
-                <option value="Forfait Professionnel (150 000 FCFA)">Forfait Professionnel (150 000 FCFA / mois)</option>
-                <option value="Forfait Baroni (75 000 FCFA)">Forfait Baroni (75 000 FCFA / mois)</option>
-                <option value="Forfait Entreprise / ONG (Sur devis)">Forfait Entreprise / ONG (Sur devis)</option>
-                <option value="Podcast Standard (25 000 FCFA)">Podcast Standard (25 000 FCFA)</option>
-                <option value="Podcast Pro (35 000 FCFA)">Podcast Pro (35 000 FCFA)</option>
-                <option value="Location Studio Seul (10 000 FCFA)">Location Studio Seul (10 000 FCFA)</option>
-                <option value="Formation Podcast (50 000 FCFA)">Formation Podcast (50 000 FCFA)</option>
+                <option value="Enregistrement Brut - Studio Principal / Annexe (20 000 FCFA/h)">Enregistrement Brut — Studio Principal / Annexe (20 000 FCFA/h)</option>
+                <option value="Enregistrement Brut - Salle de Conférence (25 000 FCFA/h)">Enregistrement Brut — Salle de Conférence (25 000 FCFA/h)</option>
+                <option value="Enregistrement Brut - Salle VIP (25 000 FCFA/h)">Enregistrement Brut — Salle VIP (25 000 FCFA/h)</option>
+                <option value="Enregistrement Brut - Extérieur (60 000 FCFA/h)">Enregistrement Brut — Extérieur (60 000 FCFA/h)</option>
+                <option value="Formule Express - Studio Principal / Annexe (35 000 FCFA/h)">Formule Express — Studio Principal / Annexe (35 000 FCFA/h)</option>
+                <option value="Formule Express - Salle de Conférence (40 000 FCFA/h)">Formule Express — Salle de Conférence (40 000 FCFA/h)</option>
+                <option value="Formule Express - Salle VIP (50 000 FCFA/h)">Formule Express — Salle VIP (50 000 FCFA/h)</option>
+                <option value="Montage & Post-production complète (25 000 FCFA)">Montage & Post-production complète (25 000 FCFA)</option>
+                <option value="Pack Shorts & Reels - 3 extraits (15 000 FCFA)">Pack Shorts & Reels - 3 extraits (15 000 FCFA)</option>
+                <option value="Coaching & Direction Éditoriale (30 000 FCFA)">Coaching & Direction Éditoriale (30 000 FCFA)</option>
+                <option value="Autre demande / Projet sur mesure">Autre demande / Projet sur mesure</option>
               </select>
             </div>
 
