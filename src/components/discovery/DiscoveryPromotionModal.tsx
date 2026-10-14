@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Sparkles, ChevronRight } from "lucide-react";
+import { ClientPortal } from "@/components/ui/ClientPortal";
 
 export interface DiscoveryPromoConfig {
   campaignId: string;
@@ -88,11 +89,12 @@ export function DiscoveryPromotionModal({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
-    >
+    <ClientPortal>
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      >
       <div
         className="relative w-full max-w-md bg-[#141414] border border-[#262626] rounded-3xl overflow-hidden shadow-2xl text-white animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -156,5 +158,6 @@ export function DiscoveryPromotionModal({
         </div>
       </div>
     </div>
+    </ClientPortal>
   );
 }

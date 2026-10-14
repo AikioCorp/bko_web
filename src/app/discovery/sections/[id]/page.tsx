@@ -250,9 +250,7 @@ export default function SectionDiscoveryPage() {
             <div className="flex items-center gap-2.5">
               {isPodcastSection ? (
                 <Radio className="w-5 h-5 text-[#FFBF00] shrink-0" />
-              ) : section?.slug === "for-you" ? (
-                <Sparkles className="w-5 h-5 text-[#FFBF00] shrink-0" />
-              ) : section?.slug === "continue-listening" ? (
+              ) : section?.slug === "for-you" ? null : section?.slug === "continue-listening" ? (
                 <Clock className="w-5 h-5 text-[#FFBF00] shrink-0" />
               ) : (
                 <Layers className="w-5 h-5 text-[#FFBF00] shrink-0" />

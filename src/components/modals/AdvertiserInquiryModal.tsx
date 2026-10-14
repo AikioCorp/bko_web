@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Building2, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import { fetchApi } from "@/lib/api";
+import { ClientPortal } from "@/components/ui/ClientPortal";
 
 interface AdvertiserInquiryModalProps {
   isOpen: boolean;
@@ -69,7 +70,8 @@ export function AdvertiserInquiryModal({ isOpen, onClose }: AdvertiserInquiryMod
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+    <ClientPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="relative w-full max-w-lg bg-[#141414] border border-[#242424] rounded-2xl p-6 shadow-2xl text-white space-y-5 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between pb-3 border-b border-[#222222]">
           <div className="flex items-center gap-2.5">
@@ -224,5 +226,6 @@ export function AdvertiserInquiryModal({ isOpen, onClose }: AdvertiserInquiryMod
         )}
       </div>
     </div>
+    </ClientPortal>
   );
 }

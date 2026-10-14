@@ -7,10 +7,11 @@ import dynamic from "next/dynamic";
 import { 
   Play, Maximize2, Minimize2, MoreHorizontal, RotateCw, Rabbit, Turtle, 
   Share, Code, Pause, Volume2, VolumeX, ListMusic, RotateCcw, X, ExternalLink,
-  Check, Copy, Radio, ChevronDown, Sparkles, SkipForward
+  Check, Copy, Radio, ChevronDown, Sparkles, SkipForward, Heart
 } from "lucide-react";
 import { usePlayerStore } from "../../store/playerStore";
 import { useAuthStore } from "../../store/authStore";
+import { useLikesStore } from "../../store/likesStore";
 import { ListenTracker } from "@/lib/playTracking";
 import { decodeHtmlEntities } from "@/lib/utils";
 import { ScrollingTitle } from "./ScrollingTitle";
@@ -70,7 +71,12 @@ export const PersistentPlayer = () => {
     showRightPanel,
     queue,
     removeFromQueue,
+    clearQueue,
+    playEpisode,
   } = usePlayerStore();
+
+  const { isAuthenticated } = useAuthStore();
+  const { isLiked: checkIsLiked, toggleLike, loadLikes, isLoaded: likesLoaded } = useLikesStore();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<any>(null);
@@ -88,7 +94,28 @@ export const PersistentPlayer = () => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [artworkTapEffect, setArtworkTapEffect] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    if (isAuthenticated && !likesLoaded) {
+      loadLikes();
+    }
+  }, [isAuthenticated, likesLoaded, loadLikes]);
+
+  const isCurrentEpisodeLiked = currentEpisode ? checkIsLiked(currentEpisode.id) : false;
+
+  const handleToggleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentEpisode) return;
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/")}`);
+      return;
+    }
+    try {
+      await toggleLike(currentEpisode.id);
+    } catch (err) {
+      console.error("Like toggle failed:", err);
+    }
+  };
 
   // Raccourcis clavier physiques inspirés d'Apple Podcasts quand le lecteur est étendu
   useEffect(() => {
@@ -387,15 +414,28 @@ export const PersistentPlayer = () => {
                 </h2>
               </div>
 
-              {/* Menu d'options Apple popover */}
-              <div className="relative shrink-0">
+              {/* Actions Apple: Like + Options */}
+              <div className="flex items-center gap-2 shrink-0">
                 <button
-                  onClick={() => setShowOptionsMenu(!showOptionsMenu)}
-                  className="w-10 h-10 rounded-full bg-[#161616] border border-[#262626] flex items-center justify-center text-white hover:bg-[#222222] hover:border-[#FFBF00]/40 transition-colors active:scale-95"
-                  aria-label="Options de l'épisode"
+                  onClick={handleToggleLike}
+                  className={`w-10 h-10 rounded-full bg-[#161616] border flex items-center justify-center transition-all active:scale-95 ${
+                    isCurrentEpisodeLiked
+                      ? "border-[#FFBF00]/40 text-[#FFBF00]"
+                      : "border-[#262626] text-white/70 hover:text-[#FFBF00] hover:border-[#FFBF00]/40"
+                  }`}
+                  aria-label={isCurrentEpisodeLiked ? "Ne plus aimer" : "Aimer"}
+                  title={isCurrentEpisodeLiked ? "Retirer des favoris" : "Aimer cet épisode"}
                 >
-                  <MoreHorizontal className="w-5 h-5" />
+                  <Heart className={`w-5 h-5 ${isCurrentEpisodeLiked ? "fill-[#FFBF00] text-[#FFBF00]" : ""}`} />
                 </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                    className="w-10 h-10 rounded-full bg-[#161616] border border-[#262626] flex items-center justify-center text-white hover:bg-[#222222] hover:border-[#FFBF00]/40 transition-colors active:scale-95"
+                    aria-label="Options de l'épisode"
+                  >
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
                 {showOptionsMenu && (
                   <div className="absolute bottom-full right-0 mb-3 w-56 bg-[#161616] rounded-2xl shadow-2xl border border-[#282828] overflow-hidden py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
                     <button
@@ -463,6 +503,7 @@ export const PersistentPlayer = () => {
                 )}
               </div>
             </div>
+          </div>
 
             {/* Barre de progression avec prévisualisation tactile */}
             <div className="w-full mb-6">
@@ -642,11 +683,24 @@ export const PersistentPlayer = () => {
             </div>
           </div>
 
-          {/* Secondary Actions: Queue + Volume + Close */}
+          {/* Secondary Actions: Like + Queue + Volume + Close */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 border-l border-[#242424] pl-2 sm:pl-3 shrink-0">
+            <button
+              onClick={handleToggleLike}
+              className={`p-1.5 rounded-full transition-colors ${
+                isCurrentEpisodeLiked ? "text-[#FFBF00]" : "text-[#888] hover:text-[#FFBF00]"
+              } hover:bg-[#202020]`}
+              title={isCurrentEpisodeLiked ? "Retirer des favoris" : "Aimer cet épisode"}
+            >
+              <Heart className={`w-4 h-4 ${isCurrentEpisodeLiked ? "fill-[#FFBF00] text-[#FFBF00]" : ""}`} />
+            </button>
             <button onClick={toggleRightPanel} className="p-1.5 rounded-full text-[#888] hover:text-[#FFBF00] hover:bg-[#202020] transition-colors relative" title="File d'attente">
               <ListMusic className="w-4 h-4" />
-              {queue.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-[#FFBF00] rounded-full"></span>}
+              {queue.length > 0 && (
+                <span className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 bg-[#FFBF00] text-[#0B0B0B] text-[9px] font-black rounded-full flex items-center justify-center">
+                  {queue.length}
+                </span>
+              )}
             </button>
             <button onClick={() => setVolume(volume === 0 ? 0.8 : 0)} className="hidden sm:inline-flex p-1.5 rounded-full text-[#888] hover:text-white hover:bg-[#202020] transition-colors" title="Volume">
               {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -661,17 +715,32 @@ export const PersistentPlayer = () => {
         {showRightPanel && (
           <div className={`absolute bottom-full right-0 mb-3 w-80 max-h-96 bg-[#141414]/95 backdrop-blur-xl border border-[#242424] rounded-2xl shadow-2xl flex flex-col overflow-hidden ${isExpanded ? 'z-[70]' : 'z-50'}`}>
             <div className="p-3 border-b border-[#242424] flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-white">File d'attente</h3>
-              <button onClick={toggleRightPanel} className="text-[#888] hover:text-white p-1">
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <ListMusic className="w-4 h-4 text-[#FFBF00]" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                  File d'attente {queue.length > 0 && `(${queue.length})`}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {queue.length > 0 && (
+                  <button
+                    onClick={clearQueue}
+                    className="text-[10px] text-[#A0A0A0] hover:text-[#FFBF00] transition-colors font-semibold"
+                  >
+                    Vider
+                  </button>
+                )}
+                <button onClick={toggleRightPanel} className="text-[#888] hover:text-white p-1">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             <div className="p-3 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
               <div>
                 <p className="text-[10px] font-bold text-[#FFBF00] uppercase tracking-wider mb-2">En cours de lecture</p>
                 <div className="flex items-center gap-3 bg-[#1E1E1E] p-2 rounded-xl border border-[#282828]">
                   <img src={currentEpisode.cover || currentEpisode.podcast.cover} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-white truncate">{decodeHtmlEntities(currentEpisode.title)}</p>
                     <Link
                       href={`/podcasts/${currentEpisode.podcast.slug}`}
@@ -686,34 +755,58 @@ export const PersistentPlayer = () => {
                   </div>
                 </div>
               </div>
-              {queue.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-bold text-[#888] uppercase tracking-wider mb-2 mt-4">À suivre</p>
-                  <div className="space-y-2">
+
+              <div>
+                <div className="flex items-center justify-between mb-2 mt-4">
+                  <p className="text-[10px] font-bold text-[#888] uppercase tracking-wider">À suivre</p>
+                  {queue.length > 0 && (
+                    <span className="text-[10px] text-[#666]">{queue.length} épisode{queue.length > 1 ? "s" : ""}</span>
+                  )}
+                </div>
+
+                {queue.length === 0 ? (
+                  <div className="py-6 px-4 text-center rounded-xl bg-[#181818]/50 border border-[#222222] space-y-1">
+                    <p className="text-xs font-semibold text-white/80">File d'attente vide</p>
+                    <p className="text-[10px] text-[#777]">
+                      Ajoutez des épisodes avec l'icône « + File » pour les enchaîner sans interruption.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
                     {queue.map((ep, i) => (
-                      <div key={i} className="flex items-center gap-3 p-2 hover:bg-[#1E1E1E] rounded-xl border border-transparent hover:border-[#282828] group transition-colors">
-                        <img src={ep.cover || ep.podcast.cover} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                      <div
+                        key={i}
+                        onClick={() => {
+                          removeFromQueue(i);
+                          playEpisode(ep);
+                        }}
+                        className="flex items-center gap-3 p-2 hover:bg-[#1E1E1E] rounded-xl border border-transparent hover:border-[#282828] group transition-colors cursor-pointer"
+                        title="Cliquer pour lancer cet épisode immédiatement"
+                      >
+                        <img src={ep.cover || ep.podcast.cover} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-white truncate">{decodeHtmlEntities(ep.title)}</p>
-                          <Link
-                            href={`/podcasts/${ep.podcast.slug}`}
-                            onClick={() => {
-                              setIsExpanded(false);
-                              if (showRightPanel) toggleRightPanel();
-                            }}
-                            className="text-[10px] text-[#888] hover:text-[#FFBF00] hover:underline truncate block"
-                          >
+                          <p className="text-xs font-medium text-white truncate group-hover:text-[#FFBF00] transition-colors">
+                            {decodeHtmlEntities(ep.title)}
+                          </p>
+                          <span className="text-[10px] text-[#888] truncate block">
                             {ep.podcast.name}
-                          </Link>
+                          </span>
                         </div>
-                        <button onClick={() => removeFromQueue(i)} className="opacity-0 group-hover:opacity-100 p-1 text-[#888] hover:text-white transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFromQueue(i);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 text-[#888] hover:text-white hover:bg-[#282828] rounded-lg transition-all"
+                          title="Retirer de la file d'attente"
+                        >
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}

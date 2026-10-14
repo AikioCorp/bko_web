@@ -47,7 +47,10 @@ import {
   EyeOff,
   ThumbsDown,
   MoreVertical,
+  Heart,
+  Check,
 } from "lucide-react";
+import { useLikesStore } from "@/store/likesStore";
 
 function HomeSkeleton() {
   return (
@@ -335,9 +338,40 @@ function PodcastShelfRow({ sec }: { sec: any }) {
 function HomeContent() {
   const searchParams = useSearchParams();
   const langFilter = searchParams.get("lang") || "ALL";
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const { playEpisode, currentEpisode, isPlaying, addToQueue, togglePlay } =
     usePlayerStore();
+  const { isLiked, toggleLike, loadLikes, isLoaded: likesLoaded } = useLikesStore();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated && !likesLoaded) {
+      loadLikes();
+    }
+  }, [isAuthenticated, likesLoaded, loadLikes]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleToggleLike = async (episodeId: string) => {
+    if (!isAuthenticated) {
+      showToast("Veuillez vous connecter pour aimer cet épisode");
+      return;
+    }
+    try {
+      const nowLiked = await toggleLike(episodeId);
+      showToast(nowLiked ? "Épisode ajouté à vos favoris" : "Épisode retiré de vos favoris");
+    } catch {
+      showToast("Erreur lors de la mise à jour des favoris");
+    }
+  };
+
+  const handleAddToQueue = (ep: any) => {
+    addToQueue(ep);
+    showToast("Épisode ajouté à la file d'attente");
+  };
 
   const handlePlay = (ep: any, attribution?: any) => {
     if (currentEpisode?.id === ep.id) {
@@ -649,7 +683,6 @@ function HomeContent() {
                           href={destinationUrl}
                           className="group inline-flex items-center gap-2 mb-1"
                         >
-                          {sec.slug === "for-you" && <Sparkles className="w-4 h-4 text-[#FFBF00]" />}
                           <h2 className="text-2xl md:text-3xl font-black text-white group-hover:text-[#FFBF00] transition-colors tracking-tight">
                             {sec.title}
                           </h2>
@@ -744,7 +777,16 @@ function HomeContent() {
 
                             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                               <button
-                                onClick={() => addToQueue(ep)}
+                                onClick={() => handleToggleLike(ep.id)}
+                                className={`p-2.5 rounded-full transition-colors bg-[#1F1F1F] hover:bg-[#2A2A2A] ${
+                                  isLiked(ep.id) ? "text-[#FFBF00]" : "text-[#808080] hover:text-[#FFBF00]"
+                                }`}
+                                title={isLiked(ep.id) ? "Retirer des favoris" : "Aimer cet épisode"}
+                              >
+                                <Heart className={`w-4 h-4 ${isLiked(ep.id) ? "fill-[#FFBF00] text-[#FFBF00]" : ""}`} />
+                              </button>
+                              <button
+                                onClick={() => handleAddToQueue(ep)}
                                 className="p-2.5 text-[#808080] hover:text-white bg-[#1F1F1F] hover:bg-[#2A2A2A] rounded-full transition-colors"
                                 title="Ajouter à la file d'attente"
                               >
@@ -939,16 +981,24 @@ function HomeContent() {
                         </p>
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          addToQueue(ep);
-                        }}
-                        className="p-3 text-[#808080] hover:text-white bg-[#2A2A2A]/50 hover:bg-[#2A2A2A] rounded-full transition-colors shrink-0"
-                        title="Ajouter à la file d'attente"
-                      >
-                        <ListPlus className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleToggleLike(ep.id)}
+                          className={`p-2.5 rounded-full transition-colors bg-[#2A2A2A]/50 hover:bg-[#2A2A2A] ${
+                            isLiked(ep.id) ? "text-[#FFBF00]" : "text-[#808080] hover:text-[#FFBF00]"
+                          }`}
+                          title={isLiked(ep.id) ? "Retirer des favoris" : "Aimer cet épisode"}
+                        >
+                          <Heart className={`w-4 h-4 ${isLiked(ep.id) ? "fill-[#FFBF00] text-[#FFBF00]" : ""}`} />
+                        </button>
+                        <button
+                          onClick={() => handleAddToQueue(ep)}
+                          className="p-2.5 text-[#808080] hover:text-white bg-[#2A2A2A]/50 hover:bg-[#2A2A2A] rounded-full transition-colors"
+                          title="Ajouter à la file d'attente"
+                        >
+                          <ListPlus className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1077,7 +1127,16 @@ function HomeContent() {
 
                   <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => addToQueue(ep)}
+                      onClick={() => handleToggleLike(ep.id)}
+                      className={`p-2.5 rounded-full transition-colors bg-[#1F1F1F] hover:bg-[#2A2A2A] ${
+                        isLiked(ep.id) ? "text-[#FFBF00]" : "text-[#808080] hover:text-[#FFBF00]"
+                      }`}
+                      title={isLiked(ep.id) ? "Retirer des favoris" : "Aimer cet épisode"}
+                    >
+                      <Heart className={`w-4 h-4 ${isLiked(ep.id) ? "fill-[#FFBF00] text-[#FFBF00]" : ""}`} />
+                    </button>
+                    <button
+                      onClick={() => handleAddToQueue(ep)}
                       className="p-2.5 text-[#808080] hover:text-white bg-[#1F1F1F] hover:bg-[#2A2A2A] rounded-full transition-colors"
                       title="Ajouter à la file d'attente"
                     >
@@ -1186,6 +1245,14 @@ function HomeContent() {
         isOpen={isAppModalOpen}
         onClose={() => setIsAppModalOpen(false)}
       />
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-24 right-6 z-[90] px-4 py-2.5 rounded-xl bg-[#1E1E1E] border border-[#333333] text-white text-xs font-semibold shadow-2xl animate-fade-in flex items-center gap-2">
+          <Check className="w-4 h-4 text-[#FFBF00]" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

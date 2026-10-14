@@ -10,10 +10,11 @@ import {
   Search, X, SlidersHorizontal, ChevronDown, Check,
   Play, Video, Headphones, Radio, Bookmark, BookmarkCheck,
   ListPlus, Share2, MoreVertical, Loader2, Sparkles,
-  ExternalLink, Building2, Clock, Globe, ArrowRight
+  ExternalLink, Building2, Clock, Globe, ArrowRight, Heart
 } from "lucide-react";
 import { usePlayerStore, PlayerEpisode } from "../../store/playerStore";
 import { useAuthStore } from "../../store/authStore";
+import { useLikesStore } from "../../store/likesStore";
 import { AdBannerSlot } from "@/components/ads/AdBannerSlot";
 import { CreatorCalloutSlot, PromoteCalloutSlot } from "@/components/explore/CalloutSlots";
 import { AdvertiserInquiryModal } from "@/components/modals/AdvertiserInquiryModal";
@@ -49,6 +50,7 @@ function ExploreMain() {
 
   const { playEpisode, addToQueue } = usePlayerStore();
   const { isAuthenticated } = useAuthStore();
+  const { isLiked, toggleLike, loadLikes, isLoaded: likesLoaded } = useLikesStore();
 
   // URL state parameters
   const qParam = searchParams.get("q") || "";
@@ -315,6 +317,26 @@ function ExploreMain() {
       setSavedEpisodeIds(newSet);
       showToast("Épisode enregistré dans votre bibliothèque");
       await fetchApi(`/episodes/${ep.id}/save`, { method: "POST" }).catch(() => {});
+    }
+    setActiveMenuEpisodeId(null);
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && !likesLoaded) {
+      loadLikes();
+    }
+  }, [isAuthenticated, likesLoaded, loadLikes]);
+
+  const handleToggleLike = async (episodeId: string) => {
+    if (!isAuthenticated) {
+      showToast("Veuillez vous connecter pour aimer cet épisode");
+      return;
+    }
+    try {
+      const nowLiked = await toggleLike(episodeId);
+      showToast(nowLiked ? "Épisode ajouté à vos favoris" : "Épisode retiré de vos favoris");
+    } catch {
+      showToast("Erreur lors de la mise à jour des favoris");
     }
     setActiveMenuEpisodeId(null);
   };
@@ -769,6 +791,18 @@ function ExploreMain() {
                               <div className="flex items-center justify-between pt-2">
                                 <div className="flex items-center gap-2">
                                   <button
+                                    onClick={() => handleToggleLike(ep.id)}
+                                    className={`p-2 rounded-xl transition-colors ${
+                                      isLiked(ep.id)
+                                        ? "text-[#FFBF00] bg-[#FFBF00]/10"
+                                        : "text-[#757575] hover:text-[#FFBF00] hover:bg-[#202020]"
+                                    }`}
+                                    title={isLiked(ep.id) ? "Retirer des favoris" : "Aimer cet épisode"}
+                                  >
+                                    <Heart className={`w-3.5 h-3.5 ${isLiked(ep.id) ? "fill-[#FFBF00] text-[#FFBF00]" : ""}`} />
+                                  </button>
+
+                                  <button
                                     onClick={() => handlePlayEpisode(ep, "AUDIO")}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#202020] hover:bg-[#FFBF00] text-white hover:text-[#0B0B0B] text-xs font-bold transition-colors"
                                   >
@@ -799,6 +833,14 @@ function ExploreMain() {
 
                                   {isMenuOpen && (
                                     <div className="absolute right-0 bottom-full mb-1.5 w-52 bg-[#1A1A1A] border border-[#2E2E2E] rounded-xl shadow-2xl p-1.5 z-40 space-y-1 animate-fade-in text-xs">
+                                      <button
+                                        onClick={() => handleToggleLike(ep.id)}
+                                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-[#D0D0D0] hover:bg-[#262626] hover:text-white transition-colors"
+                                      >
+                                        <Heart className={`w-4 h-4 ${isLiked(ep.id) ? "fill-[#FFBF00] text-[#FFBF00]" : "text-[#888]"}`} />
+                                        <span>{isLiked(ep.id) ? "Ne plus aimer" : "Aimer cet épisode"}</span>
+                                      </button>
+
                                       <button
                                         onClick={() => handleToggleSave(ep)}
                                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-[#D0D0D0] hover:bg-[#262626] hover:text-white transition-colors"

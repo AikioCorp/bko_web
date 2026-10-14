@@ -19,6 +19,7 @@ import {
   Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ClientPortal } from "@/components/ui/ClientPortal";
 
 interface Plan {
   id: string;
@@ -166,7 +167,8 @@ export const SubscriptionCheckoutModal: React.FC<SubscriptionCheckoutModalProps>
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 overflow-y-auto">
+    <ClientPortal>
+      <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-[#111111] border border-[#242424] rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
         {/* Bouton Fermer */}
         {step !== "PROCESSING" && (
@@ -406,5 +408,6 @@ export const SubscriptionCheckoutModal: React.FC<SubscriptionCheckoutModalProps>
         )}
       </div>
     </div>
+    </ClientPortal>
   );
 };

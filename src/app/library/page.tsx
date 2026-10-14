@@ -7,10 +7,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from 'swr';
 import {
   Bookmark, Clock, Play, Trash2, Radio, CheckCircle2,
-  Smartphone, MoreVertical, Plus, ListMusic
+  Smartphone, MoreVertical, Plus, ListMusic, Heart
 } from 'lucide-react';
 import { usePlayerStore, PlayerEpisode } from '../../store/playerStore';
 import { useAuthStore } from '../../store/authStore';
+import { useLikesStore } from '../../store/likesStore';
 import { fetchApi } from '@/lib/api';
 import { AppDownloadModal } from '@/components/modals/AppDownloadModal';
 import { CreatePlaylistModal } from '@/components/modals/CreatePlaylistModal';
@@ -21,15 +22,17 @@ function LibraryContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const { playEpisode } = usePlayerStore();
+  const { toggleLike } = useLikesStore();
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get('tab') as 'saved' | 'following' | 'history' | 'playlists';
-  const [activeTab, setActiveTab] = useState<'saved' | 'following' | 'history' | 'playlists'>(tabParam || 'saved');
+  const tabParam = searchParams.get('tab') as 'saved' | 'liked' | 'following' | 'history' | 'playlists';
+  const [activeTab, setActiveTab] = useState<'saved' | 'liked' | 'following' | 'history' | 'playlists'>(tabParam || 'saved');
   useEffect(() => { if (tabParam) setActiveTab(tabParam); }, [tabParam]);
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
 
   // Queries
   const { data: savedEpisodes, mutate: mutateSaved } = useSWR(isAuthenticated ? '/me/saved' : null, fetcher);
+  const { data: likedEpisodes, mutate: mutateLiked } = useSWR(isAuthenticated ? '/me/likes' : null, fetcher);
   const { data: followedPodcasts, mutate: mutateFollowed } = useSWR(isAuthenticated ? '/me/following' : null, fetcher);
   const { data: history, mutate: mutateHistory } = useSWR(isAuthenticated ? '/me/continue-listening' : null, fetcher);
   const { data: playlists, mutate: mutatePlaylists } = useSWR(isAuthenticated ? '/me/playlists' : null, fetcher);
@@ -120,6 +123,10 @@ function LibraryContent() {
           <button onClick={() => setActiveTab('saved')} className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'saved' ? 'bg-[#FFBF00] text-[#0B0B0B]' : 'text-[#888888] hover:text-white'}`}>
             Enregistrés
           </button>
+          <button onClick={() => setActiveTab('liked')} className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'liked' ? 'bg-[#FFBF00] text-[#0B0B0B]' : 'text-[#888888] hover:text-white'}`}>
+            <Heart className="w-3.5 h-3.5 fill-current" />
+            Aimés
+          </button>
           <button onClick={() => setActiveTab('following')} className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'following' ? 'bg-[#FFBF00] text-[#0B0B0B]' : 'text-[#888888] hover:text-white'}`}>
             Émissions suivies
           </button>
@@ -167,6 +174,59 @@ function LibraryContent() {
                 </div>
                 <div className="flex items-center gap-4">
                   <button onClick={() => unsaveEpisode(se.id)} className="text-xs text-[#FFBF00] hover:text-white transition-colors">Retirer</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Tab: Liked */}
+      {activeTab === 'liked' && (
+        <div className="space-y-4">
+          {!likedEpisodes ? (
+            <div className="text-[#757575] text-sm">Chargement des épisodes aimés...</div>
+          ) : likedEpisodes.length === 0 ? (
+            <div className="text-center py-12 text-[#757575]">
+              <Heart className="w-12 h-12 mx-auto mb-4 opacity-20" />
+              <p>Vous n'avez pas encore aimé d'épisodes.</p>
+              <p className="text-xs text-[#555555] mt-1">Aimez des épisodes pour enrichir vos recommandations personnalisées.</p>
+            </div>
+          ) : (
+            likedEpisodes.map((ep: any) => (
+              <div key={ep.id} className="group flex items-center justify-between p-3 rounded-2xl hover:bg-[#141414] transition-all border border-transparent hover:border-[#222222]">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#282828] cursor-pointer" onClick={() => handlePlay(ep)}>
+                    <Image unoptimized src={ep?.cover || ep?.podcast?.cover || '/images/default-cover.jpg'} alt={ep?.title || ''} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play className="w-5 h-5 fill-white text-white" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <h4 className="text-sm font-bold text-white group-hover:text-[#FFBF00] transition-colors cursor-pointer truncate" onClick={() => handlePlay(ep)}>
+                      {ep?.title}
+                    </h4>
+                    {ep?.podcast?.slug ? (
+                      <Link href={`/podcasts/${ep.podcast.slug}`} className="text-xs text-[#888888] hover:text-[#FFBF00] hover:underline transition-colors truncate">
+                        {ep.podcast.name}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-[#888888] truncate">{ep?.podcast?.name}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    onClick={async () => {
+                      await toggleLike(ep.id);
+                      mutateLiked();
+                    }}
+                    title="Ne plus aimer"
+                    className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                  >
+                    <Heart className="w-4 h-4 fill-current" />
+                    <span className="hidden sm:inline">Aimé</span>
+                  </button>
                 </div>
               </div>
             ))

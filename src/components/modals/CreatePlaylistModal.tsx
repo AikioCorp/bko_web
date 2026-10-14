@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { ClientPortal } from '@/components/ui/ClientPortal';
 
 interface CreatePlaylistModalProps {
   isOpen: boolean;
@@ -30,7 +31,8 @@ export function CreatePlaylistModal({ isOpen, onClose, onSubmit }: CreatePlaylis
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <ClientPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1A1A1A] w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -80,5 +82,6 @@ export function CreatePlaylistModal({ isOpen, onClose, onSubmit }: CreatePlaylis
         </div>
       </div>
     </div>
+    </ClientPortal>
   );
 }

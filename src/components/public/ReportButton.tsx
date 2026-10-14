@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Flag } from "lucide-react";
 import { studioApi } from "@/lib/studioApi";
 import { useAuthStore } from "@/store/authStore";
+import { ClientPortal } from "@/components/ui/ClientPortal";
 
 const REASONS: [string, string][] = [
   ["COPYRIGHT", "Droits d'auteur"],
@@ -51,41 +52,43 @@ export function ReportButton({ targetType, targetId }: { targetType: "PODCAST" |
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Signaler un contenu">
-          <div className="w-full max-w-md bg-[#161616] border border-[#262626] rounded-2xl p-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">Signaler ce contenu</h2>
-            {state === "done" ? (
-              <>
-                <p className="text-sm text-emerald-400">Merci : votre signalement a été transmis à la modération.</p>
-                <button onClick={() => { setOpen(false); setState("idle"); setDescription(""); }} className="bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-4 py-2 rounded-lg">
-                  Fermer
-                </button>
-              </>
-            ) : (
-              <>
-                <label className="block space-y-1.5 text-xs font-bold text-gray-300">
-                  Motif
-                  <select value={reason} onChange={(e) => setReason(e.target.value)} className="w-full bg-[#0B0B0B] border border-[#262626] rounded-lg px-3 py-2.5 text-sm text-white font-normal">
-                    {REASONS.map(([v, l]) => (
-                      <option key={v} value={v}>{l}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block space-y-1.5 text-xs font-bold text-gray-300">
-                  Précisions (facultatif)
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={2000} className="w-full bg-[#0B0B0B] border border-[#262626] rounded-lg px-3 py-2.5 text-sm text-white font-normal" />
-                </label>
-                {error && <p className="text-xs text-red-400">{error}</p>}
-                <div className="flex justify-end gap-2">
-                  <button onClick={() => setOpen(false)} className="bg-[#262626] text-white text-xs font-bold px-3 py-2 rounded-lg">Annuler</button>
-                  <button onClick={submit} disabled={state === "busy"} className="bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg disabled:opacity-50">
-                    {state === "busy" ? "…" : "Envoyer le signalement"}
+        <ClientPortal>
+          <div className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Signaler un contenu">
+            <div className="w-full max-w-md bg-[#161616] border border-[#262626] rounded-2xl p-6 space-y-4">
+              <h2 className="text-lg font-bold text-white">Signaler ce contenu</h2>
+              {state === "done" ? (
+                <>
+                  <p className="text-sm text-emerald-400">Merci : votre signalement a été transmis à la modération.</p>
+                  <button onClick={() => { setOpen(false); setState("idle"); setDescription(""); }} className="bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-4 py-2 rounded-lg">
+                    Fermer
                   </button>
-                </div>
-              </>
-            )}
+                </>
+              ) : (
+                <>
+                  <label className="block space-y-1.5 text-xs font-bold text-gray-300">
+                    Motif
+                    <select value={reason} onChange={(e) => setReason(e.target.value)} className="w-full bg-[#0B0B0B] border border-[#262626] rounded-lg px-3 py-2.5 text-sm text-white font-normal">
+                      {REASONS.map(([v, l]) => (
+                        <option key={v} value={v}>{l}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block space-y-1.5 text-xs font-bold text-gray-300">
+                    Précisions (facultatif)
+                    <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={2000} className="w-full bg-[#0B0B0B] border border-[#262626] rounded-lg px-3 py-2.5 text-sm text-white font-normal" />
+                  </label>
+                  {error && <p className="text-xs text-red-400">{error}</p>}
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setOpen(false)} className="bg-[#262626] text-white text-xs font-bold px-3 py-2 rounded-lg">Annuler</button>
+                    <button onClick={submit} disabled={state === "busy"} className="bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg disabled:opacity-50">
+                      {state === "busy" ? "…" : "Envoyer le signalement"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </ClientPortal>
       )}
     </>
   );

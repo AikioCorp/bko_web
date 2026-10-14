@@ -18,6 +18,7 @@ import {
 import { fetchApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
+import { ClientPortal } from "@/components/ui/ClientPortal";
 
 interface ClaimPodcastModalProps {
   isOpen: boolean;
@@ -79,7 +80,8 @@ export function ClaimPodcastModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <ClientPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Overlay sombre solide */}
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
@@ -272,5 +274,6 @@ export function ClaimPodcastModal({
         )}
       </div>
     </div>
+    </ClientPortal>
   );
 }

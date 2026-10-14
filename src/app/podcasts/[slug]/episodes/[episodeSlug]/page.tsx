@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Play, Pause, Share2, Bookmark, BookmarkCheck, ListMusic, Smartphone, Crown, Lock } from "lucide-react";
+import { Play, Pause, Share2, Bookmark, BookmarkCheck, ListMusic, Smartphone, Crown, Lock, Heart, Check } from "lucide-react";
 import { studioApi } from "@/lib/studioApi";
 import { fetchApi } from "@/lib/api";
 import { formatClock, formatDate, formatDuration, shareOrCopy, toPlayerEpisode } from "@/lib/playback";
@@ -32,6 +32,7 @@ type Episode = {
   topics: { topic: { name: string; slug: string } }[];
   viewer: {
     isSaved: boolean;
+    isLiked?: boolean;
     hasActiveSubscription?: boolean;
     isPurchased?: boolean;
     progress: { positionSeconds: number; completed: boolean } | null;
@@ -52,6 +53,7 @@ export default function EpisodePage() {
   const [ep, setEp] = useState<Episode | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "notfound" | "error">("loading");
   const [saved, setSaved] = useState(false);
+  const [liked, setLiked] = useState(false);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [tab, setTab] = useState<"about" | "chapters" | "transcript">("about");
@@ -65,6 +67,7 @@ export default function EpisodePage() {
       const e = await studioApi<Episode>(`/podcasts/${slug}/episodes/${episodeSlug}`);
       setEp(e);
       setSaved(!!e.viewer?.isSaved);
+      setLiked(!!e.viewer?.isLiked);
       setStatus("ready");
       studioApi<Chapter[]>(`/episodes/${e.id}/chapters`).then(setChapters).catch(() => {});
       studioApi<{ segments: Segment[] } | null>(`/episodes/${e.id}/transcript`)
@@ -123,6 +126,24 @@ export default function EpisodePage() {
       await studioApi(`/episodes/${ep.id}/save`, { method: next ? "POST" : "DELETE" });
     } catch (e: any) {
       setSaved(!next);
+      flash(e.message);
+    }
+  };
+
+  const toggleLike = async () => {
+    if (!isAuthenticated) return login();
+    const next = !liked;
+    setLiked(next);
+    try {
+      if (next) {
+        await studioApi(`/episodes/${ep.id}/likes`, { method: "POST" });
+        flash("Épisode ajouté à vos favoris");
+      } else {
+        await studioApi(`/episodes/${ep.id}/likes`, { method: "DELETE" });
+        flash("Épisode retiré de vos favoris");
+      }
+    } catch (e: any) {
+      setLiked(!next);
       flash(e.message);
     }
   };
@@ -210,11 +231,29 @@ export default function EpisodePage() {
               </a>
             )}
             
-            <button onClick={() => addToQueue(toPlayerEpisode(ep, ep.podcast))} className="text-[#B8B8B8] hover:text-[#FFBF00] p-2" aria-label="Ajouter à la file d'attente">
+            <button
+              onClick={() => {
+                addToQueue(toPlayerEpisode(ep, ep.podcast));
+                flash("Épisode ajouté à la file d'attente");
+              }}
+              className="text-[#B8B8B8] hover:text-[#FFBF00] p-2 transition-colors"
+              aria-label="Ajouter à la file d'attente"
+              title="Ajouter à la file d'attente"
+            >
               <ListMusic className="w-5 h-5" />
             </button>
 
-            <button onClick={toggleSave} aria-pressed={saved} aria-label={saved ? "Retirer des favoris" : "Enregistrer"} className="text-[#B8B8B8] hover:text-[#FFBF00] p-2">
+            <button
+              onClick={toggleLike}
+              aria-pressed={liked}
+              aria-label={liked ? "Ne plus aimer" : "Aimer"}
+              title={liked ? "Retirer des favoris" : "Aimer cet épisode"}
+              className={`p-2 transition-colors ${liked ? "text-[#FFBF00]" : "text-[#B8B8B8] hover:text-[#FFBF00]"}`}
+            >
+              <Heart className={`w-5 h-5 ${liked ? "fill-[#FFBF00] text-[#FFBF00]" : ""}`} />
+            </button>
+
+            <button onClick={toggleSave} aria-pressed={saved} aria-label={saved ? "Retirer de la bibliothèque" : "Enregistrer"} title={saved ? "Retirer de la bibliothèque" : "Enregistrer dans la bibliothèque"} className="text-[#B8B8B8] hover:text-[#FFBF00] p-2 transition-colors">
               {saved ? <BookmarkCheck className="w-5 h-5 text-[#FFBF00]" /> : <Bookmark className="w-5 h-5" />}
             </button>
             <button

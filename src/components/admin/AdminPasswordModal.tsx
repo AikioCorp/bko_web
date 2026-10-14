@@ -21,6 +21,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
+import { ClientPortal } from "@/components/ui/ClientPortal";
 
 interface AdminPasswordModalProps {
   isOpen: boolean;
@@ -146,7 +147,8 @@ export function AdminPasswordModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <ClientPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-lg bg-[#141414] border border-[#262626] rounded-2xl shadow-2xl text-white overflow-hidden">
         {/* Header Modal */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#222222] bg-[#111111]">
@@ -464,5 +466,6 @@ export function AdminPasswordModal({
         )}
       </div>
     </div>
+    </ClientPortal>
   );
 }

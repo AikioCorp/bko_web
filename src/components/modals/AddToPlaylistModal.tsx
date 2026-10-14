@@ -5,6 +5,7 @@ import useSWR, { mutate } from "swr";
 import { X, ListMusic, Plus, Check, Loader2 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { ClientPortal } from "@/components/ui/ClientPortal";
 
 const fetcher = (url: string) => fetchApi(url).then((res) => res.data);
 
@@ -79,93 +80,95 @@ export function AddToPlaylistModal({ episodeId, isOpen, onClose }: AddToPlaylist
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-sm bg-[#141414] border border-[#242424] rounded-2xl p-5 shadow-2xl text-white space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-[#222222]">
-          <div className="flex items-center gap-2">
-            <ListMusic className="w-5 h-5 text-[#FFBF00]" />
-            <h3 className="text-sm font-bold text-white">Ajouter à une playlist</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-[#757575] hover:text-white transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {!isAuthenticated ? (
-          <div className="py-6 text-center space-y-3">
-            <p className="text-xs text-[#A0A0A0]">
-              Connectez-vous pour ajouter cet épisode à vos playlists personnelles.
-            </p>
-            <a
-              href="/login"
-              className="inline-block px-4 py-2 rounded-xl bg-[#FFBF00] text-[#0B0B0B] font-bold text-xs"
-            >
-              Se connecter
-            </a>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Playlists List */}
-            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-              {isLoading ? (
-                <div className="py-6 text-center text-xs text-[#757575]">Chargement...</div>
-              ) : !playlists || playlists.length === 0 ? (
-                <div className="py-4 text-center text-xs text-[#757575]">
-                  Vous n'avez pas encore de playlist.
-                </div>
-              ) : (
-                playlists.map((pl) => {
-                  const isAdded = addedSuccessId === pl.id;
-                  const isProcessing = addingToId === pl.id;
-
-                  return (
-                    <button
-                      key={pl.id}
-                      onClick={() => handleAddToPlaylist(pl.id)}
-                      disabled={isProcessing || isAdded}
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#1A1A1A] hover:bg-[#222222] border border-[#262626] transition-colors text-left"
-                    >
-                      <span className="text-xs font-semibold text-white truncate max-w-[200px]">
-                        {pl.name}
-                      </span>
-                      {isAdded ? (
-                        <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
-                          <Check className="w-3.5 h-3.5" /> Ajouté
-                        </span>
-                      ) : isProcessing ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFBF00]" />
-                      ) : (
-                        <Plus className="w-4 h-4 text-[#888888]" />
-                      )}
-                    </button>
-                  );
-                })
-              )}
+    <ClientPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="relative w-full max-w-sm bg-[#141414] border border-[#242424] rounded-2xl p-5 shadow-2xl text-white space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#222222]">
+            <div className="flex items-center gap-2">
+              <ListMusic className="w-5 h-5 text-[#FFBF00]" />
+              <h3 className="text-sm font-bold text-white">Ajouter à une playlist</h3>
             </div>
-
-            {/* Quick Create Playlist form */}
-            <form onSubmit={handleCreatePlaylist} className="pt-2 border-t border-[#222222] flex gap-2">
-              <input
-                type="text"
-                value={newPlaylistName}
-                onChange={(e) => setNewPlaylistName(e.target.value)}
-                placeholder="Nouvelle playlist..."
-                className="flex-1 px-3 py-2 rounded-xl bg-[#1A1A1A] border border-[#282828] text-xs text-white placeholder-[#666666] focus:border-[#FFBF00] outline-none"
-              />
-              <button
-                type="submit"
-                disabled={isCreating || !newPlaylistName.trim()}
-                className="px-3 py-2 rounded-xl bg-[#FFBF00] text-[#0B0B0B] font-bold text-xs hover:bg-[#e6ac00] transition-colors disabled:opacity-50 shrink-0"
-              >
-                {isCreating ? "..." : "Créer"}
-              </button>
-            </form>
+            <button
+              onClick={onClose}
+              className="p-1.5 text-[#757575] hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
+
+          {!isAuthenticated ? (
+            <div className="py-6 text-center space-y-3">
+              <p className="text-xs text-[#A0A0A0]">
+                Connectez-vous pour ajouter cet épisode à vos playlists personnelles.
+              </p>
+              <a
+                href="/login"
+                className="inline-block px-4 py-2 rounded-xl bg-[#FFBF00] text-[#0B0B0B] font-bold text-xs"
+              >
+                Se connecter
+              </a>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {/* Playlists List */}
+              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                {isLoading ? (
+                  <div className="py-6 text-center text-xs text-[#757575]">Chargement...</div>
+                ) : !playlists || playlists.length === 0 ? (
+                  <div className="py-4 text-center text-xs text-[#757575]">
+                    Vous n'avez pas encore de playlist.
+                  </div>
+                ) : (
+                  playlists.map((pl) => {
+                    const isAdded = addedSuccessId === pl.id;
+                    const isProcessing = addingToId === pl.id;
+
+                    return (
+                      <button
+                        key={pl.id}
+                        onClick={() => handleAddToPlaylist(pl.id)}
+                        disabled={isProcessing || isAdded}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#1A1A1A] hover:bg-[#222222] border border-[#262626] transition-colors text-left"
+                      >
+                        <span className="text-xs font-semibold text-white truncate max-w-[200px]">
+                          {pl.name}
+                        </span>
+                        {isAdded ? (
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                            <Check className="w-3.5 h-3.5" /> Ajouté
+                          </span>
+                        ) : isProcessing ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FFBF00]" />
+                        ) : (
+                          <Plus className="w-4 h-4 text-[#888888]" />
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Quick Create Playlist form */}
+              <form onSubmit={handleCreatePlaylist} className="pt-2 border-t border-[#222222] flex gap-2">
+                <input
+                  type="text"
+                  value={newPlaylistName}
+                  onChange={(e) => setNewPlaylistName(e.target.value)}
+                  placeholder="Nouvelle playlist..."
+                  className="flex-1 px-3 py-2 rounded-xl bg-[#1A1A1A] border border-[#282828] text-xs text-white placeholder-[#666666] focus:border-[#FFBF00] outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={isCreating || !newPlaylistName.trim()}
+                  className="px-3 py-2 rounded-xl bg-[#FFBF00] text-[#0B0B0B] font-bold text-xs hover:bg-[#e6ac00] transition-colors disabled:opacity-50 shrink-0"
+                >
+                  {isCreating ? "..." : "Créer"}
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </ClientPortal>
   );
 }

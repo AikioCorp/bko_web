@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Mic, Send, CheckCircle2, AlertCircle, Phone, Mail, Calendar, MessageSquare } from "lucide-react";
 import { fetchApi } from "@/lib/api";
+import { ClientPortal } from "@/components/ui/ClientPortal";
 
 interface StudioBookingModalProps {
   isOpen: boolean;
@@ -70,7 +71,8 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in select-none">
+    <ClientPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in select-none">
       <div className="relative w-full max-w-lg bg-[#141414] border border-[#262626] rounded-3xl p-6 sm:p-8 text-white shadow-2xl space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between">
@@ -241,5 +243,6 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
         )}
       </div>
     </div>
+    </ClientPortal>
   );
 }

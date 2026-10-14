@@ -48,6 +48,7 @@ interface PlayerState {
   playEpisode: (episode: PlayerEpisode, mode?: "AUDIO" | "VIDEO", startAt?: number) => void;
   addToQueue: (episode: PlayerEpisode) => void;
   removeFromQueue: (index: number) => void;
+  clearQueue: () => void;
   playNext: () => void;
   
   togglePlay: () => void;
@@ -99,11 +100,21 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     });
   },
 
-  addToQueue: (episode) => set((state) => ({ queue: [...state.queue, episode] })),
+  addToQueue: (episode) => {
+    const state = get();
+    // If no episode is currently loaded or playing, start playing this episode immediately
+    if (!state.currentEpisode) {
+      state.playEpisode(episode);
+    } else {
+      set((s) => ({ queue: [...s.queue, episode] }));
+    }
+  },
   
   removeFromQueue: (index) => set((state) => ({ 
     queue: state.queue.filter((_, i) => i !== index) 
   })),
+
+  clearQueue: () => set({ queue: [] }),
 
   playNext: () => {
     const state = get();

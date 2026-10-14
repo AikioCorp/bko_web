@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { X, Smartphone, Download, Headphones, Bell, Zap, CheckCircle2 } from "lucide-react";
+import { ClientPortal } from "@/components/ui/ClientPortal";
 
 interface AppDownloadModalProps {
   isOpen: boolean;
@@ -28,13 +29,14 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Télécharger l'application mobile Bamako Podcast"
-    >
+    <ClientPortal>
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Télécharger l'application mobile Bamako Podcast"
+      >
       <div
         className="relative w-full max-w-lg bg-[#141414] border border-[#262626] rounded-2xl p-6 md:p-8 space-y-6 shadow-2xl text-white animate-scale-in"
         onClick={(e) => e.stopPropagation()}
@@ -159,5 +161,6 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
         </div>
       </div>
     </div>
+    </ClientPortal>
   );
 };
