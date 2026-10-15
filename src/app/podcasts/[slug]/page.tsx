@@ -26,7 +26,7 @@ import {
   Lock
 } from "lucide-react";
 import { studioApi } from "@/lib/studioApi";
-import { formatDate, formatDuration, shareOrCopy, toPlayerEpisode } from "@/lib/playback";
+import { formatDate, formatDuration, shareOrCopy, toPlayerEpisode, resolveEpisodeCover } from "@/lib/playback";
 import { usePlayerStore } from "../../../store/playerStore";
 import { useAuthStore } from "../../../store/authStore";
 import { ReportButton } from "@/components/public/ReportButton";
@@ -40,6 +40,9 @@ type Episode = {
   title: string;
   description: string;
   cover?: string | null;
+  audioCover?: string | null;
+  videoCover?: string | null;
+  effectiveCover?: string | null;
   durationSeconds: number;
   publishedAt?: string | null;
   episodeNumber?: number | null;
@@ -49,6 +52,19 @@ type Episode = {
   people: { role: string; person: { name: string } }[];
   isPremium?: boolean;
   premiumPrice?: number | null;
+};
+
+type SimilarPodcast = {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string;
+  shortDescription?: string | null;
+  cover: string;
+  country?: { name: string; flagEmoji?: string };
+  primaryLanguage?: { name: string };
+  categories?: { category: { name: string; slug: string } }[];
+  _count?: { episodes: number; followers: number };
 };
 
 type Podcast = {
@@ -67,6 +83,7 @@ type Podcast = {
   seasons: { id: string; number: number; title?: string | null }[];
   episodes: (Episode & { seasonId?: string | null })[];
   ownershipStatus?: string;
+  similarPodcasts?: SimilarPodcast[];
   _count: { episodes: number; followers: number };
   viewer: {
     isFollowing: boolean;
@@ -444,7 +461,7 @@ export default function PodcastPage() {
                   <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 bg-[#1C1C1C] border border-[#262626]">
                     <Image
                       unoptimized
-                      src={ep.cover || podcast.cover || "/images/default-cover.jpg"}
+                      src={resolveEpisodeCover(ep, podcast) || ep.cover || podcast.cover || "/images/default-cover.jpg"}
                       alt={ep.title}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -585,6 +602,70 @@ export default function PodcastPage() {
           </div>
         )}
       </section>
+
+      {/* SECTION ÉMISSIONS SIMILAIRES */}
+      {podcast.similarPodcasts && podcast.similarPodcasts.length > 0 && (
+        <section className="space-y-4 pt-4 border-t border-[#202020]">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#FFBF00]" />
+                Émissions similaires
+              </h2>
+              <p className="text-xs text-[#808080] mt-0.5">
+                D&apos;autres podcasts du même univers éditorial à découvrir
+              </p>
+            </div>
+            <Link
+              href="/explore?view=podcasts"
+              className="text-xs font-bold text-[#FFBF00] hover:underline flex items-center gap-1"
+            >
+              <span>Tout voir</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {podcast.similarPodcasts.map((sim) => (
+              <Link
+                key={sim.id}
+                href={`/podcasts/${sim.slug}`}
+                className="group bg-[#141414] hover:bg-[#181818] border border-[#222222] hover:border-[#FFBF00]/40 rounded-2xl p-3.5 transition-all flex flex-col space-y-3"
+              >
+                <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-[#1E1E1E] border border-[#262626]">
+                  <Image
+                    unoptimized
+                    src={sim.cover || "/images/default-cover.jpg"}
+                    alt={sim.name}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {sim.categories && sim.categories[0] && (
+                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-[#0B0B0B]/85 border border-[#2E2E2E] text-[10px] font-bold text-[#FFBF00]">
+                      {sim.categories[0].category.name}
+                    </span>
+                  )}
+                </div>
+
+                <div className="min-w-0 space-y-1">
+                  <h3 className="text-sm font-bold text-white group-hover:text-[#FFBF00] transition-colors truncate">
+                    {sim.name}
+                  </h3>
+                  <div className="flex items-center gap-2 text-[11px] text-[#808080]">
+                    <span>{sim._count?.episodes || 0} épisode{(sim._count?.episodes || 0) > 1 ? "s" : ""}</span>
+                    {sim._count?.followers ? (
+                      <>
+                        <span>•</span>
+                        <span>{sim._count.followers} abonné{sim._count.followers > 1 ? "s" : ""}</span>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* MODAL AJOUT À UNE PLAYLIST */}
       <AddToPlaylistModal

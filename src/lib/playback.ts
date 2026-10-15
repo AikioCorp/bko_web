@@ -1,15 +1,68 @@
 import type { PlayerEpisode } from "@/store/playerStore";
 
+/**
+ * Résout la pochette dominante selon la directive éditoriale :
+ * - Si audio ET vidéo sont disponibles, la pochette audio est dominante.
+ * - Le cas échéant (si absence de pochette audio), la pochette vidéo s'affiche.
+ * - Si seul audio ou seule vidéo existe, sa pochette respective s'applique.
+ */
+export function resolveEpisodeCover(
+  ep?: {
+    cover?: string | null;
+    audioCover?: string | null;
+    videoCover?: string | null;
+    effectiveCover?: string | null;
+    mediaSources?: any[];
+    hasAudio?: boolean;
+    hasVideo?: boolean;
+    audioAvailable?: boolean;
+    videoAvailable?: boolean;
+  } | null,
+  podcast?: { cover?: string | null } | null
+): string | null {
+  if (!ep) return podcast?.cover ?? null;
+  if (ep.effectiveCover) return ep.effectiveCover;
+
+  const hasAudio = ep.hasAudio ?? ep.audioAvailable ?? ep.mediaSources?.some((m) => m.type === "AUDIO");
+  const hasVideo = ep.hasVideo ?? ep.videoAvailable ?? ep.mediaSources?.some((m) => m.type === "VIDEO");
+
+  const audioCover = ep.audioCover ?? ep.cover;
+  const videoCover = ep.videoCover;
+
+  if (hasAudio && hasVideo) {
+    return audioCover || videoCover || podcast?.cover || null;
+  }
+  if (hasAudio) {
+    return audioCover || podcast?.cover || null;
+  }
+  if (hasVideo) {
+    return videoCover || ep.cover || podcast?.cover || null;
+  }
+  return ep.cover || podcast?.cover || null;
+}
+
 /** Adapte un épisode renvoyé par l'API publique au format attendu par le lecteur. */
 export function toPlayerEpisode(
-  ep: { id: string; slug: string; title: string; cover?: string | null; durationSeconds: number; mediaSources: any[] },
+  ep: {
+    id: string;
+    slug: string;
+    title: string;
+    cover?: string | null;
+    audioCover?: string | null;
+    videoCover?: string | null;
+    effectiveCover?: string | null;
+    durationSeconds: number;
+    mediaSources: any[];
+    hasAudio?: boolean;
+    hasVideo?: boolean;
+  },
   podcast: { slug: string; name: string; cover: string }
 ): PlayerEpisode {
   return {
     id: ep.id,
     slug: ep.slug,
     title: ep.title,
-    cover: ep.cover ?? null,
+    cover: resolveEpisodeCover(ep, podcast) ?? ep.cover ?? null,
     durationSeconds: ep.durationSeconds,
     podcast: { slug: podcast.slug, name: podcast.name, cover: podcast.cover },
     mediaSources: ep.mediaSources.map((m) => ({

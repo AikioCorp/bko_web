@@ -44,6 +44,7 @@ export default function AdminYoutubeImportPage() {
   const [countryId, setCountryId] = useState("ML");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [autoPublish, setAutoPublish] = useState(false);
+  const [excludeShorts, setExcludeShorts] = useState(true);
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -83,13 +84,16 @@ export default function AdminYoutubeImportPage() {
       setDescription(res.data.channel.description || "");
       setCover(res.data.channel.thumbnailUrl || "");
 
-      // Sélectionner par défaut toutes les vidéos non encore importées
+      // Sélectionner par défaut toutes les vidéos non encore importées (en respectant l'exclusion des shorts)
       const unimported = new Set<string>();
       const videoList = res.data.videos || res.data.items || [];
       videoList.forEach((item: any) => {
         const vid = item.videoId || item.youtubeVideoId;
         const isAlready = item.alreadyImported ?? item.isAlreadyImported ?? false;
-        if (!isAlready && vid) unimported.add(vid);
+        const isShort = item.isLikelyShort === true;
+        if (!isAlready && vid && (!excludeShorts || !isShort)) {
+          unimported.add(vid);
+        }
       });
       setSelectedVideoIds(unimported);
     } catch (err: any) {
@@ -97,6 +101,21 @@ export default function AdminYoutubeImportPage() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleToggleExcludeShorts = (val: boolean) => {
+    setExcludeShorts(val);
+    if (!previewData) return;
+    const videoList = previewData.videos || previewData.items || [];
+    const next = new Set(selectedVideoIds);
+    videoList.forEach((item: any) => {
+      const vid = item.videoId || item.youtubeVideoId;
+      if (!vid) return;
+      if (val && item.isLikelyShort) {
+        next.delete(vid);
+      }
+    });
+    setSelectedVideoIds(next);
   };
 
   const toggleVideo = (videoId: string) => {
@@ -115,6 +134,7 @@ export default function AdminYoutubeImportPage() {
       const payload: any = {
         channelUrl: url.trim(),
         autoPublish,
+        excludeShorts,
         selectedVideoIds: Array.from(selectedVideoIds),
       };
 
@@ -490,7 +510,7 @@ export default function AdminYoutubeImportPage() {
                   </div>
                 )}
 
-                <div className="pt-2">
+                <div className="pt-2 flex flex-col sm:flex-row gap-4">
                   <label className="flex items-center gap-2 cursor-pointer text-gray-300">
                     <input
                       type="checkbox"
@@ -500,14 +520,38 @@ export default function AdminYoutubeImportPage() {
                     />
                     <span>Publier directement les vidéos importées (sinon état Brouillon)</span>
                   </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-[#FFBF00] font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={excludeShorts}
+                      onChange={(e) => handleToggleExcludeShorts(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#FFBF00]"
+                    />
+                    <span>Exclure les YouTube Shorts (≤ 60s)</span>
+                  </label>
                 </div>
               </div>
 
               {/* Liste des vidéos sélectionnables */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs border-b border-[#222222] pb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-b border-[#222222] pb-2">
                   <h4 className="text-white font-bold">Vidéos à importer ({selectedVideoIds.size}/{(previewData.videos || previewData.items || []).length})</h4>
                   <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        const std = new Set<string>();
+                        (previewData.videos || previewData.items || []).forEach((i: any) => {
+                          const vid = i.videoId || i.youtubeVideoId;
+                          if (vid && !i.isLikelyShort) std.add(vid);
+                        });
+                        setSelectedVideoIds(std);
+                      }}
+                      className="text-emerald-400 font-bold hover:underline"
+                    >
+                      Standards uniquement
+                    </button>
+                    <span className="text-gray-600">•</span>
                     <button
                       onClick={() => {
                         const all = new Set<string>();
@@ -565,9 +609,13 @@ export default function AdminYoutubeImportPage() {
                                   <span>{item.durationLabel}</span>
                                 </>
                               )}
-                              {item.isLikelyShort && (
-                                <span className="text-[10px] bg-red-950/60 text-red-400 border border-red-800/40 px-1 rounded">
-                                  Short
+                              {item.isLikelyShort ? (
+                                <span className="text-[10px] bg-red-950/70 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded font-bold">
+                                  Short (≤ 60s)
+                                </span>
+                              ) : (
+                                <span className="text-[10px] bg-emerald-950/50 text-emerald-400 border border-emerald-800/40 px-1.5 py-0.5 rounded font-bold">
+                                  Standard
                                 </span>
                               )}
                             </div>

@@ -38,6 +38,7 @@ export default function PodcastYoutubePage() {
   const [autoPublish, setAutoPublish] = useState(false);
   const [autoSync, setAutoSync] = useState(true);
   const [keepManualEdits, setKeepManualEdits] = useState(true);
+  const [excludeShorts, setExcludeShorts] = useState(true);
   const [includeKeywords, setIncludeKeywords] = useState("");
   const [excludeKeywords, setExcludeKeywords] = useState("");
 
@@ -69,6 +70,9 @@ export default function PodcastYoutubePage() {
           if (json.data.importSettings) {
             setAutoPublish(!!json.data.importSettings.autoPublish);
             setKeepManualEdits(json.data.importSettings.keepManualEdits !== false);
+            if (json.data.importSettings.excludeShorts !== undefined) {
+              setExcludeShorts(json.data.importSettings.excludeShorts);
+            }
             setIncludeKeywords(json.data.importSettings.includeKeywords?.join(", ") || "");
             setExcludeKeywords(json.data.importSettings.excludeKeywords?.join(", ") || "");
           }
@@ -114,13 +118,14 @@ export default function PodcastYoutubePage() {
         setErrorMessage(json.error?.message || json.message || "Impossible d'analyser cette chaîne YouTube.");
       } else {
         setPreviewData(json.data);
-        // Par défaut, sélectionner toutes les vidéos non encore importées
+        // Par défaut, sélectionner toutes les vidéos non encore importées (en respectant excludeShorts)
         const unimported = new Set<string>();
         const list = json.data.items || json.data.videos || [];
         list.forEach((item: any) => {
           const vid = item.youtubeVideoId || item.videoId;
           const isAlready = item.isAlreadyImported ?? item.alreadyImported ?? false;
-          if (!isAlready && vid) unimported.add(vid);
+          const isShort = item.isLikelyShort === true;
+          if (!isAlready && vid && (!excludeShorts || !isShort)) unimported.add(vid);
         });
         setSelectedIds(unimported);
       }
@@ -136,6 +141,7 @@ export default function PodcastYoutubePage() {
     const rawList = previewData?.items || previewData?.videos;
     if (!rawList) return [];
     return rawList.filter((item: any) => {
+      if (excludeShorts && item.isLikelyShort) return false;
       const titleLower = (item.title || "").toLowerCase();
       if (includeKeywords) {
         const inc = includeKeywords.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
@@ -147,7 +153,7 @@ export default function PodcastYoutubePage() {
       }
       return true;
     });
-  }, [previewData, includeKeywords, excludeKeywords]);
+  }, [previewData, includeKeywords, excludeKeywords, excludeShorts]);
 
   const toggleSelect = (videoId: string) => {
     const next = new Set(selectedIds);
@@ -198,6 +204,7 @@ export default function PodcastYoutubePage() {
             autoPublish,
             keepManualEdits,
             autoSyncFuture: autoSync,
+            excludeShorts,
             includeKeywords: includeKeywords.split(",").map((s) => s.trim()).filter(Boolean),
             excludeKeywords: excludeKeywords.split(",").map((s) => s.trim()).filter(Boolean),
             importScope: selectedIds.size > 0 ? "SELECT" : "ALL",
@@ -606,7 +613,7 @@ export default function PodcastYoutubePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
                   <label className="flex items-center gap-2 cursor-pointer text-gray-300">
                     <input
                       type="checkbox"
@@ -636,11 +643,21 @@ export default function PodcastYoutubePage() {
                     />
                     <span>Protéger mes éditions locales</span>
                   </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-[#FFBF00] font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={excludeShorts}
+                      onChange={(e) => setExcludeShorts(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#E5A93C] focus:ring-0"
+                    />
+                    <span>Exclure les YouTube Shorts</span>
+                  </label>
                 </div>
               </div>
 
               {/* Barre d'action sélection */}
-              <div className="flex items-center justify-between text-xs border-b border-[#1E2638] pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-b border-[#1E2638] pb-3">
                 <div className="flex items-center gap-3">
                   <button onClick={selectAll} className="text-[#FFBF00] font-bold hover:underline">
                     Tout sélectionner
@@ -694,6 +711,11 @@ export default function PodcastYoutubePage() {
                               <Clock className="w-3 h-3" />
                               {video.durationSeconds || video.duration ? `${Math.floor((video.durationSeconds || video.duration) / 60)} min` : (video.durationLabel || "Durée inconnue")}
                             </span>
+                            {video.isLikelyShort && (
+                              <span className="text-[10px] bg-red-950/70 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded font-bold">
+                                Short (≤ 60s)
+                              </span>
+                            )}
                             <a
                               href={video.canonicalUrl}
                               target="_blank"
