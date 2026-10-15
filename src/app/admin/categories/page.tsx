@@ -1,4 +1,7 @@
 "use client";
+import { useAdminAccess } from "@/components/admin/AdminAccess";
+import { hasPermission } from "@/lib/admin-permissions";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState } from "react";
 import useSWR from "swr";
@@ -21,6 +24,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 export default function CategoriesLanguagesPage() {
+  const {access}=useAdminAccess();
+  const canEditCatalog=hasPermission(access,"catalog.edit");
   const [activeTab, setActiveTab] = useState<"Categories" | "Languages">("Categories");
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -39,12 +44,12 @@ export default function CategoriesLanguagesPage() {
   );
 
   // Search Filter
-  const categories = (catData || []).filter((c: any) => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
+  const categories = (catData || []).filter((c: any) =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
     (c.description && c.description.toLowerCase().includes(search.toLowerCase()))
   );
-  const languages = (langData || []).filter((l: any) => 
-    l.name.toLowerCase().includes(search.toLowerCase()) || 
+  const languages = (langData || []).filter((l: any) =>
+    l.name.toLowerCase().includes(search.toLowerCase()) ||
     l.code.toLowerCase().includes(search.toLowerCase()) ||
     l.nativeName.toLowerCase().includes(search.toLowerCase())
   );
@@ -97,9 +102,9 @@ export default function CategoriesLanguagesPage() {
 
   const handleToggleCategory = async (cat: any) => {
     try {
-      await adminApi(`/admin/categories/${cat.id}`, { 
-        method: "PUT", 
-        body: JSON.stringify({ ...cat, isActive: !cat.isActive }) 
+      await adminApi(`/admin/categories/${cat.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ ...cat, isActive: !cat.isActive })
       });
       mutateCat();
     } catch (e: any) {
@@ -131,9 +136,9 @@ export default function CategoriesLanguagesPage() {
 
   const handleToggleLanguage = async (lang: any) => {
     try {
-      await adminApi(`/admin/languages/${lang.code}`, { 
-        method: "PUT", 
-        body: JSON.stringify({ ...lang, isActive: !lang.isActive }) 
+      await adminApi(`/admin/languages/${lang.code}`, {
+        method: "PUT",
+        body: JSON.stringify({ ...lang, isActive: !lang.isActive })
       });
       mutateLang();
     } catch (e: any) {
@@ -159,8 +164,8 @@ export default function CategoriesLanguagesPage() {
         <button
           onClick={() => setActiveTab("Categories")}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === "Categories" 
-              ? "border-[#FFBF00] text-white" 
+            activeTab === "Categories"
+              ? "border-[#FFBF00] text-white"
               : "border-transparent text-[#757575] hover:text-white"
           }`}
         >
@@ -169,8 +174,8 @@ export default function CategoriesLanguagesPage() {
         <button
           onClick={() => setActiveTab("Languages")}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === "Languages" 
-              ? "border-[#FFBF00] text-white" 
+            activeTab === "Languages"
+              ? "border-[#FFBF00] text-white"
               : "border-transparent text-[#757575] hover:text-white"
           }`}
         >
@@ -182,21 +187,21 @@ export default function CategoriesLanguagesPage() {
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#757575]" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder={`Rechercher une ${activeTab === "Categories" ? "catégorie" : "langue"}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#171717] border border-[#2A2A2A] rounded-lg pl-10 pr-4 py-2 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#757575]"
           />
         </div>
-        <Button 
+        <AdminAction permission="catalog.create"><Button
           onClick={() => setEditingItem(activeTab === "Categories" ? { isCategory: true } : { isLanguage: true })}
           className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold w-full md:w-auto"
         >
-          <Plus className="w-4 h-4 mr-2" /> 
+          <Plus className="w-4 h-4 mr-2" />
           Ajouter une {activeTab === "Categories" ? "catégorie" : "langue"}
-        </Button>
+        </Button></AdminAction>
       </div>
 
       {/* Table Container */}
@@ -220,7 +225,7 @@ export default function CategoriesLanguagesPage() {
                   <tr><td colSpan={5} className="p-12 text-center text-[#757575]">Aucune catégorie trouvée.</td></tr>
                 ) : (
                   categories.map((cat: any) => (
-                    <tr key={cat.id} className="hover:bg-[#1C1C1C] transition-colors group cursor-pointer" onClick={() => setEditingItem({ ...cat, isCategory: true })}>
+                    <tr key={cat.id} className="hover:bg-[#1C1C1C] transition-colors group cursor-pointer" onClick={canEditCatalog?() => setEditingItem({ ...cat, isCategory: true }):undefined}>
                       <td className="p-4 font-bold text-white text-sm">{cat.icon} {cat.name}</td>
                       <td className="p-4 text-sm text-[#B8B8B8] max-w-md truncate">{cat.description || "—"}</td>
                       <td className="p-4 text-center text-sm font-bold text-[#FFBF00]">{cat._count?.podcasts || 0}</td>
@@ -237,14 +242,14 @@ export default function CategoriesLanguagesPage() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          
-                          <Button size="sm" variant="ghost" className="h-8 px-2 text-[#B8B8B8] hover:text-white" onClick={(e) => { e.stopPropagation(); handleToggleCategory(cat); }}>
+
+                          <AdminAction permission="catalog.edit"><Button size="sm" variant="ghost" className="h-8 px-2 text-[#B8B8B8] hover:text-white" onClick={(e) => { e.stopPropagation(); handleToggleCategory(cat); }}>
                               {cat.isActive ? <Power className="w-4 h-4 text-[#B8B8B8]" /> : <Play className="w-4 h-4 text-[#757575]" />}
-                            </Button>
+                            </Button></AdminAction>
                             {cat._count?.podcasts === 0 && (
-                              <Button size="sm" variant="ghost" className="h-8 px-2 text-red-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); setDeletingItem({ id: cat.id, isCategory: true, name: cat.name }); }}>
+                              <AdminAction permission="catalog.delete"><Button size="sm" variant="ghost" className="h-8 px-2 text-red-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); setDeletingItem({ id: cat.id, isCategory: true, name: cat.name }); }}>
                                   <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
+                                </Button></AdminAction>
                             )}
                         </div>
                       </td>
@@ -276,7 +281,7 @@ export default function CategoriesLanguagesPage() {
                   <tr><td colSpan={6} className="p-12 text-center text-[#757575]">Aucune langue trouvée.</td></tr>
                 ) : (
                   languages.map((lang: any) => (
-                    <tr key={lang.code} className="hover:bg-[#1C1C1C] transition-colors group cursor-pointer" onClick={() => setEditingItem({ ...lang, isLanguage: true, isEdit: true })}>
+                    <tr key={lang.code} className="hover:bg-[#1C1C1C] transition-colors group cursor-pointer" onClick={canEditCatalog?() => setEditingItem({ ...lang, isLanguage: true, isEdit: true }):undefined}>
                       <td className="p-4 font-mono text-sm text-[#757575]">{lang.code}</td>
                       <td className="p-4 font-bold text-white text-sm">{lang.name}</td>
                       <td className="p-4 text-sm text-[#B8B8B8]">{lang.nativeName}</td>
@@ -294,14 +299,14 @@ export default function CategoriesLanguagesPage() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          
-                          <Button size="sm" variant="ghost" className="h-8 px-2 text-[#B8B8B8] hover:text-white" onClick={(e) => { e.stopPropagation(); handleToggleLanguage(lang); }}>
+
+                          <AdminAction permission="catalog.edit"><Button size="sm" variant="ghost" className="h-8 px-2 text-[#B8B8B8] hover:text-white" onClick={(e) => { e.stopPropagation(); handleToggleLanguage(lang); }}>
                               {lang.isActive ? <Power className="w-4 h-4 text-[#B8B8B8]" /> : <Play className="w-4 h-4 text-[#757575]" />}
-                            </Button>
+                            </Button></AdminAction>
                             {(lang._count?.primaryPodcasts || 0) + (lang._count?.secondaryPodcasts || 0) === 0 && (
-                              <Button size="sm" variant="ghost" className="h-8 px-2 text-red-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); setDeletingItem({ code: lang.code, isLanguage: true, name: lang.name }); }}>
+                              <AdminAction permission="catalog.delete"><Button size="sm" variant="ghost" className="h-8 px-2 text-red-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); setDeletingItem({ code: lang.code, isLanguage: true, name: lang.name }); }}>
                                   <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
+                                </Button></AdminAction>
                             )}
                         </div>
                       </td>
@@ -314,7 +319,7 @@ export default function CategoriesLanguagesPage() {
         )}
       </div>
 
-      
+
       {/* Deletion Modal */}
       {deletingItem && (
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4" onClick={() => setDeletingItem(null)}>
@@ -325,10 +330,10 @@ export default function CategoriesLanguagesPage() {
             </p>
             <div className="flex gap-3 justify-end">
               <Button variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => setDeletingItem(null)}>Annuler</Button>
-              <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => {
+              <AdminAction permission="catalog.delete"><Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => {
                   if (deletingItem.isCategory) confirmDeleteCategory(deletingItem.id);
                   else confirmDeleteLanguage(deletingItem.code);
-              }}>Supprimer</Button>
+              }}>Supprimer</Button></AdminAction>
             </div>
           </div>
         </div>
@@ -344,9 +349,9 @@ export default function CategoriesLanguagesPage() {
                 {editingItem.isCategory ? "une catégorie" : "une langue"}
               </h2>
             </div>
-            
-            <form onSubmit={editingItem.isCategory ? handleSaveCategory : handleSaveLanguage} className="p-6 space-y-4">
-              
+
+            <AdminAction permission={editingItem?.id || editingItem?.code ? "catalog.edit" : "catalog.create"}><form onSubmit={editingItem.isCategory ? handleSaveCategory : handleSaveLanguage} className="p-6 space-y-4">
+
               {editingItem.isCategory ? (
                 <>
                   <div>
@@ -357,7 +362,7 @@ export default function CategoriesLanguagesPage() {
                     <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Identifiant (slug)</label>
                     <input name="slug" required defaultValue={editingItem.slug} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white font-mono" />
                   </div>
-                  
+
                   <div>
                     <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description</label>
                     <textarea name="description" rows={3} defaultValue={editingItem.description} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white resize-none" />
@@ -385,7 +390,7 @@ export default function CategoriesLanguagesPage() {
                 <Button type="button" variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => setEditingItem(null)}>Annuler</Button>
                 <Button type="submit" className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">Enregistrer</Button>
               </div>
-            </form>
+            </form></AdminAction>
           </div>
         </div>
       )}

@@ -1,4 +1,6 @@
 ﻿"use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -13,13 +15,13 @@ function classNames(...classes: string[]) {
 export default function CollectionEditPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
-  
+
   const fetcher = (url: string) => adminApi(url).then(res => res.data);
   const { data: collection, mutate, error, isLoading } = useSWR(`/admin/collections/${id}`, fetcher);
-  
+
   const [formData, setFormData] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -113,22 +115,22 @@ export default function CollectionEditPage() {
     <div className="w-full pb-32">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <Link href="/admin/collections" className="p-2 hover:bg-[#1A1A1A] rounded-full transition-colors text-[#888888] hover:text-white">
+          <AdminPageAccess href="/admin/collections"><Link href="/admin/collections" className="p-2 hover:bg-[#1A1A1A] rounded-full transition-colors text-[#888888] hover:text-white">
             <ChevronLeft className="w-5 h-5" />
-          </Link>
+          </Link></AdminPageAccess>
           <div>
             <h1 className="text-2xl font-bold text-white leading-tight">Éditer la collection</h1>
             <p className="text-sm text-[#888888]">{collection.slug}</p>
           </div>
         </div>
-        <button
+        <AdminAction permission="catalog.edit"><button
           onClick={handleSave}
           disabled={isSaving}
           className="bg-white text-black px-4 py-2 rounded-full font-semibold text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 disabled:opacity-50"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Enregistrer
-        </button>
+        </button></AdminAction>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -136,7 +138,7 @@ export default function CollectionEditPage() {
         <div className="space-y-6">
           <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6 space-y-6">
             <h2 className="font-semibold text-white">Paramètres</h2>
-            
+
             <div>
               <label className="block text-sm font-medium text-[#888888] mb-1">Titre</label>
               <input
@@ -146,7 +148,7 @@ export default function CollectionEditPage() {
                 className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl px-4 py-2 text-white outline-none focus:border-[#444444]"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-[#888888] mb-1">Description (optionnelle)</label>
               <textarea
@@ -173,7 +175,7 @@ export default function CollectionEditPage() {
                 <div className="font-medium text-white">Mise en avant</div>
                 <div className="text-xs text-[#888888]">Mettre en avant cette collection</div>
               </div>
-              <button
+              <AdminAction permission="catalog.edit"><button
                 onClick={() => setFormData({ ...formData, isFeatured: !formData.isFeatured })}
                 className={classNames(
                   "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
@@ -186,7 +188,7 @@ export default function CollectionEditPage() {
                     formData.isFeatured ? "translate-x-5" : "translate-x-0"
                   )}
                 />
-              </button>
+              </button></AdminAction>
             </div>
           </div>
         </div>
@@ -199,13 +201,13 @@ export default function CollectionEditPage() {
                 <h2 className="font-semibold text-white">Contenu de la collection</h2>
                 <p className="text-xs text-[#888888]">{collection.items?.length || 0} élément(s)</p>
               </div>
-              <button
+              <AdminAction permission="catalog.edit"><button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 className="bg-[#2A2A2A] hover:bg-[#333333] text-white px-3 py-1.5 rounded-xl font-medium text-sm transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Ajouter
-              </button>
+              </button></AdminAction>
             </div>
 
             {isSearchOpen && (
@@ -221,7 +223,7 @@ export default function CollectionEditPage() {
                     className="w-full bg-[#141414] border border-[#2A2A2A] rounded-lg pl-9 pr-4 py-2 text-sm text-white outline-none focus:border-[#444444]"
                   />
                 </div>
-                
+
                 {isSearching ? (
                   <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-[#888888]" /></div>
                 ) : searchResults.length > 0 ? (
@@ -237,12 +239,12 @@ export default function CollectionEditPage() {
                             <span className="text-xs text-[#888888]">{res.podcast ? "Épisode" : "Podcast"}</span>
                           </div>
                         </div>
-                        <button
+                        <AdminAction permission="catalog.edit"><button
                           onClick={() => handleAddItem(res)}
                           className="text-xs font-semibold bg-white text-black px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           Ajouter
-                        </button>
+                        </button></AdminAction>
                       </li>
                     ))}
                   </ul>
@@ -275,13 +277,13 @@ export default function CollectionEditPage() {
                           <div className="text-xs text-[#888888]">{item.podcast ? "Podcast" : "Épisode"}</div>
                         </div>
                       </div>
-                      <button
+                      <AdminAction permission="catalog.edit"><button
                         onClick={() => handleRemoveItem(item.id)}
                         className="p-2 text-[#888888] hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
                         title="Retirer"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </button></AdminAction>
                     </div>
                   );
                 })

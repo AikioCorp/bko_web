@@ -1,4 +1,6 @@
 ﻿"use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -10,7 +12,7 @@ export default function CollectionsListPage() {
   const router = useRouter();
   const fetcher = (url: string) => adminApi(url).then(res => res.data);
   const { data: collections, mutate, error, isLoading } = useSWR("/admin/collections", fetcher);
-  
+
   const [isCreating, setIsCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,17 +44,17 @@ export default function CollectionsListPage() {
           <h1 className="text-2xl font-bold text-white mb-2">Collections</h1>
           <p className="text-[#888888]">Créez des regroupements thématiques de contenus.</p>
         </div>
-        <button
+        <AdminAction permission="catalog.edit"><button
           onClick={() => setIsCreating(true)}
           className="bg-white text-black px-4 py-2 rounded-full font-semibold text-sm hover:bg-gray-100 transition-colors flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
           Nouvelle Collection
-        </button>
+        </button></AdminAction>
       </div>
 
       {isCreating && (
-        <form onSubmit={handleCreate} className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6 mb-8 max-w-md">
+        <AdminAction permission="catalog.edit"><form onSubmit={handleCreate} className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6 mb-8 max-w-md">
           <h2 className="text-lg font-semibold text-white mb-4">Créer une collection</h2>
           <div className="flex flex-col gap-4">
             <div>
@@ -84,7 +86,7 @@ export default function CollectionsListPage() {
               </button>
             </div>
           </div>
-        </form>
+        </form></AdminAction>
       )}
 
       {collections?.length === 0 ? (
@@ -96,7 +98,7 @@ export default function CollectionsListPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {collections?.map((collection: any) => (
-            <Link
+            <AdminPageAccess href={`/admin/collections/${collection.slug || collection.id}`} key={collection.id}><Link
               href={`/admin/collections/${collection.slug || collection.id}`}
               key={collection.id}
               className="bg-[#141414] border border-[#2A2A2A] hover:border-[#444444] rounded-2xl p-4 transition-colors group flex gap-4"
@@ -115,7 +117,7 @@ export default function CollectionsListPage() {
                   {collection._count.items} {collection._count.items > 1 ? "éléments" : "élément"}
                 </div>
               </div>
-            </Link>
+            </Link></AdminPageAccess>
           ))}
         </div>
       )}

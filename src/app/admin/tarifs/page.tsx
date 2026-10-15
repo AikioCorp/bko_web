@@ -1,4 +1,5 @@
 "use client";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState } from "react";
 import useSWR from "swr";
@@ -168,13 +169,13 @@ export default function StudioOffersAdminPage() {
           </p>
         </div>
 
-        <Button
+        <AdminAction permission="offers.create"><Button
           onClick={() => handleOpenEdit()}
           className="bg-[#FFBF00] text-black font-black hover:bg-[#E5AB00] transition-colors rounded-xl px-5 py-2.5 flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
           <span>Créer une Offre</span>
-        </Button>
+        </Button></AdminAction>
       </div>
 
       {isLoading && !offers ? (
@@ -188,10 +189,10 @@ export default function StudioOffersAdminPage() {
           <p className="text-sm text-[#888888] mb-6 max-w-sm mx-auto">
             Initialisez les formules d'enregistrement ou créez votre première offre de studio.
           </p>
-          <Button onClick={() => handleOpenEdit()} className="bg-[#FFBF00] text-black font-bold">
+          <AdminAction permission="offers.create"><Button onClick={() => handleOpenEdit()} className="bg-[#FFBF00] text-black font-bold">
             <Plus className="w-4 h-4 mr-2" />
             Créer la première offre
-          </Button>
+          </Button></AdminAction>
         </div>
       ) : (
         <div className="space-y-12">
@@ -255,7 +256,7 @@ export default function StudioOffersAdminPage() {
 
                         {/* Top Actions */}
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <button
+                          <AdminAction permission="offers.edit"><button
                             onClick={() => handleToggleActive(pkg)}
                             disabled={statusTogglingId === pkg.id}
                             title={pkg.isActive ? "Masquer l'offre" : "Activer l'offre"}
@@ -266,21 +267,21 @@ export default function StudioOffersAdminPage() {
                             ) : (
                               <EyeOff className="w-4 h-4 text-red-400" />
                             )}
-                          </button>
-                          <button
+                          </button></AdminAction>
+                          <AdminAction permission="offers.edit"><button
                             onClick={() => handleOpenEdit(pkg)}
                             title="Modifier l'offre"
                             className="p-2 text-[#888] hover:text-white bg-[#1E1E1E] hover:bg-[#282828] rounded-xl transition-colors cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
+                          </button></AdminAction>
+                          <AdminAction permission="offers.delete"><button
                             onClick={() => handleDelete(pkg.id, pkg.name)}
                             title="Supprimer l'offre"
                             className="p-2 text-red-400 hover:text-red-300 bg-red-950/20 hover:bg-red-950/40 rounded-xl transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </button></AdminAction>
                         </div>
                       </div>
 
@@ -366,7 +367,7 @@ export default function StudioOffersAdminPage() {
                     <div className="flex justify-between items-start gap-2">
                       <span className="text-base font-bold text-white">{service.name}</span>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button
+                        <AdminAction permission="offers.edit"><button
                           onClick={() => handleToggleActive(service)}
                           disabled={statusTogglingId === service.id}
                           className="p-1.5 text-[#888] hover:text-white bg-[#1E1E1E] rounded-lg transition-colors cursor-pointer"
@@ -376,19 +377,19 @@ export default function StudioOffersAdminPage() {
                           ) : (
                             <EyeOff className="w-3.5 h-3.5 text-red-400" />
                           )}
-                        </button>
-                        <button
+                        </button></AdminAction>
+                        <AdminAction permission="offers.edit"><button
                           onClick={() => handleOpenEdit(service)}
                           className="p-1.5 text-[#888] hover:text-white bg-[#1E1E1E] rounded-lg transition-colors cursor-pointer"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
+                        </button></AdminAction>
+                        <AdminAction permission="offers.delete"><button
                           onClick={() => handleDelete(service.id, service.name)}
                           className="p-1.5 text-red-400 hover:text-red-300 bg-red-950/20 rounded-lg transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        </button></AdminAction>
                       </div>
                     </div>
 
@@ -435,7 +436,7 @@ export default function StudioOffersAdminPage() {
               {isEditing.isNew ? "Créer une nouvelle offre" : `Modifier l'offre : ${formData.name || ""}`}
             </h2>
 
-            <form onSubmit={handleSave} className="overflow-y-auto pr-2 space-y-5 pb-4 custom-scrollbar flex-1">
+            <AdminAction permission={isEditing?.id ? "offers.edit" : "offers.create"}><form onSubmit={handleSave} className="overflow-y-auto pr-2 space-y-5 pb-4 custom-scrollbar flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#888] uppercase mb-1">Catégorie</label>
@@ -622,7 +623,7 @@ export default function StudioOffersAdminPage() {
                   <span className="text-xs font-medium text-white">Afficher en ligne</span>
                 </label>
               </div>
-            </form>
+            </form></AdminAction>
 
             <div className="pt-6 border-t border-[#242424] flex items-center justify-end gap-3 mt-auto">
               <Button
@@ -633,14 +634,14 @@ export default function StudioOffersAdminPage() {
               >
                 Annuler
               </Button>
-              <Button
+              <AdminAction permission={isEditing?.id ? "offers.edit" : "offers.create"}><Button
                 onClick={handleSave}
                 disabled={isSaving}
                 className="bg-[#FFBF00] text-black hover:bg-[#E5AB00] font-black rounded-xl px-6"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Enregistrer les Tarifs
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>

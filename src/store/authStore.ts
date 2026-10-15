@@ -20,6 +20,7 @@ export interface UserProfile {
   isVerified?: boolean;
   isSuspended?: boolean;
   suspendedReason?: string | null;
+  suspendedAt?: string | null;
   onboardingCompleted?: boolean;
   onboardingState?: "NOT_PROMPTED" | "PROMPTED" | "COMPLETED" | "DISMISSED" | string;
   hasPreferences?: boolean;

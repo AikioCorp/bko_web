@@ -1,4 +1,8 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { useAdminAccess } from "@/components/admin/AdminAccess";
+import { hasPermission } from "@/lib/admin-permissions";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -102,6 +106,8 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 };
 
 export default function UserDetailPage() {
+  const {access}=useAdminAccess();
+  const canEditUsers=hasPermission(access,"users.edit");
   const params = useParams();
   const router = useRouter();
   const userId = params?.id as string;
@@ -147,13 +153,13 @@ export default function UserDetailPage() {
 
   // Récupération des plans d'abonnement disponibles
   const { data: subscriptionPlans } = useSWR(
-    "/admin/subscription-plans",
+    canEditUsers?"/admin/user-subscription-plans":null,
     fetcher
   );
 
   // Récupération des rôles assignables
   const { data: assignableRoles } = useSWR(
-    "/admin/assignable-roles",
+    canEditUsers?"/admin/assignable-roles":null,
     fetcher
   );
 
@@ -298,11 +304,11 @@ export default function UserDetailPage() {
         <AlertTriangle className="w-12 h-12 text-[#EF4444] mx-auto mb-4" />
         <h2 className="text-xl font-bold text-white mb-2">Fiche utilisateur introuvable</h2>
         <p className="text-[#888888] text-sm mb-6">Ce profil n'existe pas ou vous n'avez pas l'autorisation d'y accéder.</p>
-        <Link href="/admin/users">
+        <AdminPageAccess href="/admin/users"><Link href="/admin/users">
           <Button className="bg-[#1C1C1C] hover:bg-[#282828] text-white border border-[#333333]">
             <ArrowLeft className="w-4 h-4 mr-2" /> Retour à la liste des utilisateurs
           </Button>
-        </Link>
+        </Link></AdminPageAccess>
       </div>
     );
   }
@@ -324,13 +330,13 @@ export default function UserDetailPage() {
       {/* Barre Supérieure & Navigation Retour */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">
-          <Link
+          <AdminPageAccess href="/admin/users"><Link
             href="/admin/users"
             className="inline-flex items-center gap-1.5 text-xs md:text-sm text-[#888888] hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Tous les utilisateurs</span>
-          </Link>
+          </Link></AdminPageAccess>
           <span className="text-[#444444]">/</span>
           <span className="text-xs md:text-sm font-semibold text-[#FFBF00] flex items-center gap-1.5">
             <User className="w-3.5 h-3.5" />
@@ -379,14 +385,14 @@ export default function UserDetailPage() {
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
                   {profile.fullName || "Utilisateur sans nom"}
                 </h1>
-                <button
+                <AdminAction permission="users.edit"><button
                   onClick={() => setIsEditModalOpen(true)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#251D08] hover:bg-[#382C0C] text-[#FFBF00] border border-[#FFBF00]/40 text-xs font-semibold transition-colors shadow-sm"
                   title="Modifier les coordonnées et informations de ce compte"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Modifier</span>
-                </button>
+                </button></AdminAction>
                 {profile.isVerified && (
                   <span title="Compte vérifié">
                     <BadgeCheck className="w-6 h-6 text-blue-400" />
@@ -470,14 +476,14 @@ export default function UserDetailPage() {
           <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-2.5 shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0 border-[#1E1E1E]">
             <div className="flex flex-wrap items-center gap-2">
               {/* Bouton Modifier l'utilisateur - Mis en avant en OR */}
-              <Button
+              <AdminAction permission="users.edit"><Button
                 onClick={() => setIsEditModalOpen(true)}
                 className="bg-[#FFBF00] hover:bg-[#E5AB00] text-black font-bold text-xs h-9 px-4 rounded-xl flex items-center gap-2 shadow-sm"
               >
                 <Edit3 className="w-4 h-4 text-black" /> Modifier l&apos;utilisateur
-              </Button>
+              </Button></AdminAction>
 
-              <Button
+              <AdminAction permission="users.edit"><Button
                 onClick={() => {
                   setSelectedPlanId(subscriptionPlans?.[0]?.id || "");
                   setIsGrantModalOpen(true);
@@ -485,19 +491,19 @@ export default function UserDetailPage() {
                 className="bg-[#181818] hover:bg-[#242424] text-white border border-[#2E2E2E] font-semibold text-xs h-9 px-3.5 rounded-xl flex items-center gap-1.5"
               >
                 <CreditCard className="w-3.5 h-3.5 text-[#FFBF00]" /> Attribuer un abonnement
-              </Button>
+              </Button></AdminAction>
 
-              <Button
+              <AdminAction permission="users.edit"><Button
                 onClick={() => setIsPasswordModalOpen(true)}
                 className="bg-[#181818] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs h-9 px-3 rounded-xl flex items-center gap-1.5"
               >
                 <KeyRound className="w-3.5 h-3.5 text-[#FFBF00]" /> Mot de passe
-              </Button>
+              </Button></AdminAction>
             </div>
 
             {!isCurrent && (
               <div className="flex items-center gap-2">
-                <Button
+                <AdminAction permission="users.edit"><Button
                   onClick={() => {
                     setSelectedRoles(profile.roles || []);
                     setIsRolesModalOpen(true);
@@ -505,9 +511,9 @@ export default function UserDetailPage() {
                   className="bg-[#181818] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs h-9 px-3 rounded-xl flex items-center gap-1.5"
                 >
                   <Shield className="w-3.5 h-3.5 text-[#3B82F6]" /> Modifier rôles
-                </Button>
+                </Button></AdminAction>
 
-                <Button
+                <AdminAction permission="users.edit"><Button
                   onClick={() => setIsSuspendModalOpen(true)}
                   className={classNames(
                     "text-xs h-9 px-3 rounded-xl border flex items-center gap-1.5",
@@ -518,15 +524,15 @@ export default function UserDetailPage() {
                 >
                   {profile.isSuspended ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
                   {profile.isSuspended ? "Débloquer" : "Bloquer"}
-                </Button>
+                </Button></AdminAction>
 
-                <Button
+                <AdminAction permission="users.delete"><Button
                   onClick={() => setIsDeleteModalOpen(true)}
                   className="bg-[#141414] hover:bg-[#2A1517] text-[#888888] hover:text-[#EF4444] border border-[#242424] hover:border-red-900/40 text-xs h-9 px-3 rounded-xl"
                   title="Supprimer ce compte"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+                </Button></AdminAction>
               </div>
             )}
           </div>
@@ -736,12 +742,12 @@ export default function UserDetailPage() {
                       <p className="text-xs text-[#777777]">Informations de profil et contact du compte</p>
                     </div>
                   </div>
-                  <Button
+                  <AdminAction permission="users.edit"><Button
                     onClick={() => setIsEditModalOpen(true)}
                     className="bg-[#FFBF00] hover:bg-[#E5AB00] text-black font-bold text-xs h-8 px-3 rounded-lg flex items-center gap-1.5 shadow-sm"
                   >
                     <Edit3 className="w-3.5 h-3.5" /> Modifier
-                  </Button>
+                  </Button></AdminAction>
                 </div>
 
                 <div className="space-y-3 text-xs">
@@ -811,13 +817,13 @@ export default function UserDetailPage() {
                 <span className="text-[11px] text-[#666666]">
                   Dernière mise à jour : {profile.updatedAt ? new Date(profile.updatedAt).toLocaleDateString("fr-FR") : "N/A"}
                 </span>
-                <Button
+                <AdminAction permission="users.edit"><Button
                   onClick={() => setIsEditModalOpen(true)}
                   className="bg-[#1A1A1A] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs h-8 px-3 rounded-lg flex items-center gap-1.5"
                 >
                   <Edit3 className="w-3.5 h-3.5 text-[#FFBF00]" />
                   <span>Modifier les informations</span>
-                </Button>
+                </Button></AdminAction>
               </div>
             </div>
 
@@ -835,7 +841,7 @@ export default function UserDetailPage() {
                     </div>
                   </div>
                   {!isCurrent && (
-                    <Button
+                    <AdminAction permission="users.edit"><Button
                       onClick={() => {
                         setSelectedRoles(profile.roles || []);
                         setIsRolesModalOpen(true);
@@ -843,7 +849,7 @@ export default function UserDetailPage() {
                       className="bg-[#1A1A1A] hover:bg-[#252525] text-white border border-[#2E2E2E] text-xs h-8 px-3 rounded-lg flex items-center gap-1.5"
                     >
                       <Shield className="w-3.5 h-3.5 text-[#3B82F6]" /> Gérer les rôles
-                    </Button>
+                    </Button></AdminAction>
                   )}
                 </div>
 
@@ -915,7 +921,7 @@ export default function UserDetailPage() {
                         </span>
                       </div>
                       {!isCurrent && (
-                        <Button
+                        <AdminAction permission="users.edit"><Button
                           size="sm"
                           onClick={() => setIsSuspendModalOpen(true)}
                           className={classNames(
@@ -926,7 +932,7 @@ export default function UserDetailPage() {
                           )}
                         >
                           {profile.isSuspended ? "Débloquer" : "Bloquer"}
-                        </Button>
+                        </Button></AdminAction>
                       )}
                     </div>
                   </div>
@@ -934,16 +940,16 @@ export default function UserDetailPage() {
               </div>
 
               <div className="pt-4 border-t border-[#1E1E1E] mt-4 flex items-center justify-between">
-                <Button
+                <AdminAction permission="users.edit"><Button
                   onClick={() => setIsPasswordModalOpen(true)}
                   className="bg-[#1A1A1A] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs h-8 px-3 rounded-lg flex items-center gap-1.5"
                 >
                   <KeyRound className="w-3.5 h-3.5 text-[#FFBF00]" />
                   <span>Changer le mot de passe</span>
-                </Button>
+                </Button></AdminAction>
 
                 {!isCurrent && (
-                  <Button
+                  <AdminAction permission="users.edit"><Button
                     onClick={() => {
                       setSelectedRoles(profile.roles || []);
                       setIsRolesModalOpen(true);
@@ -952,7 +958,7 @@ export default function UserDetailPage() {
                   >
                     <Shield className="w-3.5 h-3.5" />
                     <span>Modifier les rôles</span>
-                  </Button>
+                  </Button></AdminAction>
                 )}
               </div>
             </div>
@@ -1009,14 +1015,14 @@ export default function UserDetailPage() {
 
               <div className="flex items-center gap-3">
                 {activeSub && (
-                  <Button
+                  <AdminAction permission="users.edit"><Button
                     onClick={() => handleCancelSubscription(activeSub.id)}
                     className="bg-[#2A1517] hover:bg-[#381B1E] text-[#EF4444] border border-red-900/40 text-xs h-9 px-4 rounded-xl"
                   >
                     Résilier l'abonnement
-                  </Button>
+                  </Button></AdminAction>
                 )}
-                <Button
+                <AdminAction permission="users.edit"><Button
                   onClick={() => {
                     setSelectedPlanId(subscriptionPlans?.[0]?.id || "");
                     setIsGrantModalOpen(true);
@@ -1025,7 +1031,7 @@ export default function UserDetailPage() {
                 >
                   <Plus className="w-3.5 h-3.5 mr-1.5" />
                   {activeSub ? "Prolonger / Changer" : "Attribuer un forfait"}
-                </Button>
+                </Button></AdminAction>
               </div>
             </div>
 
@@ -1105,12 +1111,12 @@ export default function UserDetailPage() {
                           </td>
                           <td className="px-6 py-3 text-right">
                             {isSubActive && (
-                              <button
+                              <AdminAction permission="users.edit"><button
                                 onClick={() => handleCancelSubscription(sub.id)}
                                 className="text-red-400 hover:text-red-300 font-semibold"
                               >
                                 Révoquer
-                              </button>
+                              </button></AdminAction>
                             )}
                           </td>
                         </tr>
@@ -1537,12 +1543,12 @@ export default function UserDetailPage() {
               <h3 className="text-sm font-bold text-white">Sécurité & Connectivité</h3>
               <p className="text-xs text-[#777777]">Appareils enregistrés, sessions web en cours et journal d'audit</p>
             </div>
-            <Button
+            <AdminAction permission="users.edit"><Button
               onClick={handleRevokeSessions}
               className="bg-[#2A1517] hover:bg-[#381B1E] text-[#EF4444] border border-red-900/40 text-xs h-9 px-4 rounded-xl flex items-center gap-2"
             >
               <LogOut className="w-3.5 h-3.5" /> Déconnecter tous les appareils
-            </Button>
+            </Button></AdminAction>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1638,7 +1644,7 @@ export default function UserDetailPage() {
               </button>
             </div>
 
-            <form onSubmit={handleGrantSubscription} className="space-y-4">
+            <AdminAction permission="users.edit"><form onSubmit={handleGrantSubscription} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1.5">
                   Formule d'abonnement
@@ -1718,7 +1724,7 @@ export default function UserDetailPage() {
                   {isGrantingSub ? "Activation..." : "Valider et Activer"}
                 </Button>
               </div>
-            </form>
+            </form></AdminAction>
           </div>
         </div>
       )}
@@ -1756,7 +1762,7 @@ export default function UserDetailPage() {
               >
                 Annuler
               </Button>
-              <Button
+              <AdminAction permission="users.edit"><Button
                 onClick={handleToggleSuspension}
                 disabled={isSubmittingSuspension}
                 className={classNames(
@@ -1765,7 +1771,7 @@ export default function UserDetailPage() {
                 )}
               >
                 {isSubmittingSuspension ? "Traitement..." : profile.isSuspended ? "Confirmer le déblocage" : "Confirmer le blocage"}
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>
@@ -1811,13 +1817,13 @@ export default function UserDetailPage() {
               >
                 Annuler
               </Button>
-              <Button
+              <AdminAction permission="users.edit"><Button
                 onClick={handleSaveRoles}
                 disabled={isSubmittingRoles}
                 className="bg-[#FFBF00] hover:bg-[#E6AC00] text-black font-semibold text-xs h-9 px-4 rounded-xl"
               >
                 {isSubmittingRoles ? "Enregistrement..." : "Enregistrer les rôles"}
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>
@@ -1852,13 +1858,13 @@ export default function UserDetailPage() {
               >
                 Annuler
               </Button>
-              <Button
+              <AdminAction permission="users.delete"><Button
                 onClick={handleDeleteUser}
                 disabled={isDeleting || deleteConfirmationInput !== profile.email}
                 className="bg-[#EF4444] hover:bg-red-600 text-white font-semibold text-xs h-9 px-4 rounded-xl disabled:opacity-40"
               >
                 {isDeleting ? "Suppression..." : "Supprimer définitivement"}
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>

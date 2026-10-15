@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -328,15 +330,15 @@ export default function NewEpisodeWizard() {
 
   return (
     <div className="w-full py-4 pb-32 text-white space-y-8 animate-in fade-in">
-      
+
       {/* Fil d'Ariane & Émission parente */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-xs text-[#888888] font-semibold">
-          <Link href="/admin/podcasts" className="hover:text-white transition-colors">Émissions</Link>
+          <AdminPageAccess href="/admin/podcasts"><Link href="/admin/podcasts" className="hover:text-white transition-colors">Émissions</Link></AdminPageAccess>
           <span>/</span>
-          <Link href={`/admin/podcasts/${podcastId}`} className="text-[#FFBF00] hover:underline font-bold">
+          <AdminPageAccess href={`/admin/podcasts/${podcastId}`}><Link href={`/admin/podcasts/${podcastId}`} className="text-[#FFBF00] hover:underline font-bold">
             {podcast?.name || "Chargement..."}
-          </Link>
+          </Link></AdminPageAccess>
           <span>/</span>
           <span className="text-white">Nouvel épisode</span>
         </div>
@@ -374,8 +376,8 @@ export default function NewEpisodeWizard() {
                 }}
                 disabled={s.step > currentStep + 1}
                 className={`p-3 rounded-xl text-left border transition-all ${
-                  isActive 
-                    ? "bg-[#222222] border-[#FFBF00] text-white" 
+                  isActive
+                    ? "bg-[#222222] border-[#FFBF00] text-white"
                     : isDone
                     ? "bg-[#141414] border-[#2A2A2A] text-[#B8B8B8] hover:border-[#444444]"
                     : "bg-[#0E0E0E] border-[#222222] text-[#555555] opacity-60"
@@ -556,8 +558,8 @@ export default function NewEpisodeWizard() {
                     Glissez votre fichier ici ou <span className="text-[#FFBF00] underline">Parcourir</span>
                   </p>
                   <p className="text-xs text-[#757575] max-w-md mx-auto">
-                    {selectedFormat === "AUDIO" 
-                      ? "Formats acceptés : MP3, M4A, WAV. Limite maximale serveur : 250 Mo." 
+                    {selectedFormat === "AUDIO"
+                      ? "Formats acceptés : MP3, M4A, WAV. Limite maximale serveur : 250 Mo."
                       : "Formats acceptés : MP4, MOV. Limite maximale serveur : 2 Go."}
                   </p>
                   <input
@@ -725,7 +727,7 @@ export default function NewEpisodeWizard() {
       {/* ========================================================= */}
       {currentStep === 3 && (
         <div className="space-y-8 animate-in fade-in">
-          
+
           {/* Métadonnées de l'épisode */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
             <div className="border-b border-[#2A2A2A] pb-4">
@@ -876,8 +878,8 @@ export default function NewEpisodeWizard() {
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#FFBF00]" />
-                  {selectedFormat === "AUDIO" 
-                    ? "Ajouter aussi une version vidéo" 
+                  {selectedFormat === "AUDIO"
+                    ? "Ajouter aussi une version vidéo"
                     : "Ajouter aussi une version audio"}
                 </h3>
                 <p className="text-xs text-[#888888] mt-0.5">
@@ -962,9 +964,9 @@ export default function NewEpisodeWizard() {
       {/* ========================================================= */}
       {currentStep === 4 && (
         <div className="space-y-8 animate-in fade-in">
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+
             {/* Colonne gauche (2/3) : Carte publique & Lecteur exclusif */}
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
@@ -980,9 +982,9 @@ export default function NewEpisodeWizard() {
                 {/* Carte de lecture publique */}
                 <div className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-2xl p-6 flex flex-col sm:flex-row gap-5 items-start">
                   <div className="w-24 h-24 rounded-xl bg-[#171717] border border-[#2A2A2A] overflow-hidden shrink-0">
-                    <img 
-                      src={useCustomCover && cover ? cover : podcast?.cover || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=200&h=200&fit=crop"} 
-                      alt="Pochette" 
+                    <img
+                      src={useCustomCover && cover ? cover : podcast?.cover || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=200&h=200&fit=crop"}
+                      alt="Pochette"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -1072,7 +1074,7 @@ export default function NewEpisodeWizard() {
 
             {/* Colonne droite (1/3) : Checklist & Actions de Publication */}
             <div className="space-y-6">
-              
+
               {/* Checklist de Publication */}
               <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 space-y-4">
                 <h4 className="text-xs font-bold text-[#888888] uppercase tracking-wider">
@@ -1173,7 +1175,7 @@ export default function NewEpisodeWizard() {
                 </div>
 
                 {/* Bouton d'action principal */}
-                <Button
+                <AdminAction permission="catalog.create"><Button
                   onClick={handleFinalSubmit}
                   disabled={isSubmitting}
                   className="w-full bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-12 rounded-xl"
@@ -1187,7 +1189,7 @@ export default function NewEpisodeWizard() {
                   ) : (
                     "Enregistrer le brouillon"
                   )}
-                </Button>
+                </Button></AdminAction>
               </div>
 
             </div>

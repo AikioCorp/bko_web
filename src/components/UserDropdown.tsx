@@ -4,10 +4,12 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, LogIn, UserPlus, ShieldCheck, Radio, Bookmark, LogOut, Crown } from "lucide-react";
+import { useConsoleAccess } from "@/hooks/useConsoleAccess";
 import { useAuthStore } from "@/store/authStore";
 
 export function UserDropdown() {
   const router = useRouter();
+  const {hasConsole,landing}=useConsoleAccess();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -27,7 +29,7 @@ export function UserDropdown() {
   const isSuperAdmin = user?.roles?.some((r) => r.toUpperCase() === "SUPER_ADMIN");
   const isAdmin = user?.roles?.some((r) => r.toUpperCase() === "ADMIN");
   const isCreator = user?.roles?.some((r) => r.toUpperCase() === "CREATOR" || r.toUpperCase() === "EDITOR");
-  const canAccessConsole = isSuperAdmin || isAdmin;
+  const canAccessConsole = hasConsole;
 
   return (
     <div
@@ -106,7 +108,7 @@ export function UserDropdown() {
               <div className="p-1 space-y-0.5">
                 {canAccessConsole && (
                   <Link
-                    href="/admin/dashboard"
+                    href={landing}
                     onClick={() => setIsOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-[#FFBF00] bg-[#FFBF00]/10 hover:bg-[#FFBF00]/20 transition-colors font-bold"
                   >

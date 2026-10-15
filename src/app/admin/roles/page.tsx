@@ -1,235 +1,47 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import useSWR from "swr";
+import { Plus, Pencil, Trash2, Shield, X } from "lucide-react";
 import { adminApi } from "@/lib/api";
-import { Shield, Plus, Edit2, Trash2, Users, Check, X, ShieldAlert, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useAdminAccess, refreshAdminAccess } from "@/components/admin/AdminAccess";
+import { hasPermission } from "@/lib/admin-permissions";
 
-export default function AdminRolesPage() {
-  const fetcher = (url: string) => adminApi(url).then(res => res.data);
-  const { data: roles, mutate, isLoading: isLoadingRoles } = useSWR("/admin/roles", fetcher);
-  const { data: permissionsCatalog, isLoading: isLoadingPerms } = useSWR("/admin/permissions", fetcher);
-
-  const [isEditing, setIsEditing] = useState<any>(null);
-  const [formData, setFormData] = useState<{name: string, description: string, permissions: string[]}>({ name: "", description: "", permissions: [] });
-  const [isSaving, setIsSaving] = useState(false);
-
-  const handleOpenEdit = (role?: any) => {
-    if (role) {
-      setIsEditing(role);
-      setFormData({ name: role.name, description: role.description || "", permissions: role.permissions || [] });
-    } else {
-      setIsEditing({ isNew: true });
-      setFormData({ name: "", description: "", permissions: [] });
-    }
-  };
-
-  const togglePermission = (code: string) => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: prev.permissions.includes(code)
-        ? prev.permissions.filter(p => p !== code)
-        : [...prev.permissions, code]
-    }));
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setIsSaving(true);
-      if (isEditing.isNew) {
-        await adminApi("/admin/roles", { method: "POST", body: JSON.stringify(formData) });
-      } else {
-        await adminApi(`/admin/roles/${isEditing.id}`, { method: "PUT", body: JSON.stringify(formData) });
-      }
-      await mutate();
-      setIsEditing(null);
-    } catch (err: any) {
-      alert("Erreur: " + err.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Voulez-vous vraiment supprimer le rÃƒÂ´le "${name}" ?`)) return;
-    try {
-      await adminApi(`/admin/roles/${id}`, { method: "DELETE" });
-      await mutate();
-    } catch (err: any) {
-      alert("Erreur: " + err.message);
-    }
-  };
-
-  const isLoading = isLoadingRoles || isLoadingPerms;
-
-  return (
-    <div className="w-full pb-32">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
-            <Shield className="w-6 h-6 text-[#FFBF00]" />
-            Administrateurs et rÃƒÂ´les
-          </h1>
-          <p className="text-[#888888]">GÃƒÂ©rez les niveaux d'accÃƒÂ¨s et les permissions de vos ÃƒÂ©quipes.</p>
-        </div>
-        <Button onClick={() => handleOpenEdit()} className="bg-[#FFBF00] text-black font-bold hover:bg-[#E5AB00]">
-          <Plus className="w-4 h-4 mr-2" />
-          Nouveau RÃƒÂ´le
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {isLoading && !roles ? (
-          <div className="lg:col-span-3 text-center p-12 text-[#888]">Chargement...</div>
-        ) : (
-          roles?.map((role: any) => (
-            <div key={role.id} className="bg-[#111] border border-[#222] rounded-2xl p-6 flex flex-col h-full relative group transition-colors hover:border-[#333]">
-              {role.isSystem && (
-                <div className="absolute -top-3 left-6 bg-[#222] text-[#888] text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1 border border-[#333]">
-                  RÃƒÂ´le SystÃƒÂ¨me
-                </div>
-              )}
-              
-              <div className="flex justify-between items-start mb-4 mt-2">
-                <h3 className="text-xl font-bold text-white">{role.name}</h3>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {!role.isSystem && (
-                    <>
-                      <button onClick={() => handleOpenEdit(role)} className="p-1.5 text-[#888] hover:text-white bg-[#222] rounded-lg">
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => handleDelete(role.id, role.name)} className="p-1.5 text-red-500 hover:text-red-400 bg-red-950/20 rounded-lg">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </>
-                  )}
-                  {role.isSystem && (
-                    <button onClick={() => handleOpenEdit(role)} className="p-1.5 text-[#888] hover:text-white bg-[#222] rounded-lg">
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <p className="text-sm text-[#888] mb-6 flex-1 line-clamp-3">
-                {role.description || "Aucune description fournie pour ce rÃƒÂ´le."}
-              </p>
-              
-              <div className="border-t border-[#222] pt-4 flex items-center justify-between">
-                <div className="flex flex-wrap gap-1">
-                  {role.isSuperAdmin ? (
-                    <span className="text-xs font-semibold px-2.5 py-1 bg-[#FFBF00]/10 text-[#FFBF00] rounded flex items-center gap-1">
-                      <ShieldAlert className="w-3 h-3" /> Tous les droits
-                    </span>
-                  ) : (
-                    <span className="text-xs font-semibold px-2.5 py-1 bg-[#222] text-[#888] rounded">
-                      {role.permissions?.length || 0} permission(s)
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#666]">
-                  <Users className="w-3.5 h-3.5" /> {role.usersCount || 0}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Editor Modal */}
-      {isEditing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80" onClick={() => setIsEditing(null)} />
-          <div className="relative bg-[#111] border border-[#222] w-full max-w-3xl rounded-2xl shadow-2xl p-6 flex flex-col h-[90vh] animate-in zoom-in-95">
-            <h2 className="text-xl font-bold text-white mb-2 border-b border-[#222] pb-4 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-[#FFBF00]" />
-              {isEditing.isNew ? "CrÃƒÂ©er un RÃƒÂ´le" : isEditing.isSystem ? "Voir le RÃƒÂ´le (Lecture seule)" : "Modifier le RÃƒÂ´le"}
-            </h2>
-            
-            <form id="roleForm" onSubmit={handleSave} className="overflow-y-auto pr-4 custom-scrollbar flex-1 space-y-6 mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#888] uppercase mb-2">Nom du rÃƒÂ´le</label>
-                  <input
-                    required
-                    disabled={isEditing.isSystem}
-                    type="text"
-                    value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full bg-[#0A0A0A] border border-[#222] rounded-lg p-3 text-sm text-white outline-none focus:border-[#FFBF00] disabled:opacity-50"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-[#888] uppercase mb-2">Description</label>
-                  <input
-                    disabled={isEditing.isSystem}
-                    type="text"
-                    value={formData.description}
-                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full bg-[#0A0A0A] border border-[#222] rounded-lg p-3 text-sm text-white outline-none focus:border-[#FFBF00] disabled:opacity-50"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#888] uppercase mb-4">Permissions attribuÃƒÂ©es</label>
-                
-                {isEditing.isSuperAdmin ? (
-                  <div className="bg-[#FFBF00]/10 border border-[#FFBF00]/30 rounded-lg p-6 text-center">
-                    <ShieldAlert className="w-8 h-8 text-[#FFBF00] mx-auto mb-3" />
-                    <h4 className="text-[#FFBF00] font-bold">Super Administrateur</h4>
-                    <p className="text-sm text-[#FFBF00]/70 mt-1">Ce rÃƒÂ´le possÃƒÂ¨de implicitement toutes les permissions du systÃƒÂ¨me. Elles ne peuvent ÃƒÂªtre restreintes.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {permissionsCatalog?.features?.map((group: any) => (
-                      <div key={group.key} className="bg-[#0A0A0A] border border-[#222] rounded-xl overflow-hidden">
-                        <div className="bg-[#161616] px-4 py-3 border-b border-[#222] flex flex-col">
-                          <h4 className="text-sm font-bold text-white">{group.label}</h4>
-                          <span className="text-xs text-[#888]">{group.description}</span>
-                        </div>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                          {group.caps.map((cap: any) => {
-                            const code = `${group.key}.${cap}`;
-                            const isChecked = formData.permissions.includes(code);
-                            return (
-                              <label key={code} className={`flex items-center gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${isChecked ? 'border-[#FFBF00]/50 bg-[#FFBF00]/5' : 'border-[#222] hover:bg-[#161616]'} ${isEditing.isSystem ? 'pointer-events-none opacity-80' : ''}`}>
-                                <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 transition-colors ${isChecked ? 'bg-[#FFBF00] text-black' : 'bg-[#222] border border-[#444] text-transparent'}`}>
-                                  <Check className="w-3 h-3" />
-                                </div>
-                                <input
-                                  type="checkbox"
-                                  className="hidden"
-                                  checked={isChecked}
-                                  onChange={() => togglePermission(code)}
-                                  disabled={isEditing.isSystem}
-                                />
-                                <span className="text-sm font-medium text-white uppercase">{cap}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </form>
-            
-            <div className="pt-6 border-t border-[#222] flex items-center justify-end gap-3 mt-auto shrink-0">
-              <Button type="button" variant="ghost" onClick={() => setIsEditing(null)} className="text-[#888] hover:text-white">
-                Fermer
-              </Button>
-              {!isEditing.isSystem && (
-                <Button form="roleForm" type="submit" disabled={isSaving} className="bg-[#FFBF00] text-black hover:bg-[#E5AB00] font-bold">
-                  {isSaving ? "Enregistrement..." : "Enregistrer"}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+type Role={id:string;name:string;description:string;permissions:string[];isSystem:boolean;isSuperAdmin:boolean;usersCount:number};
+type Feature={key:string;label:string;description:string;caps:string[]};
+const labels:Record<string,string>={view:"Consulter",create:"Créer",edit:"Modifier / traiter",delete:"Supprimer"};
+export default function AdminRolesPage(){
+ const {access}=useAdminAccess();
+ const can=(p:string)=>hasPermission(access,p);
+ const fetcher=(url:string)=>adminApi(url).then(r=>r.data);
+ const {data:roles,error,mutate}=useSWR<Role[]>("/admin/roles",fetcher);
+ const {data:catalog,error:catalogError}=useSWR<{features:Feature[];templates:any[]}>("/admin/permissions",fetcher);
+ const [editing,setEditing]=useState<Role|null|undefined>(undefined);
+ const [name,setName]=useState(""),[description,setDescription]=useState(""),[permissions,setPermissions]=useState<string[]>([]);
+ const [busy,setBusy]=useState(false),[message,setMessage]=useState(""),[failure,setFailure]=useState("");
+ const isNew=editing===null;
+ const readOnly=!!editing?.isSuperAdmin || !can(isNew?"roles.create":"roles.edit");
+ function open(role:Role|null){setEditing(role);setName(role?.name||"");setDescription(role?.description||"");setPermissions(role?.permissions||[]);setFailure("");}
+ function toggle(feature:string,cap:string){
+  const code=feature+"."+cap;
+  setPermissions(prev=>{
+   if(prev.includes(code)) return cap==="view"?prev.filter(p=>!p.startsWith(feature+".")):prev.filter(p=>p!==code);
+   return Array.from(new Set([...prev,feature+".view",code]));
+  });
+ }
+ async function save(e:React.FormEvent){e.preventDefault();if(readOnly)return;setBusy(true);setFailure("");try{
+  await adminApi(isNew?"/admin/roles":"/admin/roles/"+editing!.id,{method:isNew?"POST":"PUT",body:JSON.stringify({name,description,permissions})});
+  await mutate();await refreshAdminAccess();setEditing(undefined);setMessage("Les autorisations du rôle ont été enregistrées.");
+ }catch(e:any){setFailure(e.message);}finally{setBusy(false);}}
+ async function remove(role:Role){if(!confirm('Supprimer le rôle « '+role.name+' » ?'))return;setFailure("");try{await adminApi('/admin/roles/'+role.id,{method:'DELETE'});await mutate();}catch(e:any){setFailure(e.message);}}
+ const input="w-full rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white outline-none focus:border-[#FFBF00] disabled:opacity-60";
+ return <div className="max-w-6xl pb-12"><div className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-bold">Collaborateurs et rôles</h1><p className="mt-2 max-w-2xl text-sm text-white/60">Définissez les autorisations d’un rôle, puis attribuez-le à un collaborateur depuis sa fiche Utilisateur. Les menus et les actions suivent ces droits.</p></div>{can("roles.create")&&<button onClick={()=>open(null)} className="flex items-center gap-2 rounded-full bg-[#FFBF00] px-5 py-3 text-sm font-semibold text-black"><Plus size={16}/>Nouveau rôle</button>}</div>
+ {(failure||error||catalogError)&&<p role="alert" className="mt-5 text-sm text-red-400">{failure||"Impossible de charger les rôles ou les autorisations."}</p>}
+ {message&&<p role="status" className="mt-5 text-sm text-[#FFBF00]">{message}</p>}
+ {!roles?<p className="py-12 text-white/50">Chargement…</p>:<div className="mt-8 divide-y divide-white/10">{roles.map(role=><div key={role.id} className="flex flex-wrap items-center justify-between gap-4 py-5"><div><h2 className="flex items-center gap-2 font-semibold"><Shield size={17}/>{role.name}{role.isSystem&&<span className="text-xs font-normal text-white/40">Rôle système</span>}</h2><p className="mt-1 text-sm text-white/60">{role.description}</p><p className="mt-2 text-xs text-white/40">{role.isSuperAdmin?"Tous les droits":role.permissions.length+" autorisations"} · {role.usersCount} collaborateurs</p></div><div className="flex items-center gap-3"><button onClick={()=>open(role)} className="flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-4 text-sm"><Pencil size={14}/>{!role.isSuperAdmin&&can("roles.edit")?"Autorisations":"Consulter"}</button>{!role.isSystem&&can("roles.delete")&&<button aria-label={"Supprimer le rôle "+role.name} onClick={()=>void remove(role)} className="p-3 text-red-400"><Trash2 size={17}/></button>}</div></div>)}</div>}
+ {editing!==undefined&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3"><section role="dialog" aria-modal="true" aria-labelledby="role-title" className="flex max-h-[90dvh] w-full max-w-4xl flex-col rounded-2xl bg-[#141414] p-5 md:p-7"><div className="flex items-start justify-between gap-4"><h2 id="role-title" className="text-xl font-bold">{isNew?"Créer un rôle":readOnly?"Consulter le rôle":"Modifier les autorisations"}</h2><button aria-label="Fermer" disabled={busy} onClick={()=>setEditing(undefined)} className="p-2"><X size={20}/></button></div>
+ <form onSubmit={save} className="mt-5 overflow-y-auto"><div className="grid gap-4 md:grid-cols-2"><label className="text-sm">Nom du rôle<input required maxLength={40} disabled={readOnly||!isNew} className={input} value={name} onChange={e=>setName(e.target.value.toUpperCase().replace(/ /g,"_"))}/></label><label className="text-sm">Description<input maxLength={500} disabled={readOnly} className={input} value={description} onChange={e=>setDescription(e.target.value)}/></label></div>
+ {isNew&&catalog?.templates?.length&&<label className="mt-4 block text-sm">Partir d’un modèle<select className={input} defaultValue="" onChange={e=>{const t=catalog.templates.find((t:any)=>t.key===e.target.value);if(t){setName(t.name);setDescription(t.description);setPermissions(t.permissions);}}}><option value="">Personnaliser les droits</option>{catalog.templates.map((t:any)=><option key={t.key} value={t.key}>{t.description}</option>)}</select></label>}
+ {editing?.isSuperAdmin?<p className="my-8 text-sm text-[#FFBF00]">Le super administrateur possède tous les droits. Ce rôle est protégé.</p>:<div className="mt-6 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-white/15"><th className="py-3 pr-4">Module</th>{Object.entries(labels).map(([cap,label])=><th key={cap} className="min-w-24 px-2 py-3 text-center font-medium">{label}</th>)}</tr></thead><tbody>{catalog?.features.map(feature=><tr key={feature.key} className="border-b border-white/10"><th className="py-4 pr-4 font-medium"><span>{feature.label}</span><span className="mt-1 block max-w-xs text-xs font-normal text-white/45">{feature.description}</span></th>{Object.keys(labels).map(cap=><td key={cap} className="px-2 text-center">{feature.caps.includes(cap)?<input type="checkbox" aria-label={feature.label+" : "+labels[cap]} checked={permissions.includes(feature.key+"."+cap)} disabled={readOnly||(!access?.isSuperAdmin&&!access?.permissions.includes(feature.key+"."+cap))} onChange={()=>toggle(feature.key,cap)} className="h-5 w-5 accent-[#FFBF00] disabled:opacity-40"/>:<span className="text-white/20">—</span>}</td>)}</tr>)}</tbody></table></div>}
+ {failure&&<p role="alert" className="mt-4 text-sm text-red-400">{failure}</p>}<div className="sticky bottom-0 mt-5 flex justify-end gap-3 bg-[#141414] py-4"><button type="button" disabled={busy} onClick={()=>setEditing(undefined)} className="rounded-full border border-white/15 px-5 py-3 text-sm">Fermer</button>{!readOnly&&<button type="submit" disabled={busy||!catalog} className="rounded-full bg-[#FFBF00] px-5 py-3 text-sm font-semibold text-black disabled:opacity-50">{busy?"Enregistrement…":"Enregistrer les autorisations"}</button>}</div></form></section></div>}
+ </div>;
 }

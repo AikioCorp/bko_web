@@ -1,4 +1,5 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -54,7 +55,7 @@ const SCREENS = [
 export default function PrototypeShowcasePage() {
   const [activeScreenId, setActiveScreenId] = useState<number>(1);
   const [viewportMode, setViewportMode] = useState<"DESKTOP" | "MOBILE">("DESKTOP");
-  
+
   // Interactive prototype state
   const [demoFormat, setDemoFormat] = useState<"AUDIO" | "VIDEO" | "HYBRID">("AUDIO");
   const [sourceTab, setSourceTab] = useState<"FILE" | "LINK">("FILE");
@@ -75,15 +76,15 @@ export default function PrototypeShowcasePage() {
 
   return (
     <div className="min-h-screen bg-[#0B0B0B] text-white flex flex-col font-sans selection:bg-[#FFBF00] selection:text-black">
-      
+
       {/* Prototype Control Bar */}
       <header className="sticky top-0 z-50 bg-[#141414] border-b border-[#2A2A2A] px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
-        
+
         {/* Navigation & Context */}
         <div className="flex items-center gap-3">
-          <Link href="/admin/podcasts" className="text-xs font-bold text-[#888888] hover:text-[#FFBF00] transition-colors flex items-center">
+          <AdminPageAccess href="/admin/podcasts"><Link href="/admin/podcasts" className="text-xs font-bold text-[#888888] hover:text-[#FFBF00] transition-colors flex items-center">
             <ChevronLeft className="w-4 h-4 mr-1" /> Sortir du prototype
-          </Link>
+          </Link></AdminPageAccess>
           <span className="text-[#333333]">|</span>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#FFBF00] animate-pulse" />
@@ -167,8 +168,8 @@ export default function PrototypeShowcasePage() {
         <div className="flex items-center gap-4 text-[#888888] text-[11px]">
           <span>Format test : <strong className="text-white">{demoFormat}</strong></span>
           <span>•</span>
-          <button 
-            onClick={() => setSimulateError(!simulateError)} 
+          <button
+            onClick={() => setSimulateError(!simulateError)}
             className={`px-2 py-0.5 rounded font-bold border text-[10px] ${
               simulateError ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-[#171717] text-[#888888] border-[#2A2A2A]"
             }`}
@@ -180,13 +181,13 @@ export default function PrototypeShowcasePage() {
 
       {/* Main Prototype Viewport Canvas */}
       <main className="flex-1 p-4 md:p-8 flex justify-center items-start overflow-y-auto">
-        
+
         <div className={`transition-all duration-300 ${
-          viewportMode === "DESKTOP" 
-            ? "w-full max-w-6xl" 
+          viewportMode === "DESKTOP"
+            ? "w-full max-w-6xl"
             : "w-full max-w-[420px] bg-[#000000] rounded-[44px] p-4 border-[8px] border-[#222222] shadow-2xl relative my-2"
         }`}>
-          
+
           {/* Mobile Notch Bar */}
           {viewportMode === "MOBILE" && (
             <div className="w-full flex justify-between items-center px-4 pt-1 pb-3 text-[11px] font-bold text-white border-b border-[#1A1A1A] mb-4">
@@ -220,10 +221,10 @@ export default function PrototypeShowcasePage() {
 
               {/* Barre de filtres */}
               <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-3 flex flex-wrap gap-2 text-xs">
-                <input 
-                  type="text" 
-                  placeholder="Rechercher une émission..." 
-                  className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg px-3 py-1.5 text-white flex-1 min-w-[140px]" 
+                <input
+                  type="text"
+                  placeholder="Rechercher une émission..."
+                  className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg px-3 py-1.5 text-white flex-1 min-w-[140px]"
                 />
                 <select className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg px-2.5 py-1.5 text-white">
                   <option>Tous les formats</option>
@@ -304,7 +305,7 @@ export default function PrototypeShowcasePage() {
                   const Icon = c.icon;
                   const isSelected = demoFormat === c.id;
                   return (
-                    <div 
+                    <div
                       key={c.id}
                       onClick={() => { setDemoFormat(c.id as any); setActiveScreenId(3); }}
                       className={`p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
@@ -440,7 +441,7 @@ export default function PrototypeShowcasePage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div 
+                <div
                   onClick={() => { setDemoFormat("AUDIO"); setActiveScreenId(5); }}
                   className={`p-6 rounded-2xl border cursor-pointer ${demoFormat === "AUDIO" ? "bg-[#171717] border-[#FFBF00]" : "bg-[#141414] border-[#2A2A2A]"}`}
                 >
@@ -449,7 +450,7 @@ export default function PrototypeShowcasePage() {
                   <p className="text-xs text-[#888888] mt-1">Fichier audio direct ou URL streamable.</p>
                 </div>
 
-                <div 
+                <div
                   onClick={() => { setDemoFormat("VIDEO"); setActiveScreenId(5); }}
                   className={`p-6 rounded-2xl border cursor-pointer ${demoFormat === "VIDEO" ? "bg-[#171717] border-[#FFBF00]" : "bg-[#141414] border-[#2A2A2A]"}`}
                 >
@@ -560,8 +561,8 @@ export default function PrototypeShowcasePage() {
                     </h3>
                     <p className="text-[11px] text-[#757575]">Les deux versions appartiennent au même épisode (aucun doublon).</p>
                   </div>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={() => setHasSecondaryMedia(!hasSecondaryMedia)}
                     className="text-xs bg-[#222222] hover:bg-[#333333] text-white"
                   >
@@ -594,7 +595,7 @@ export default function PrototypeShowcasePage() {
           {activeScreenId === 7 && (
             <div className="space-y-6 animate-in fade-in">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
+
                 {/* Carte publique avec lecteur exclusif */}
                 <div className="lg:col-span-2 space-y-4">
                   <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 space-y-4">
@@ -610,8 +611,8 @@ export default function PrototypeShowcasePage() {
 
                     {/* Actions de lecture synchronisées */}
                     <div className="pt-2 flex gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={() => setActivePlayer(activePlayer === "AUDIO" ? "NONE" : "AUDIO")}
                         className={`text-xs font-bold ${activePlayer === "AUDIO" ? "bg-white text-black" : "bg-[#FFBF00] text-black"}`}
                       >
@@ -619,8 +620,8 @@ export default function PrototypeShowcasePage() {
                         {activePlayer === "AUDIO" ? "Pause Audio" : "Écouter (Audio)"}
                       </Button>
 
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={() => setActivePlayer(activePlayer === "VIDEO" ? "NONE" : "VIDEO")}
                         className={`text-xs font-bold ${activePlayer === "VIDEO" ? "bg-white text-black" : "bg-[#2A2A2A] text-white"}`}
                       >

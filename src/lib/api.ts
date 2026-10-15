@@ -3,7 +3,10 @@ import { getAccessToken } from "@/lib/token";
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
 export async function fetchApi<T = any>(endpoint: string, options: RequestInit = {}): Promise<{ success: boolean; data?: T; message?: string; error?: any }> {
-  const token = getAccessToken();
+  const mainToken = getAccessToken();
+  const supportToken = typeof window !== "undefined" ? localStorage.getItem("bko_support_token") : null;
+  const isSupportReq = endpoint.includes("/support") || endpoint.includes("/me/support-tickets");
+  const token = mainToken || (isSupportReq ? supportToken : null);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -43,7 +46,12 @@ export async function fetchApi<T = any>(endpoint: string, options: RequestInit =
         const { clearStoredTokens } = await import("@/lib/token");
         const { usePlayerStore } = await import("@/store/playerStore");
         clearStoredTokens();
-        sessionStorage.setItem("bko_suspended_details", JSON.stringify(json.error.details || {}));
+        const details = json.error.details || {};
+        sessionStorage.setItem("bko_suspended_details", JSON.stringify(details));
+        localStorage.setItem("bko_suspended_profile", JSON.stringify(details));
+        if (details.supportToken) {
+          localStorage.setItem("bko_support_token", details.supportToken);
+        }
         usePlayerStore.getState().pause();
       } catch (_) {}
       if (window.location.pathname !== "/suspended") {

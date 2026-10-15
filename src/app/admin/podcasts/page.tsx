@@ -1,4 +1,5 @@
 "use client";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -53,7 +54,7 @@ export default function AdminPodcastsPage() {
   const [limit, setLimit] = useState(25);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const { isAuthenticated } = useAuthStore();
-  
+
   // Referential data for filters (public endpoints)
   const { data: countries } = useSWR('/countries', (url: string) => adminApi(url).then((res: any) => res.data || []));
   const { data: categories } = useSWR('/categories', (url: string) => adminApi(url).then((res: any) => res.data || []));
@@ -86,7 +87,7 @@ export default function AdminPodcastsPage() {
 
   const totalItems = data?.pagination?.total ?? data?.total ?? displayedPodcasts.length;
   const counts = data?.counts || { ALL: 0, PENDING: 0, PUBLISHED: 0, DRAFT: 0, SUSPENDED: 0, ARCHIVED: 0 };
-  
+
   const TABS = [
     { id: "ALL", label: "Toutes les émissions", count: counts.ALL || displayedPodcasts.length },
     { id: "PUBLISHED", label: "Publiées", count: counts.PUBLISHED || 0 },
@@ -97,10 +98,10 @@ export default function AdminPodcastsPage() {
   ];
 
   const totalPages = limit === 1000 ? 1 : Math.ceil(totalItems / limit);
-  
+
   // Reset page when tab, search or filters change
-  React.useEffect(() => { 
-    setPage(1); 
+  React.useEffect(() => {
+    setPage(1);
   }, [activeTab, search, limit, langFilter, catFilter, formatFilter, originFilter]);
 
   const toggleSelectAll = () => {
@@ -161,9 +162,9 @@ export default function AdminPodcastsPage() {
     }
 
     setIsBulkLoading(true);
-    
+
     if (data) {
-      const updatedItems = data.items.map((p: any) => 
+      const updatedItems = data.items.map((p: any) =>
         selectedIds.has(p.id) ? { ...p, ...payload } : p
       );
       mutate({ ...data, items: updatedItems }, false);
@@ -294,26 +295,26 @@ export default function AdminPodcastsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            className="bg-[#171717] hover:bg-[#262626] border-[#2A2A2A] text-white" 
+          <Button
+            variant="outline"
+            className="bg-[#171717] hover:bg-[#262626] border-[#2A2A2A] text-white"
             onClick={() => router.push("/admin/podcasts/import-youtube")}
           >
             <Video className="w-4 h-4 mr-2 text-red-500" /> Connecter YouTube
           </Button>
-          <Button 
-            variant="outline" 
-            className="bg-[#171717] hover:bg-[#262626] border-[#2A2A2A] text-white" 
+          <AdminAction permission="catalog.create"><Button
+            variant="outline"
+            className="bg-[#171717] hover:bg-[#262626] border-[#2A2A2A] text-white"
             onClick={() => router.push("/admin/podcasts/import-rss")}
           >
             <Rss className="w-4 h-4 mr-2 text-[#FFBF00]" /> Importer via RSS
-          </Button>
-          <Button 
-            className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" 
+          </Button></AdminAction>
+          <AdminAction permission="catalog.create"><Button
+            className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold"
             onClick={() => router.push("/admin/podcasts/new")}
           >
             <Plus className="w-4 h-4 mr-2" /> Créer une émission
-          </Button>
+          </Button></AdminAction>
         </div>
       </div>
 
@@ -326,8 +327,8 @@ export default function AdminPodcastsPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-                isActive 
-                  ? "border-[#FFBF00] text-white" 
+                isActive
+                  ? "border-[#FFBF00] text-white"
                   : "border-transparent text-[#757575] hover:text-white"
               }`}
             >
@@ -342,9 +343,9 @@ export default function AdminPodcastsPage() {
         {/* Recherche */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#757575]" />
-          <input 
-            type="text" 
-            placeholder="Rechercher une émission, un créateur ou une organisation..." 
+          <input
+            type="text"
+            placeholder="Rechercher une émission, un créateur ou une organisation..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#171717] border border-[#2A2A2A] rounded-lg pl-10 pr-4 py-2 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#757575]"
@@ -439,31 +440,31 @@ export default function AdminPodcastsPage() {
             {selectedIds.size} émission(s) sélectionnée(s)
           </span>
           <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              onClick={() => handleBulkAction({ status: "PUBLISHED" })} 
+            <AdminAction permission="catalog.edit"><Button
+              size="sm"
+              onClick={() => handleBulkAction({ status: "PUBLISHED" })}
               className="h-8 bg-[#2A2A2A] hover:bg-[#333333] text-white text-xs font-medium border border-[#333333]"
             >
               Publier
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={() => handleBulkAction({ status: "SUSPENDED" })} 
+            </Button></AdminAction>
+            <AdminAction permission="catalog.edit"><Button
+              size="sm"
+              onClick={() => handleBulkAction({ status: "SUSPENDED" })}
               className="h-8 bg-[#2A2A2A] hover:bg-[#333333] text-white text-xs font-medium border border-[#333333]"
             >
               Suspendre
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={() => handleBulkAction({ status: "ARCHIVED" })} 
+            </Button></AdminAction>
+            <AdminAction permission="catalog.edit"><Button
+              size="sm"
+              onClick={() => handleBulkAction({ status: "ARCHIVED" })}
               className="h-8 bg-[#2A2A2A] hover:bg-[#333333] text-white text-xs font-medium border border-[#333333]"
             >
               Archiver
-            </Button>
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              onClick={() => setSelectedIds(new Set())} 
+            </Button></AdminAction>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedIds(new Set())}
               className="text-[#757575] hover:text-white h-8 text-xs font-medium px-2"
             >
               Annuler
@@ -474,19 +475,19 @@ export default function AdminPodcastsPage() {
 
       {/* Main Table Container */}
       <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl overflow-hidden">
-        
+
         {/* Desktop Table */}
         <div className="hidden md:block overflow-x-auto min-h-[460px]">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[#2A2A2A] text-xs font-semibold text-[#757575] uppercase tracking-wider bg-[#141414]">
                 <th className="p-4 w-12">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={displayedPodcasts.length > 0 && selectedIds.size === displayedPodcasts.length}
                     onChange={toggleSelectAll}
                     aria-label="Sélectionner toutes les émissions"
-                    className="w-4 h-4 accent-[#FFBF00] rounded cursor-pointer bg-[#0B0B0B] border-[#2A2A2A]" 
+                    className="w-4 h-4 accent-[#FFBF00] rounded cursor-pointer bg-[#0B0B0B] border-[#2A2A2A]"
                   />
                 </th>
                 <th className="p-4">Émission</th>
@@ -520,26 +521,26 @@ export default function AdminPodcastsPage() {
                   const isSelected = selectedIds.has(p.id);
 
                   return (
-                    <tr 
-                      key={p.id} 
+                    <tr
+                      key={p.id}
                       onClick={() => handleRowClick(p.id, p.slug)}
                       className={`hover:bg-[#1C1C1C] cursor-pointer transition-colors group ${isSelected ? "bg-[#FFBF00]/5" : ""}`}
                     >
                       <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={isSelected}
                           onChange={(e) => handleToggleSelect(p.id, e as any)}
                           aria-label={`Sélectionner ${p.name}`}
-                          className="w-4 h-4 accent-[#FFBF00] rounded cursor-pointer bg-[#0B0B0B] border-[#2A2A2A]" 
+                          className="w-4 h-4 accent-[#FFBF00] rounded cursor-pointer bg-[#0B0B0B] border-[#2A2A2A]"
                         />
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-3.5">
-                          <img 
-                            src={p.cover || p.image || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=96&h=96&fit=crop"} 
-                            alt={p.name} 
-                            className="w-12 h-12 rounded-lg object-cover bg-[#0B0B0B] border border-[#2A2A2A] shrink-0" 
+                          <img
+                            src={p.cover || p.image || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=96&h=96&fit=crop"}
+                            alt={p.name}
+                            className="w-12 h-12 rounded-lg object-cover bg-[#0B0B0B] border border-[#2A2A2A] shrink-0"
                           />
                           <div>
                             <p className="font-bold text-white text-sm group-hover:text-[#FFBF00] transition-colors leading-snug">
@@ -567,33 +568,33 @@ export default function AdminPodcastsPage() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-8 px-2 text-xs text-[#B8B8B8] hover:text-white hover:bg-[#2A2A2A]" 
-                            onClick={() => handleRowClick(p.id, p.slug)} 
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs text-[#B8B8B8] hover:text-white hover:bg-[#2A2A2A]"
+                            onClick={() => handleRowClick(p.id, p.slug)}
                             title="Ouvrir la fiche de l'émission"
                           >
                             <Eye className="w-3.5 h-3.5 mr-1" /> Ouvrir
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-8 px-2 text-xs text-[#B8B8B8] hover:text-[#FFBF00] hover:bg-[#2A2A2A]" 
-                            onClick={() => router.push(`/admin/podcasts/${p.id}/edit`)} 
+                          <AdminAction permission="catalog.edit"><Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs text-[#B8B8B8] hover:text-[#FFBF00] hover:bg-[#2A2A2A]"
+                            onClick={() => router.push(`/admin/podcasts/${p.id}/edit`)}
                             title="Modifier les informations"
                           >
                             <Edit2 className="w-3.5 h-3.5 mr-1" /> Modifier
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-8 px-2 text-xs text-[#757575] hover:text-amber-400 hover:bg-[#2A2A2A]" 
-                            onClick={(e) => handleArchive(p.id, e)} 
+                          </Button></AdminAction>
+                          <AdminAction permission="catalog.delete"><Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs text-[#757575] hover:text-amber-400 hover:bg-[#2A2A2A]"
+                            onClick={(e) => handleArchive(p.id, e)}
                             title="Archiver l'émission"
                           >
                             <Archive className="w-3.5 h-3.5 mr-1" /> Archiver
-                          </Button>
+                          </Button></AdminAction>
                         </div>
                       </td>
                     </tr>
@@ -607,16 +608,16 @@ export default function AdminPodcastsPage() {
         {/* Mobile View: Cards */}
         <div className="md:hidden divide-y divide-[#2A2A2A]">
           {displayedPodcasts.map((p: any) => (
-            <div 
-              key={p.id} 
+            <div
+              key={p.id}
               className="p-4 space-y-3 hover:bg-[#1C1C1C] transition-colors"
               onClick={() => handleRowClick(p.id, p.slug)}
             >
               <div className="flex items-start gap-3">
-                <img 
-                  src={p.cover || p.image || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=96&h=96&fit=crop"} 
-                  alt={p.name} 
-                  className="w-14 h-14 rounded-lg object-cover bg-[#0B0B0B] border border-[#2A2A2A] shrink-0" 
+                <img
+                  src={p.cover || p.image || "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=96&h=96&fit=crop"}
+                  alt={p.name}
+                  className="w-14 h-14 rounded-lg object-cover bg-[#0B0B0B] border border-[#2A2A2A] shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
@@ -640,22 +641,22 @@ export default function AdminPodcastsPage() {
                   Langue: {p.primaryLanguageCode?.toUpperCase() || "FR"}
                 </span>
                 <div className="flex items-center gap-1">
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     className="h-8 px-2 text-xs text-[#B8B8B8] hover:text-white"
                     onClick={() => handleRowClick(p.id, p.slug)}
                   >
                     Ouvrir
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
+                  <AdminAction permission="catalog.delete"><Button
+                    size="sm"
+                    variant="ghost"
                     className="h-8 px-2 text-xs text-[#757575] hover:text-amber-400"
                     onClick={(e) => handleArchive(p.id, e)}
                   >
                     Archiver
-                  </Button>
+                  </Button></AdminAction>
                 </div>
               </div>
             </div>

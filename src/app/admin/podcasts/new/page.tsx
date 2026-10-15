@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -235,15 +237,15 @@ export default function NewPodcastWizard() {
   if (currentScreen === "CHOICE") {
     return (
       <div className="w-full py-4 pb-28 text-white space-y-8 animate-in fade-in">
-        
+
         {/* Navigation & Header */}
         <div className="space-y-3">
-          <Link 
-            href="/admin/podcasts" 
+          <AdminPageAccess href="/admin/podcasts"><Link
+            href="/admin/podcasts"
             className="inline-flex items-center text-xs font-semibold text-[#888888] hover:text-[#FFBF00] transition-colors"
           >
             <ChevronLeft className="w-4 h-4 mr-1" /> Retour aux émissions
-          </Link>
+          </Link></AdminPageAccess>
           <div className="flex items-center gap-2 text-xs font-bold text-[#FFBF00] uppercase tracking-wider">
             <span>Étape 1 sur 2</span>
             <span>•</span>
@@ -268,13 +270,13 @@ export default function NewPodcastWizard() {
 
         {/* Les 3 Grandes Cartes de Format */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          
+
           {/* Carte 1 : Émission audio */}
-          <div 
+          <div
             onClick={() => { setSelectedFormat("AUDIO"); setCurrentScreen("FORM"); }}
             className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
-              selectedFormat === "AUDIO" 
-                ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]" 
+              selectedFormat === "AUDIO"
+                ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]"
                 : "bg-[#171717] border-[#2A2A2A] hover:border-[#444444] hover:bg-[#1C1C1C]"
             }`}
           >
@@ -302,11 +304,11 @@ export default function NewPodcastWizard() {
           </div>
 
           {/* Carte 2 : Émission vidéo */}
-          <div 
+          <div
             onClick={() => { setSelectedFormat("VIDEO"); setCurrentScreen("FORM"); }}
             className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
-              selectedFormat === "VIDEO" 
-                ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]" 
+              selectedFormat === "VIDEO"
+                ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]"
                 : "bg-[#171717] border-[#2A2A2A] hover:border-[#444444] hover:bg-[#1C1C1C]"
             }`}
           >
@@ -334,11 +336,11 @@ export default function NewPodcastWizard() {
           </div>
 
           {/* Carte 3 : Émission audio et vidéo */}
-          <div 
+          <div
             onClick={() => { setSelectedFormat("HYBRID"); setCurrentScreen("FORM"); }}
             className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between group ${
-              selectedFormat === "HYBRID" 
-                ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]" 
+              selectedFormat === "HYBRID"
+                ? "bg-[#171717] border-[#FFBF00] ring-1 ring-[#FFBF00]"
                 : "bg-[#171717] border-[#2A2A2A] hover:border-[#444444] hover:bg-[#1C1C1C]"
             }`}
           >
@@ -381,13 +383,13 @@ export default function NewPodcastWizard() {
             </div>
           </div>
 
-          <Button 
+          <AdminAction permission="catalog.create"><Button
             onClick={() => router.push("/admin/podcasts/import-rss")}
             variant="outline"
             className="bg-[#1F1F1F] hover:bg-[#2A2A2A] border-[#333333] text-white shrink-0 text-xs font-semibold h-10 px-5"
           >
             Importer via RSS
-          </Button>
+          </Button></AdminAction>
         </div>
 
       </div>
@@ -405,10 +407,10 @@ export default function NewPodcastWizard() {
 
   return (
     <div className="w-full flex flex-col pb-32 text-white">
-      
+
       {/* Fil d'Ariane & Titre */}
       <div className="space-y-4 mb-8">
-        <button 
+        <button
           onClick={() => setCurrentScreen("CHOICE")}
           className="inline-flex items-center text-xs font-semibold text-[#888888] hover:text-[#FFBF00] transition-colors"
         >
@@ -445,10 +447,10 @@ export default function NewPodcastWizard() {
 
       {/* Disposition principale : Formulaire (gauche) + Aperçu en direct (droite) */}
       <div className="flex flex-col lg:flex-row gap-8 items-start">
-        
+
         {/* Colonne Formulaire (2/3 sur desktop) */}
         <div className="w-full lg:flex-1 space-y-8">
-          
+
           {/* BLOC 1 : IDENTITÉ */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
             <div className="border-b border-[#2A2A2A] pb-4">
@@ -461,13 +463,13 @@ export default function NewPodcastWizard() {
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                   Nom de l'émission <span className="text-[#FFBF00]">*</span>
                 </label>
-                <input 
-                  type="text" 
-                  name="name" 
-                  value={formData.name} 
-                  onChange={handleChange} 
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
                   placeholder="Ex: Les Voix du Mandé, Économie Bamako..."
-                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                 />
               </div>
 
@@ -475,13 +477,13 @@ export default function NewPodcastWizard() {
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                   Résumé court (Slogan / Accroche)
                 </label>
-                <input 
-                  type="text" 
-                  name="descriptionShort" 
-                  value={formData.descriptionShort} 
-                  onChange={handleChange} 
+                <input
+                  type="text"
+                  name="descriptionShort"
+                  value={formData.descriptionShort}
+                  onChange={handleChange}
                   placeholder="Ex: Le rendez-vous hebdomadaire des récits et traditions orales."
-                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                 />
               </div>
 
@@ -489,13 +491,13 @@ export default function NewPodcastWizard() {
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                   Description complète <span className="text-[#FFBF00]">*</span>
                 </label>
-                <textarea 
-                  name="description" 
-                  rows={5} 
-                  value={formData.description} 
-                  onChange={handleChange} 
+                <textarea
+                  name="description"
+                  rows={5}
+                  value={formData.description}
+                  onChange={handleChange}
                   placeholder="Présentez le concept de l'émission, les thèmes abordés, le ton et la fréquence de diffusion..."
-                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555] resize-none" 
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555] resize-none"
                 />
               </div>
             </div>
@@ -529,13 +531,13 @@ export default function NewPodcastWizard() {
                   </div>
 
                   <div className="flex-1 space-y-3 w-full">
-                    <input 
-                      type="text" 
-                      name="cover" 
-                      value={formData.cover} 
-                      onChange={handleChange} 
+                    <input
+                      type="text"
+                      name="cover"
+                      value={formData.cover}
+                      onChange={handleChange}
                       placeholder="URL directe de l'image (https://...)"
-                      className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                      className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                     />
                     <label className="w-full flex items-center justify-center bg-[#0B0B0B] border border-[#2A2A2A] border-dashed text-white hover:bg-[#202020] rounded-lg h-10 px-4 cursor-pointer text-xs font-semibold transition-colors">
                       {uploadingCover ? (
@@ -543,15 +545,15 @@ export default function NewPodcastWizard() {
                       ) : (
                         <><UploadCloud className="w-4 h-4 mr-2 text-[#FFBF00]" /> Importer un fichier image (JPG, PNG, WebP)</>
                       )}
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         accept="image/jpeg,image/png,image/webp"
-                        className="hidden" 
+                        className="hidden"
                         disabled={uploadingCover}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) handleImageFile(file, "covers");
-                        }} 
+                        }}
                       />
                     </label>
                   </div>
@@ -564,13 +566,13 @@ export default function NewPodcastWizard() {
                   Bannière de couverture (Optionnel, format paysage 16:9)
                 </label>
                 <div className="space-y-3">
-                  <input 
-                    type="text" 
-                    name="banner" 
-                    value={formData.banner} 
-                    onChange={handleChange} 
+                  <input
+                    type="text"
+                    name="banner"
+                    value={formData.banner}
+                    onChange={handleChange}
                     placeholder="URL directe de la bannière (https://...)"
-                    className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                    className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                   />
                   <label className="w-full flex items-center justify-center bg-[#0B0B0B] border border-[#2A2A2A] border-dashed text-white hover:bg-[#202020] rounded-lg h-10 px-4 cursor-pointer text-xs font-semibold transition-colors">
                     {uploadingBanner ? (
@@ -578,15 +580,15 @@ export default function NewPodcastWizard() {
                     ) : (
                       <><UploadCloud className="w-4 h-4 mr-2 text-[#FFBF00]" /> Importer une bannière</>
                     )}
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      className="hidden" 
+                      className="hidden"
                       disabled={uploadingBanner}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleImageFile(file, "banners");
-                      }} 
+                      }}
                     />
                   </label>
                 </div>
@@ -607,9 +609,9 @@ export default function NewPodcastWizard() {
                   <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                     Langue principale <span className="text-[#FFBF00]">*</span>
                   </label>
-                  <select 
-                    name="primaryLanguageCode" 
-                    value={formData.primaryLanguageCode} 
+                  <select
+                    name="primaryLanguageCode"
+                    value={formData.primaryLanguageCode}
                     onChange={handleChange}
                     className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none"
                   >
@@ -697,13 +699,13 @@ export default function NewPodcastWizard() {
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                   Ville d'enregistrement (Optionnel)
                 </label>
-                <input 
-                  type="text" 
-                  name="city" 
-                  value={formData.city} 
-                  onChange={handleChange} 
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
                   placeholder="Ex: Bamako, Ségou, Sikasso..."
-                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                 />
               </div>
             </div>
@@ -757,13 +759,13 @@ export default function NewPodcastWizard() {
                   <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                     Site web officiel (Optionnel)
                   </label>
-                  <input 
-                    type="url" 
-                    name="website" 
-                    value={formData.website} 
-                    onChange={handleChange} 
+                  <input
+                    type="url"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleChange}
                     placeholder="https://..."
-                    className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                    className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                   />
                 </div>
               </div>
@@ -772,7 +774,7 @@ export default function NewPodcastWizard() {
 
           {/* BARRE D'ACTIONS DU FORMULAIRE */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Button
+            <AdminAction permission="catalog.create"><Button
               type="button"
               variant="ghost"
               disabled={isSubmitting}
@@ -780,10 +782,10 @@ export default function NewPodcastWizard() {
               className="text-[#888888] hover:text-white text-xs w-full sm:w-auto"
             >
               <Save className="w-4 h-4 mr-2" /> Enregistrer le brouillon
-            </Button>
+            </Button></AdminAction>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              <Button
+              <AdminAction permission="catalog.create"><Button
                 type="button"
                 variant="outline"
                 disabled={isSubmitting}
@@ -791,9 +793,9 @@ export default function NewPodcastWizard() {
                 className="bg-[#1C1C1C] border-[#2A2A2A] text-white hover:bg-[#262626] text-xs font-semibold h-11 w-full sm:w-auto px-5"
               >
                 Terminer sans épisode
-              </Button>
+              </Button></AdminAction>
 
-              <Button
+              <AdminAction permission="catalog.create"><Button
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => handleSave("NEW_EPISODE")}
@@ -804,7 +806,7 @@ export default function NewPodcastWizard() {
                 ) : (
                   <>Continuer vers le premier épisode <ArrowRight className="w-4 h-4 ml-2" /></>
                 )}
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
 

@@ -12,19 +12,29 @@ import {
   Loader2, Megaphone, Crown, Video
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import useSWR from "swr";
+import { fetchApi } from "@/lib/api";
+import { NotificationBell } from "../NotificationBell";
+import { AdminAccessProvider, useAdminAccess } from "./AdminAccess";
+import { canVisitAdmin, firstAdminPage, hasPermission } from "@/lib/admin-permissions";
 import { UserDropdown } from "../UserDropdown";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
+  return <AdminAccessProvider><AdminShellContent>{children}</AdminShellContent></AdminAccessProvider>;
+}
+
+function AdminShellContent({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, isLoading, logout } = useAuthStore();
   const router = useRouter();
 
-  const isSuperAdmin = user?.roles?.some(r => r.toUpperCase() === "SUPER_ADMIN") || false;
-  const isAdmin = user?.roles?.some(r => r.toUpperCase() === "ADMIN") || false;
-  const canSupport = isSuperAdmin || !!user?.permissions?.includes("support.view");
-  const canAccessConsole = isSuperAdmin || isAdmin || (canSupport && pathname?.startsWith("/admin/support"));
+  const {access,loading:accessLoading,error:accessError,refresh}=useAdminAccess();
+  const canAccessConsole=!!access && (access.isSuperAdmin || access.permissions.length>0);
+  const canSupport=hasPermission(access,"support.view");
+  const pageAllowed=canVisitAdmin(access,pathname || "/admin");
+  const {data:supportCount}=useSWR(canSupport&&user?.id?["support-open-count",user.id]:null,()=>fetchApi<{open:number}>("/admin/support-tickets/count").then(r=>r.data),{refreshInterval:30000,revalidateOnFocus:true});
 
   // Redirection automatique vers la page de connexion si non authentifié
   useEffect(() => {
@@ -41,7 +51,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         ease: "power2.out"
       });
     }
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen,accessLoading,canAccessConsole]);
 
   const navGroups = [
     {
@@ -69,6 +79,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       label: "Modération",
       items: [
         ...(canSupport ? [{ name: "Assistance", href: "/admin/support", icon: ShieldAlert }] : []),
+        { name: "Contenus à valider", href: "/admin/reviews", icon: BadgeCheck },
         { name: "Signalements", href: "/admin/reports", icon: ShieldAlert },
         { name: "Revendications", href: "/admin/claims", icon: BadgeCheck },
       ]
@@ -76,6 +87,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     {
       label: "Suivi",
       items: [
+        { name: "Marchés", href: "/admin/markets", icon: Library },
         { name: "Imports et médias", href: "/admin/media", icon: FileDown },
         { name: "Statistiques", href: "/admin/analytics", icon: BarChart3 },
       ]
@@ -83,7 +95,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   ];
 
   const superAdminGroup = {
-    label: "Super Admin",
+    label: "Administration",
     items: [
       { name: "Administrateurs et rôles", href: "/admin/roles", icon: Shield },
       { name: "Paramètres", href: "/admin/settings", icon: Settings },
@@ -93,7 +105,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
 
   // 1. Écran de chargement pendant la vérification du token/session
-  if (isLoading || !isAuthenticated) {
+  if (isLoading || !isAuthenticated || accessLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#0E0E0E] text-white">
         <div className="flex flex-col items-center gap-3">
@@ -114,9 +126,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Accès Non Autorisé</h2>
           <p className="text-sm text-[#A0A0A0] mb-6 leading-relaxed">
-            Votre compte ({user?.email}) ne possède pas les privilèges requis (Administrateur ou Super Admin).
+            {accessError ? "Impossible de vérifier vos autorisations. Réessayez pour continuer." : "Votre compte ne dispose d’aucune autorisation d’administration."}
           </p>
           <div className="flex flex-col gap-3">
+            {accessError && <button onClick={refresh} className="text-[#FFBF00]">Réessayer</button>}
             <Link
               href="/"
               className="w-full py-2.5 rounded-xl bg-[#FFBF00] text-[#0B0B0B] font-bold text-sm hover:bg-[#E5AC00] transition-colors text-center"
@@ -166,7 +179,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-6 px-3 scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
-          {navGroups.map((group, i) => (
+          {navGroups.map(group=>({...group,items:group.items.filter(item=>canVisitAdmin(access,item.href))})).filter(group=>group.items.length).map((group, i) => (
             <div key={i} className="flex flex-col gap-1">
               {isSidebarOpen && (
                 <span className="text-[10px] font-semibold text-[#666666] uppercase tracking-wider px-2 mb-1">
@@ -181,6 +194,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   <Link 
                     key={item.name} 
                     href={item.href}
+                    title={!isSidebarOpen?item.name:undefined}
                     className={`flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors whitespace-nowrap ${
                       isActive 
                         ? "bg-[#262626] text-white" 
@@ -188,7 +202,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     }`}
                   >
                     <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-[#FFBF00]" : ""}`} />
-                    {isSidebarOpen && <span className="text-sm font-medium">{item.name}</span>}
+                    {isSidebarOpen && <span className="text-sm font-medium">{item.name}{item.href==="/admin/support" && !!supportCount?.open && <span className="ml-2 rounded-full bg-[#FFBF00] px-2 text-xs text-black">{supportCount.open}</span>}</span>}
                   </Link>
                 );
               })}
@@ -196,14 +210,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           ))}
 
           {/* Super Admin Section */}
-          {isSuperAdmin && (
+          {superAdminGroup.items.some(item=>canVisitAdmin(access,item.href)) && (
             <div className="flex flex-col gap-1 mt-2 pt-4 border-t border-[#262626]">
               {isSidebarOpen && (
                 <span className="text-[10px] font-semibold text-red-500 uppercase tracking-wider px-2 mb-1">
-                  {superAdminGroup.label}
+                  Collaborateurs et configuration
                 </span>
               )}
-              {superAdminGroup.items.map((item) => {
+              {superAdminGroup.items.filter(item=>canVisitAdmin(access,item.href)).map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
                 
@@ -259,13 +273,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
           
           <div className="flex items-center gap-4">
+            <NotificationBell allHref="/admin/notifications" />
             <UserDropdown />
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 no-scrollbar relative">
           <div className="w-full">
-            {children}
+            {pageAllowed ? <React.Fragment key={access?.permissions.slice().sort().join(",")}>{children}</React.Fragment> : <div role="alert" className="py-12"><h1 className="text-xl font-semibold">Accès non autorisé</h1><p className="mt-3 text-[#A0A0A0]">Vous ne disposez pas des autorisations nécessaires pour cette page.</p><Link href={firstAdminPage(access)} className="inline-block mt-5 text-[#FFBF00]">Ouvrir mon espace autorisé</Link></div>}
           </div>
         </div>
       </div>

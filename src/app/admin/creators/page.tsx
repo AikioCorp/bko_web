@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
@@ -415,13 +417,13 @@ export default function CreatorsAdminPage() {
             Actualiser
           </Button>
 
-          <Button
+          <AdminAction permission="users.edit"><Button
             onClick={() => setIsCreateModalOpen(true)}
             className="bg-[#FFBF00] hover:bg-[#E5AC00] text-[#0B0B0B] font-bold text-sm shadow-md"
           >
             <Plus className="w-4 h-4 mr-2" />
             Nouveau profil créateur
-          </Button>
+          </Button></AdminAction>
         </div>
       </div>
 
@@ -584,13 +586,13 @@ export default function CreatorsAdminPage() {
               ? `Aucun résultat ne correspond à la recherche « ${debouncedSearch} ».`
               : "Aucun profil créateur n'est encore configuré dans cette sélection."}
           </p>
-          <Button
+          <AdminAction permission="users.edit"><Button
             onClick={() => setIsCreateModalOpen(true)}
             className="bg-[#FFBF00] hover:bg-[#E5AC00] text-[#0B0B0B] font-bold text-sm"
           >
             <Plus className="w-4 h-4 mr-2" />
             Créer le premier profil créateur
-          </Button>
+          </Button></AdminAction>
         </div>
       ) : viewMode === "grid" ? (
         /* VUE GRILLE DE CARTES */
@@ -698,7 +700,7 @@ export default function CreatorsAdminPage() {
                         )}
                       </div>
                     ) : (
-                      <button
+                      <AdminAction permission="users.edit"><button
                         onClick={(e) => {
                           e.stopPropagation();
                           setCreatorForAssign(c);
@@ -708,7 +710,7 @@ export default function CreatorsAdminPage() {
                       >
                         <Plus className="w-3 h-3" />
                         Rattacher une émission
-                      </button>
+                      </button></AdminAction>
                     )}
                   </div>
                 </div>
@@ -726,7 +728,7 @@ export default function CreatorsAdminPage() {
 
                   {/* Actions Rapides */}
                   <div className="flex items-center gap-1">
-                    <button
+                    <AdminAction permission="users.edit"><button
                       onClick={(e) => handleQuickToggleVerified(c, e)}
                       className={classNames(
                         "p-1.5 rounded-lg text-xs transition-colors",
@@ -737,7 +739,7 @@ export default function CreatorsAdminPage() {
                       title={c.isVerified ? "Révoquer certification" : "Attribuer certification badge bleu"}
                     >
                       <BadgeCheck className="w-4 h-4" />
-                    </button>
+                    </button></AdminAction>
 
                     <Link
                       href={`/creators/${c.slug}`}
@@ -821,7 +823,7 @@ export default function CreatorsAdminPage() {
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <button
+                      <AdminAction permission="users.edit"><button
                         onClick={(e) => handleQuickToggleVerified(c, e)}
                         className={classNames(
                           "px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors",
@@ -832,7 +834,7 @@ export default function CreatorsAdminPage() {
                       >
                         <BadgeCheck className="w-3.5 h-3.5" />
                         {c.isVerified ? "Certifié" : "Standard"}
-                      </button>
+                      </button></AdminAction>
                     </td>
 
                     <td className="py-3.5 px-4 text-right">
@@ -1053,7 +1055,7 @@ export default function CreatorsAdminPage() {
                             Active le badge bleu officiel visible sur l&apos;application mobile et le web.
                           </p>
                         </div>
-                        <button
+                        <AdminAction permission="users.edit"><button
                           type="button"
                           onClick={() => setEditVerified(!editVerified)}
                           className={classNames(
@@ -1067,12 +1069,12 @@ export default function CreatorsAdminPage() {
                               editVerified ? "right-1" : "left-1"
                             )}
                           />
-                        </button>
+                        </button></AdminAction>
                       </div>
                     </div>
 
                     <div className="pt-3">
-                      <Button
+                      <AdminAction permission="users.edit"><Button
                         onClick={handleSaveCreatorEdits}
                         disabled={isUpdating}
                         className="w-full bg-[#FFBF00] hover:bg-[#E5AC00] text-[#0B0B0B] font-bold text-sm"
@@ -1085,7 +1087,7 @@ export default function CreatorsAdminPage() {
                         ) : (
                           "Enregistrer les modifications"
                         )}
-                      </Button>
+                      </Button></AdminAction>
                     </div>
                   </div>
 
@@ -1125,13 +1127,13 @@ export default function CreatorsAdminPage() {
                     </div>
 
                     <div className="pt-2">
-                      <Link
+                      <AdminPageAccess href={`/admin/users`}><Link
                         href={`/admin/users`}
                         className="text-xs text-[#FFBF00] hover:underline flex items-center gap-1"
                       >
                         <span>Gérer ce compte dans Utilisateurs & Rôles</span>
                         <ArrowUpRight className="w-3.5 h-3.5" />
-                      </Link>
+                      </Link></AdminPageAccess>
                     </div>
                   </div>
 
@@ -1144,14 +1146,14 @@ export default function CreatorsAdminPage() {
                     <p className="text-xs text-[#A0A0A0] leading-relaxed mb-4">
                       La suppression du profil créateur retire sa page publique, ses abonnements et son identifiant d&apos;artiste. Le compte utilisateur reste actif avec le rôle auditeur standard.
                     </p>
-                    <Button
+                    <AdminAction permission="users.delete"><Button
                       variant="outline"
                       onClick={() => setCreatorToDelete(activeCreator)}
                       className="border-red-900/60 bg-red-950/40 text-red-300 hover:bg-red-900/60 hover:text-white text-xs w-full font-bold"
                     >
                       <Trash2 className="w-3.5 h-3.5 mr-2" />
                       Supprimer le profil créateur
-                    </Button>
+                    </Button></AdminAction>
                   </div>
                 </div>
               )}
@@ -1167,7 +1169,7 @@ export default function CreatorsAdminPage() {
                       </p>
                     </div>
 
-                    <Button
+                    <AdminAction permission="users.edit"><Button
                       size="sm"
                       onClick={() => {
                         setCreatorForAssign(activeCreator);
@@ -1177,14 +1179,14 @@ export default function CreatorsAdminPage() {
                     >
                       <Plus className="w-3.5 h-3.5 mr-1.5 text-[#FFBF00]" />
                       Rattacher une émission
-                    </Button>
+                    </Button></AdminAction>
                   </div>
 
                   {activeCreator.podcasts.length === 0 ? (
                     <div className="bg-[#141414] border border-[#222222] rounded-2xl p-8 text-center">
                       <Podcast className="w-8 h-8 text-[#555555] mx-auto mb-2" />
                       <p className="text-xs text-[#888888] mb-3">Aucune émission n&apos;est actuellement rattachée à ce créateur.</p>
-                      <Button
+                      <AdminAction permission="users.edit"><Button
                         size="sm"
                         onClick={() => {
                           setCreatorForAssign(activeCreator);
@@ -1194,7 +1196,7 @@ export default function CreatorsAdminPage() {
                       >
                         <Plus className="w-3.5 h-3.5 mr-1.5" />
                         Attribuer un podcast existant
-                      </Button>
+                      </Button></AdminAction>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -1220,13 +1222,13 @@ export default function CreatorsAdminPage() {
                           </div>
 
                           <div className="flex items-center gap-2 shrink-0">
-                            <Link
+                            <AdminPageAccess href={`/admin/podcasts/${pod.id}`}><Link
                               href={`/admin/podcasts/${pod.id}`}
                               className="px-2.5 py-1.5 bg-[#222222] hover:bg-[#2A2A2A] text-white rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
                             >
                               <span>Gérer</span>
                               <ArrowUpRight className="w-3 h-3" />
-                            </Link>
+                            </Link></AdminPageAccess>
                           </div>
                         </div>
                       ))}
@@ -1285,9 +1287,9 @@ export default function CreatorsAdminPage() {
 
                   <div className="p-4 bg-[#141414] border border-[#222222] rounded-2xl text-xs text-[#888888]">
                     Pour configurer les pays ouverts ou la bêta fermée, consultez le module{" "}
-                    <Link href="/admin/categories" className="text-[#FFBF00] hover:underline font-medium">
+                    <AdminPageAccess href="/admin/categories"><Link href="/admin/categories" className="text-[#FFBF00] hover:underline font-medium">
                       Catégories et Marchés
-                    </Link>.
+                    </Link></AdminPageAccess>.
                   </div>
                 </div>
               )}
@@ -1318,7 +1320,7 @@ export default function CreatorsAdminPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateCreatorSubmit} className="space-y-4">
+            <AdminAction permission="users.edit"><form onSubmit={handleCreateCreatorSubmit} className="space-y-4">
               {/* Étape 1 : Sélection de l'utilisateur */}
               <div>
                 <label className="block text-xs text-[#CCCCCC] font-medium mb-1.5">
@@ -1444,7 +1446,7 @@ export default function CreatorsAdminPage() {
                   {isCreating ? "Création en cours..." : "Créer le créateur"}
                 </Button>
               </div>
-            </form>
+            </form></AdminAction>
           </div>
         </div>
       )}
@@ -1499,14 +1501,14 @@ export default function CreatorsAdminPage() {
                     </div>
                   </div>
 
-                  <Button
+                  <AdminAction permission="users.edit"><Button
                     size="sm"
                     disabled={isAssigning}
                     onClick={() => handleAssignPodcastSubmit(p.id)}
                     className="h-8 bg-[#FFBF00] hover:bg-[#E5AC00] text-[#0B0B0B] font-bold text-xs shrink-0"
                   >
                     Rattacher
-                  </Button>
+                  </Button></AdminAction>
                 </div>
               ))}
             </div>
@@ -1565,13 +1567,13 @@ export default function CreatorsAdminPage() {
               >
                 Annuler
               </Button>
-              <Button
+              <AdminAction permission="users.delete"><Button
                 disabled={isDeleting || deleteConfirmationText.trim().toLowerCase() !== "supprimer"}
                 onClick={handleDeleteCreatorSubmit}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold text-sm disabled:opacity-40"
               >
                 {isDeleting ? "Suppression..." : "Confirmer la suppression"}
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>

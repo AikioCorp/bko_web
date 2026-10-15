@@ -1,4 +1,5 @@
 "use client";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useMemo } from "react";
 import useSWR from "swr";
@@ -481,33 +482,33 @@ export default function AdminClaimsPage() {
               {claim.status === "PENDING" || claim.status === "UNDER_REVIEW" ? (
                 <div className="pt-2 flex flex-wrap items-center justify-end gap-3 border-t border-[#222222]">
                   {claim.status === "PENDING" && (
-                    <Button
+                    <AdminAction permission="claims.edit"><Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleOpenReview(claim, "UNDER_REVIEW")}
                       className="border-[#333333] bg-[#1A1A1A] text-[#CCCCCC] hover:text-white text-xs"
                     >
                       Mettre en examen
-                    </Button>
+                    </Button></AdminAction>
                   )}
 
-                  <Button
+                  <AdminAction permission="claims.edit"><Button
                     size="sm"
                     onClick={() => handleOpenReview(claim, "REJECTED")}
                     className="bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-200 text-xs font-bold"
                   >
                     <XCircle className="w-3.5 h-3.5 mr-1.5" />
                     Rejeter la demande
-                  </Button>
+                  </Button></AdminAction>
 
-                  <Button
+                  <AdminAction permission="claims.edit"><Button
                     size="sm"
                     onClick={() => handleOpenReview(claim, "APPROVED")}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
                     Approuver la propriété
-                  </Button>
+                  </Button></AdminAction>
                 </div>
               ) : null}
             </div>
@@ -593,7 +594,7 @@ export default function AdminClaimsPage() {
               >
                 Annuler
               </Button>
-              <Button
+              <AdminAction permission="claims.edit"><Button
                 size="sm"
                 disabled={isSubmitting}
                 onClick={handleSubmitReview}
@@ -618,7 +619,7 @@ export default function AdminClaimsPage() {
                 ) : (
                   "Mettre en examen"
                 )}
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>

@@ -88,7 +88,7 @@ export function resolvePostAuthDecision(
   }
 
   // 3. Compte opérationnel : destination interne validée ou tableau de bord lié au rôle
-  const destination = cleanTarget || getDestinationForRole(user?.roles || []);
+  const destination = cleanTarget || (user?.permissions?.length ? "/admin" : getDestinationForRole(user?.roles || []));
   return {
     path: destination,
     isSuspended: false,

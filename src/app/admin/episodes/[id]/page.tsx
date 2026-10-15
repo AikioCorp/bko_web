@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -42,7 +44,7 @@ export default function AdminEditEpisodePage() {
   const [youtubeUrlInput, setYoutubeUrlInput] = useState("");
   const [checkingYoutube, setCheckingYoutube] = useState(false);
   const [youtubePreview, setYoutubePreview] = useState<any>(null);
-  
+
   // Preview states
   const [previewMode, setPreviewMode] = useState<"AUDIO" | "YOUTUBE" | null>(null);
 
@@ -69,7 +71,7 @@ export default function AdminEditEpisodePage() {
       setEpisodeType(episode.episodeType || "FULL");
       setExplicit(episode.explicit || false);
       setCoverUrl(episode.cover || episode.coverUrl || episode.podcast?.cover || episode.podcast?.coverUrl || "");
-      
+
       const ytId = episode.sources?.youtube?.videoId || episode.youtubeId;
       const aUrl = episode.sources?.audio?.url || episode.audioUrl;
       const aStatus = episode.sources?.audioState || episode.audioStatus;
@@ -227,9 +229,9 @@ export default function AdminEditEpisodePage() {
         body: JSON.stringify({ filename: file.name, mimeType: file.type || "audio/mpeg", sizeBytes: file.size })
       });
       if (!res.success) throw new Error(res.message || "Impossible de créer la session d'envoi");
-      
+
       const { uploadUrl, uploadId } = res.data;
-      
+
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", uploadUrl, true);
       xhr.setRequestHeader("Content-Type", file.type || "audio/mpeg");
@@ -238,7 +240,7 @@ export default function AdminEditEpisodePage() {
           setUploadProgress(Math.round((evt.loaded / evt.total) * 100));
         }
       };
-      
+
       await new Promise((resolve, reject) => {
         xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) resolve(true); else reject(new Error("Échec du transfert vers le stockage (S3/R2)")); };
         xhr.onerror = () => reject(new Error("Erreur réseau lors de l'envoi du fichier"));
@@ -265,9 +267,9 @@ export default function AdminEditEpisodePage() {
   return (
     <div className="w-full">
       <div className="mb-6 flex items-center gap-4 text-sm text-[#757575]">
-        <Link href="/admin/podcasts" className="hover:text-white transition-colors">Podcasts</Link>
+        <AdminPageAccess href="/admin/podcasts"><Link href="/admin/podcasts" className="hover:text-white transition-colors">Podcasts</Link></AdminPageAccess>
         <span>/</span>
-        <Link href={`/admin/podcasts/${podcast?.slug || podcast?.id}`} className="hover:text-white transition-colors">{podcast?.title || "Podcast"}</Link>
+        <AdminPageAccess href={`/admin/podcasts/${podcast?.slug || podcast?.id}`}><Link href={`/admin/podcasts/${podcast?.slug || podcast?.id}`} className="hover:text-white transition-colors">{podcast?.title || "Podcast"}</Link></AdminPageAccess>
         <span>/</span>
         <span className="text-white">Édition de l'épisode</span>
       </div>
@@ -280,28 +282,28 @@ export default function AdminEditEpisodePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-[#2A2A2A] text-white hover:bg-[#1A1A1A]" onClick={() => handlePublish("DRAFT")}>
+          <AdminAction permission="catalog.edit"><Button variant="outline" className="border-[#2A2A2A] text-white hover:bg-[#1A1A1A]" onClick={() => handlePublish("DRAFT")}>
             Enregistrer le brouillon
-          </Button>
-          <Button 
-            className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" 
+          </Button></AdminAction>
+          <AdminAction permission="catalog.edit"><Button
+            className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold"
             disabled={!canPublish || publishing}
             onClick={() => handlePublish("PUBLISHED")}
           >
             {publishing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
             Publier maintenant
-          </Button>
+          </Button></AdminAction>
         </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* COLONNE GAUCHE : Formulaires */}
         <div className="flex-1 space-y-8">
-          
+
           {/* 1. Informations de l'épisode */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
             <h2 className="text-lg font-bold text-white mb-6">1. Informations de l'épisode</h2>
-            
+
             <div className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Titre *</label>
@@ -358,7 +360,7 @@ export default function AdminEditEpisodePage() {
           {/* 2. Sources de lecture */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
             <h2 className="text-lg font-bold text-white mb-6">2. Sources de lecture</h2>
-            
+
             <div className="space-y-8">
               {/* AUDIO */}
               <div className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-5">
@@ -390,7 +392,7 @@ export default function AdminEditEpisodePage() {
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]" onClick={() => setPreviewMode("AUDIO")}>Écouter</Button>
-                      <Button variant="outline" size="sm" className="border-[#2A2A2A] text-red-500 hover:bg-[#2A2A2A] hover:text-red-400" onClick={handleRemoveAudio}>Retirer</Button>
+                      <AdminAction permission="catalog.edit"><Button variant="outline" size="sm" className="border-[#2A2A2A] text-red-500 hover:bg-[#2A2A2A] hover:text-red-400" onClick={handleRemoveAudio}>Retirer</Button></AdminAction>
                     </div>
                   </div>
                 )}
@@ -404,14 +406,14 @@ export default function AdminEditEpisodePage() {
                         {uploadingAudio ? `Envoi en cours... ${uploadProgress}%` : "Déposer un fichier audio ou parcourir"}
                       </p>
                       <p className="text-xs text-[#757575]">MP3, M4A, WAV (Max 250 Mo)</p>
-                      
+
                       {uploadingAudio && (
                         <div className="mt-4 h-1.5 w-full bg-[#2A2A2A] rounded-full overflow-hidden">
                           <div className="h-full bg-[#FFBF00]" style={{ width: `${uploadProgress}%` }} />
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                       <div className="h-px bg-[#2A2A2A] flex-1"></div>
                       <span className="text-xs text-[#757575] font-bold uppercase">Ou utiliser une adresse directe</span>
@@ -420,7 +422,7 @@ export default function AdminEditEpisodePage() {
 
                     <div className="flex gap-2">
                       <input type="url" value={audioUrlInput} onChange={e => setAudioUrlInput(e.target.value)} placeholder="https://..." className="flex-1 bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
-                      <Button onClick={handleSetAudioUrl} disabled={!audioUrlInput} className="bg-[#2A2A2A] text-white hover:bg-[#333]">Valider</Button>
+                      <AdminAction permission="catalog.edit"><Button onClick={handleSetAudioUrl} disabled={!audioUrlInput} className="bg-[#2A2A2A] text-white hover:bg-[#333]">Valider</Button></AdminAction>
                     </div>
                   </div>
                 )}
@@ -449,7 +451,7 @@ export default function AdminEditEpisodePage() {
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]" onClick={() => setPreviewMode("YOUTUBE")}>Regarder</Button>
-                      <Button variant="outline" size="sm" className="border-[#2A2A2A] text-red-500 hover:bg-[#2A2A2A] hover:text-red-400" onClick={handleRemoveYoutube}>Retirer</Button>
+                      <AdminAction permission="catalog.edit"><Button variant="outline" size="sm" className="border-[#2A2A2A] text-red-500 hover:bg-[#2A2A2A] hover:text-red-400" onClick={handleRemoveYoutube}>Retirer</Button></AdminAction>
                     </div>
                   </div>
                 )}
@@ -459,9 +461,9 @@ export default function AdminEditEpisodePage() {
                     <label className="block text-xs font-bold text-[#757575] uppercase">Adresse de la vidéo</label>
                     <div className="flex gap-2">
                       <input type="url" value={youtubeUrlInput} onChange={e => setYoutubeUrlInput(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="flex-1 bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
-                      <Button onClick={handlePreviewYoutube} disabled={!youtubeUrlInput || checkingYoutube} className="bg-[#2A2A2A] text-white hover:bg-[#333]">
+                      <AdminAction permission="catalog.edit"><Button onClick={handlePreviewYoutube} disabled={!youtubeUrlInput || checkingYoutube} className="bg-[#2A2A2A] text-white hover:bg-[#333]">
                         {checkingYoutube ? <Loader2 className="w-4 h-4 animate-spin" /> : "Vérifier la vidéo"}
-                      </Button>
+                      </Button></AdminAction>
                     </div>
                   </div>
                 )}
@@ -473,7 +475,7 @@ export default function AdminEditEpisodePage() {
                     <p className="text-xs text-[#757575] mb-4">{youtubePreview.channelTitle || youtubePreview.channel}</p>
                     <div className="flex gap-3">
                       <Button variant="outline" onClick={() => setYoutubePreview(null)} className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]">Annuler</Button>
-                      <Button onClick={handleConfirmYoutube} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">Confirmer cette vidéo</Button>
+                      <AdminAction permission="catalog.edit"><Button onClick={handleConfirmYoutube} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">Confirmer cette vidéo</Button></AdminAction>
                     </div>
                   </div>
                 )}
@@ -485,17 +487,17 @@ export default function AdminEditEpisodePage() {
 
         {/* COLONNE DROITE : Aperçu & Checklist */}
         <div className="w-full lg:w-[380px] space-y-6">
-          
+
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-5 sticky top-6">
             <h3 className="text-sm font-bold text-[#757575] uppercase mb-4">Aperçu public</h3>
-            
+
             <div className="bg-[#0B0B0B] rounded-xl overflow-hidden border border-[#2A2A2A]">
               {/* Cover area */}
               <div className="aspect-video bg-[#2A2A2A] relative flex items-center justify-center overflow-hidden">
                 {coverUrl ? (
                   <img src={coverUrl} className="absolute inset-0 w-full h-full object-cover blur-sm opacity-50" />
                 ) : null}
-                
+
                 {previewMode === "YOUTUBE" && hasYoutubeReady ? (
                   <div className="absolute inset-0 z-10 bg-black">
                      <ReactPlayer
@@ -510,12 +512,12 @@ export default function AdminEditEpisodePage() {
                   <img src={coverUrl || "https://placehold.co/400x400/171717/333333?text=Cover"} className="w-24 h-24 rounded-lg shadow-2xl relative z-10 object-cover" />
                 )}
               </div>
-              
+
               <div className="p-4">
                 <p className="text-[#FFBF00] text-xs font-bold mb-1 uppercase tracking-wider">{podcast?.title}</p>
                 <h4 className="text-white font-bold text-lg leading-tight mb-2">{title || "Titre de l'épisode"}</h4>
                 <p className="text-[#757575] text-xs line-clamp-2 mb-4">{summary || description || "Le résumé de l'épisode apparaîtra ici."}</p>
-                
+
                 {/* Audio Player if active */}
                 {previewMode === "AUDIO" && hasAudioReady && effectiveAudioUrl && (
                   <div className="mb-4">
@@ -526,9 +528,9 @@ export default function AdminEditEpisodePage() {
                 {/* Source Toggles */}
                 <div className="flex gap-2">
                   {hasAudioReady && (
-                    <Button 
-                      variant={previewMode === "AUDIO" ? "default" : "outline"} 
-                      size="sm" 
+                    <Button
+                      variant={previewMode === "AUDIO" ? "default" : "outline"}
+                      size="sm"
                       className={`flex-1 ${previewMode === "AUDIO" ? "bg-white text-black hover:bg-gray-200" : "border-[#2A2A2A] text-white hover:bg-[#1A1A1A]"}`}
                       onClick={() => setPreviewMode("AUDIO")}
                     >
@@ -536,9 +538,9 @@ export default function AdminEditEpisodePage() {
                     </Button>
                   )}
                   {hasYoutubeReady && (
-                    <Button 
-                      variant={previewMode === "YOUTUBE" ? "default" : "outline"} 
-                      size="sm" 
+                    <Button
+                      variant={previewMode === "YOUTUBE" ? "default" : "outline"}
+                      size="sm"
                       className={`flex-1 ${previewMode === "YOUTUBE" ? "bg-white text-black hover:bg-gray-200" : "border-[#2A2A2A] text-white hover:bg-[#1A1A1A]"}`}
                       onClick={() => setPreviewMode("YOUTUBE")}
                     >

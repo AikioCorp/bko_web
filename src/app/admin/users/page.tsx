@@ -1,4 +1,8 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { useAdminAccess } from "@/components/admin/AdminAccess";
+import { hasPermission } from "@/lib/admin-permissions";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
@@ -86,6 +90,8 @@ const ROLE_INFO_MAP: Record<string, { label: string; badgeBg: string; badgeText:
 };
 
 export default function UsersPage() {
+  const {access}=useAdminAccess();
+  const canEditUsers=hasPermission(access,"users.edit");
   const { user: currentUser } = useAuthStore();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -106,7 +112,7 @@ export default function UsersPage() {
     `/admin/users?page=${page}&limit=${limit}${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ""}`,
     fetcher
   );
-  const { data: rolesData } = useSWR("/admin/assignable-roles", fetcher);
+  const { data: rolesData } = useSWR(canEditUsers?"/admin/assignable-roles":null, fetcher);
 
   // Panneau latéral
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -606,24 +612,24 @@ export default function UsersPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                           {/* Bouton Modifier l'utilisateur - Mis en avant avec icône et texte */}
-                          <button
+                          <AdminAction permission="users.edit"><button
                             title="Modifier les informations de l'utilisateur"
                             onClick={() => setUserToEdit(user)}
                             className="px-2.5 py-1.5 rounded-lg bg-[#251D08] hover:bg-[#382C0C] text-[#FFBF00] border border-[#FFBF00]/40 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             <span>Modifier</span>
-                          </button>
+                          </button></AdminAction>
 
                           {/* Bouton Fiche Utilisateur (remplace Vue 360°) */}
-                          <Link
+                          <AdminPageAccess href={`/admin/users/${user.id}`}><Link
                             href={`/admin/users/${user.id}`}
                             className="px-2.5 py-1.5 rounded-lg bg-[#181818] hover:bg-[#242424] text-white border border-[#2E2E2E] text-xs font-semibold transition-colors flex items-center gap-1.5"
                             title="Consulter la fiche détaillée du membre"
                           >
                             <User className="w-3.5 h-3.5 text-[#FFBF00]" />
                             <span>Fiche</span>
-                          </Link>
+                          </Link></AdminPageAccess>
 
                           {/* Bouton Volet Gérer */}
                           <button
@@ -635,18 +641,18 @@ export default function UsersPage() {
                           </button>
 
                           {/* Bouton Mot de passe & Sécurité */}
-                          <button
+                          <AdminAction permission="users.edit"><button
                             title="Gérer / Réinitialiser le mot de passe"
                             onClick={() => setUserToResetPassword(user)}
                             className="p-2 rounded-lg bg-[#141414] hover:bg-[#202020] text-[#888888] hover:text-[#FFBF00] border border-[#242424] hover:border-[#FFBF00]/40 transition-colors"
                           >
                             <KeyRound className="w-4 h-4" />
-                          </button>
+                          </button></AdminAction>
 
                           {!isCurrent ? (
                             <>
                               {/* Bouton Bloquer / Débloquer rapide */}
-                              <button
+                              <AdminAction permission="users.edit"><button
                                 title={user.isSuspended ? "Débloquer le compte" : "Bloquer le compte"}
                                 onClick={() => {
                                   setUserToSuspend(user);
@@ -660,10 +666,10 @@ export default function UsersPage() {
                                 )}
                               >
                                 {user.isSuspended ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                              </button>
+                              </button></AdminAction>
 
                               {/* Bouton Supprimer rapide */}
-                              <button
+                              <AdminAction permission="users.delete"><button
                                 title="Supprimer définitivement ce compte"
                                 onClick={() => {
                                   setUserToDelete(user);
@@ -673,7 +679,7 @@ export default function UsersPage() {
                                 className="p-2 rounded-lg bg-[#141414] hover:bg-[#2A1517] text-[#888888] hover:text-[#EF4444] border border-[#242424] hover:border-red-900/40 transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
-                              </button>
+                              </button></AdminAction>
                             </>
                           ) : null}
                         </div>
@@ -783,31 +789,31 @@ export default function UsersPage() {
 
                 {/* Actions principales d'administration */}
                 <div className="mt-4 pt-4 border-t border-[#222222] space-y-2">
-                  <button
+                  <AdminAction permission="users.edit"><button
                     type="button"
                     onClick={() => setUserToEdit(selectedUser)}
                     className="w-full py-2.5 px-4 rounded-xl bg-[#FFBF00] hover:bg-[#E5AB00] text-black text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
                   >
                     <Edit3 className="w-4 h-4 text-black" />
                     <span>Modifier l&apos;utilisateur</span>
-                  </button>
+                  </button></AdminAction>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <Link
+                    <AdminPageAccess href={`/admin/users/${selectedUser.id}`}><Link
                       href={`/admin/users/${selectedUser.id}`}
                       className="py-2 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#2E2E2E] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <User className="w-3.5 h-3.5 text-[#FFBF00]" />
                       <span>Fiche Utilisateur</span>
-                    </Link>
-                    <button
+                    </Link></AdminPageAccess>
+                    <AdminAction permission="users.edit"><button
                       type="button"
                       onClick={() => setUserToResetPassword(selectedUser)}
                       className="py-2 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#2E2E2E] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <KeyRound className="w-3.5 h-3.5 text-[#FFBF00]" />
                       <span>Mot de passe</span>
-                    </button>
+                    </button></AdminAction>
                   </div>
                 </div>
               </div>
@@ -901,14 +907,14 @@ export default function UsersPage() {
                     );
                   })}
 
-                  <Button
+                  <AdminAction permission="users.edit"><Button
                     onClick={handleUpdateRoles}
                     disabled={isUpdating}
                     className="mt-1 bg-[#FFBF00] text-black hover:bg-[#E5AB00] font-bold text-xs py-2.5 rounded-xl"
                   >
                     {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                     Enregistrer les rôles de l'utilisateur
-                  </Button>
+                  </Button></AdminAction>
                 </div>
               </div>
 
@@ -935,7 +941,7 @@ export default function UsersPage() {
                       </p>
                     </div>
 
-                    <button
+                    <AdminAction permission="users.edit"><button
                       type="button"
                       onClick={handleToggleCertification}
                       disabled={isUpdating}
@@ -950,7 +956,7 @@ export default function UsersPage() {
                           isCreatorVerified ? "translate-x-5" : "translate-x-0"
                         )}
                       />
-                    </button>
+                    </button></AdminAction>
                   </div>
                 </div>
               </div>
@@ -1008,7 +1014,7 @@ export default function UsersPage() {
                     </div>
                   )}
 
-                  <Button
+                  <AdminAction permission="users.edit"><Button
                     onClick={handleToggleSuspension}
                     disabled={isUpdating || currentUser?.id === selectedUser.id}
                     className={classNames(
@@ -1020,7 +1026,7 @@ export default function UsersPage() {
                   >
                     {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                     {isSuspended ? "Débloquer le compte" : "Bloquer ce compte maintenant"}
-                  </Button>
+                  </Button></AdminAction>
                 </div>
 
                 {/* 2. Suppression Définitive */}
@@ -1039,7 +1045,7 @@ export default function UsersPage() {
                       Vous ne pouvez pas supprimer votre propre compte administrateur.
                     </div>
                   ) : (
-                    <Button
+                    <AdminAction permission="users.delete"><Button
                       onClick={() => {
                         setUserToDelete(selectedUser);
                         setDeleteConfirmationInput("");
@@ -1049,7 +1055,7 @@ export default function UsersPage() {
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Supprimer définitivement ce compte
-                    </Button>
+                    </Button></AdminAction>
                   )}
                 </div>
               </div>
@@ -1122,7 +1128,7 @@ export default function UsersPage() {
               >
                 Annuler
               </Button>
-              <Button
+              <AdminAction permission="users.delete"><Button
                 onClick={handleDeleteUser}
                 disabled={
                   isDeleting ||
@@ -1132,7 +1138,7 @@ export default function UsersPage() {
               >
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Trash2 className="w-4 h-4 mr-1.5" />}
                 {isDeleting ? "Suppression en cours..." : "Confirmer la suppression"}
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>
@@ -1214,7 +1220,7 @@ export default function UsersPage() {
               >
                 Annuler
               </Button>
-              <Button
+              <AdminAction permission="users.edit"><Button
                 onClick={handleQuickSuspendSubmit}
                 disabled={isQuickSuspending}
                 className={classNames(
@@ -1230,7 +1236,7 @@ export default function UsersPage() {
                   <Lock className="w-4 h-4 mr-1.5" />
                 )}
                 {userToSuspend.isSuspended ? "Débloquer le compte" : "Bloquer le compte"}
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>

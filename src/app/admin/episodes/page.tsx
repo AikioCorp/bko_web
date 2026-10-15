@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -132,13 +134,13 @@ export default function AdminEpisodesPage() {
             {total.toLocaleString("fr-FR")} épisode{total > 1 ? "s" : ""} sur l&apos;ensemble du catalogue.
           </p>
         </div>
-        <Link
+        <AdminPageAccess href="/admin/podcasts"><Link
           href="/admin/podcasts"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FFBF00] hover:bg-[#E5A800] text-black text-xs font-bold self-start sm:self-auto transition-colors"
         >
           <Plus className="w-4 h-4" />
           Ajouter via une émission
-        </Link>
+        </Link></AdminPageAccess>
       </div>
 
       {feedback && (
@@ -282,12 +284,12 @@ export default function AdminEpisodesPage() {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <Link
+                            <AdminPageAccess href={`/admin/episodes/${ep.id}`}><Link
                               href={`/admin/episodes/${ep.id}`}
                               className="font-bold text-white hover:text-[#FFBF00] truncate block max-w-[260px]"
                             >
                               {ep.title}
-                            </Link>
+                            </Link></AdminPageAccess>
                             {ep.isPremium && (
                               <span className="text-[10px] font-bold text-[#FFBF00]">PREMIUM</span>
                             )}
@@ -319,7 +321,7 @@ export default function AdminEpisodesPage() {
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-end gap-1.5">
                           {ep.status !== "PUBLISHED" && (
-                            <button
+                            <AdminAction permission="catalog.edit"><button
                               onClick={() => publish(ep)}
                               disabled={busyId === ep.id}
                               title="Publier"
@@ -330,7 +332,7 @@ export default function AdminEpisodesPage() {
                               ) : (
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                               )}
-                            </button>
+                            </button></AdminAction>
                           )}
                           {ep.podcast?.slug && ep.status === "PUBLISHED" && (
                             <Link
@@ -342,20 +344,20 @@ export default function AdminEpisodesPage() {
                               <Eye className="w-3.5 h-3.5" />
                             </Link>
                           )}
-                          <Link
+                          <AdminPageAccess href={`/admin/episodes/${ep.id}`}><Link
                             href={`/admin/episodes/${ep.id}`}
                             title="Modifier"
                             className="p-2 rounded-lg bg-[#1C1C1C] hover:bg-[#262626] text-[#FFBF00] transition-colors"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
-                          </Link>
-                          <button
+                          </Link></AdminPageAccess>
+                          <AdminAction permission="catalog.delete"><button
                             onClick={() => setToDelete(ep)}
                             title="Supprimer"
                             className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </button></AdminAction>
                         </div>
                       </td>
                     </tr>
@@ -409,14 +411,14 @@ export default function AdminEpisodesPage() {
               >
                 Annuler
               </button>
-              <button
+              <AdminAction permission="catalog.delete"><button
                 onClick={confirmDelete}
                 disabled={deleting}
                 className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-semibold text-white flex items-center gap-2 disabled:opacity-50 transition-colors"
               >
                 {deleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Supprimer
-              </button>
+              </button></AdminAction>
             </div>
           </div>
         </div>

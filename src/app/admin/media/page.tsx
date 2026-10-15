@@ -1,4 +1,5 @@
 "use client";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
@@ -512,13 +513,13 @@ export default function AdminMediaPage() {
                               </button>
 
                               {/* Supprimer */}
-                              <button
+                              <AdminAction permission="storage.edit"><button
                                 title="Supprimer ce fichier"
                                 onClick={() => setAssetToDelete(asset)}
                                 className="p-2 rounded-lg bg-[#141414] hover:bg-[#2A1517] text-[#888888] hover:text-[#EF4444] border border-[#242424] hover:border-red-900/40 transition-colors"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              </button></AdminAction>
                             </div>
                           </td>
                         </tr>
@@ -604,7 +605,7 @@ export default function AdminMediaPage() {
                       </span>
                     </div>
 
-                    <Button
+                    <AdminAction permission="storage.edit"><Button
                       size="sm"
                       onClick={() => handleRetryJob(job.id)}
                       disabled={retryingJobId === job.id}
@@ -612,7 +613,7 @@ export default function AdminMediaPage() {
                     >
                       {retryingJobId === job.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <RotateCcw className="w-3.5 h-3.5 mr-1.5" />}
                       Relancer la tâche
-                    </Button>
+                    </Button></AdminAction>
                   </div>
                 ))}
               </div>
@@ -633,7 +634,7 @@ export default function AdminMediaPage() {
               Saisissez l'URL d'un flux RSS distant (Anchor, Acast, Buzzsprout, etc.) pour vérifier sa conformité et ses métadonnées.
             </p>
 
-            <form onSubmit={handlePreviewRss} className="flex flex-col sm:flex-row gap-3 mb-6">
+            <AdminAction permission="catalog.create"><form onSubmit={handlePreviewRss} className="flex flex-col sm:flex-row gap-3 mb-6">
               <input
                 type="url"
                 required
@@ -650,7 +651,7 @@ export default function AdminMediaPage() {
                 {isCheckingRss ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
                 Analyser le flux
               </Button>
-            </form>
+            </form></AdminAction>
 
             {rssError && (
               <div className="p-4 rounded-xl bg-[#2E1417] border border-red-900/50 text-red-300 text-xs flex items-center gap-2.5">
@@ -786,7 +787,7 @@ export default function AdminMediaPage() {
               >
                 Fermer
               </Button>
-              <Button
+              <AdminAction permission="storage.edit"><Button
                 onClick={() => {
                   setAssetToDelete(previewAsset);
                   setPreviewAsset(null);
@@ -795,7 +796,7 @@ export default function AdminMediaPage() {
               >
                 <Trash2 className="w-4 h-4 mr-1.5" />
                 Supprimer
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>
@@ -838,14 +839,14 @@ export default function AdminMediaPage() {
               >
                 Annuler
               </Button>
-              <Button
+              <AdminAction permission="storage.edit"><Button
                 onClick={handleDeleteAsset}
                 disabled={isDeleting}
                 className="bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold px-4 py-2 rounded-xl"
               >
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Trash2 className="w-4 h-4 mr-1.5" />}
                 {isDeleting ? "Suppression..." : "Confirmer la suppression"}
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>

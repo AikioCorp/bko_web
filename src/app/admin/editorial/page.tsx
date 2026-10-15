@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -189,18 +191,18 @@ export default function EditorialListPage() {
             affichées sur l'accueil et la découverte.
           </p>
         </div>
-        <button
+        <AdminAction permission="catalog.edit"><button
           onClick={() => setIsCreating(true)}
           className="bg-white text-black px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 self-start sm:self-auto cursor-pointer shadow-sm"
         >
           <Plus className="w-4 h-4" />
           Nouvelle Section
-        </button>
+        </button></AdminAction>
       </div>
 
       {/* Create Section Modal / Form */}
       {isCreating && (
-        <form
+        <AdminAction permission="catalog.edit"><form
           onSubmit={handleCreate}
           className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-6 mb-8 shadow-xl space-y-4"
         >
@@ -255,7 +257,7 @@ export default function EditorialListPage() {
               {isSubmitting ? "Création..." : "Créer et configurer"}
             </button>
           </div>
-        </form>
+        </form></AdminAction>
       )}
 
       {/* Empty State */}
@@ -269,13 +271,13 @@ export default function EditorialListPage() {
             Créez votre première sélection pour mettre en avant vos meilleures
             émissions ou séries audio sur la page d'accueil.
           </p>
-          <button
+          <AdminAction permission="catalog.edit"><button
             onClick={() => setIsCreating(true)}
             className="bg-white text-black px-4 py-2 rounded-full font-semibold text-sm hover:bg-gray-100 transition-colors inline-flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Créer une section
-          </button>
+          </button></AdminAction>
         </div>
       ) : (
         <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl overflow-hidden shadow-sm">
@@ -317,7 +319,7 @@ export default function EditorialListPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-center gap-1">
-                        <button
+                        <AdminAction permission="catalog.edit"><button
                           type="button"
                           onClick={(e) => handleMoveSection(index, "up", e)}
                           disabled={index === 0}
@@ -325,8 +327,8 @@ export default function EditorialListPage() {
                           className="p-1 text-[#666666] hover:text-white hover:bg-[#2A2A2A] rounded disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
+                        </button></AdminAction>
+                        <AdminAction permission="catalog.edit"><button
                           type="button"
                           onClick={(e) => handleMoveSection(index, "down", e)}
                           disabled={index === sections.length - 1}
@@ -334,7 +336,7 @@ export default function EditorialListPage() {
                           className="p-1 text-[#666666] hover:text-white hover:bg-[#2A2A2A] rounded disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
-                        </button>
+                        </button></AdminAction>
                       </div>
                     </td>
 
@@ -391,7 +393,7 @@ export default function EditorialListPage() {
                       className="px-6 py-4"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <button
+                      <AdminAction permission="catalog.edit"><button
                         type="button"
                         onClick={(e) => handleToggleStatus(section, e)}
                         className={classNames(
@@ -412,7 +414,7 @@ export default function EditorialListPage() {
                               : "translate-x-0"
                           )}
                         />
-                      </button>
+                      </button></AdminAction>
                     </td>
 
                     {/* Actions: Edit, Delete */}
@@ -421,21 +423,21 @@ export default function EditorialListPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-end gap-2">
-                        <Link
+                        <AdminPageAccess href={`/admin/editorial/${section.id}`}><Link
                           href={`/admin/editorial/${section.id}`}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#2A2A2A] text-white hover:bg-[#333333] transition-colors"
                         >
                           Gérer
                           <ExternalLink className="w-3 h-3" />
-                        </Link>
-                        <button
+                        </Link></AdminPageAccess>
+                        <AdminAction permission="catalog.edit"><button
                           type="button"
                           onClick={(e) => handleDelete(section, e)}
                           className="p-1.5 text-[#888888] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                           title="Supprimer la section"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </button></AdminAction>
                       </div>
                     </td>
                   </tr>

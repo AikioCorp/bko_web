@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -41,7 +43,7 @@ const TABS = ["Épisodes", "Sources RSS", "Équipe", "Historique", "Informations
 export default function AdminPodcastDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
-  
+
   const [activeTab, setActiveTab] = useState("Épisodes");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -208,7 +210,7 @@ export default function AdminPodcastDetailsPage() {
     const drafts = episodes.filter((ep: any) => ep.status === "DRAFT");
     const ids = drafts.map((ep: any) => ep.id);
     if (ids.length === 0) return;
-    
+
     setIsBulkPublishing(true);
     try {
       const res = await adminApi("/admin/episodes/bulk-publish", {
@@ -247,7 +249,7 @@ export default function AdminPodcastDetailsPage() {
     try {
       const res = await adminApi(`/admin/podcasts/${id}/episodes`, {
         method: "POST",
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           title: newEpisodeTitle.trim(),
           description: newEpisodeDescription.trim() || undefined,
           url: newEpisodeUrl.trim() || undefined
@@ -285,9 +287,9 @@ export default function AdminPodcastDetailsPage() {
       <div className="w-full flex flex-col items-center justify-center py-32 text-center text-white">
         <p className="text-lg font-bold mb-2">Podcast introuvable</p>
         <p className="text-sm text-[#757575] mb-6">{error?.message || "Ce podcast n'existe pas ou a été supprimé."}</p>
-        <Link href="/admin/podcasts" className="text-[#FFBF00] text-sm font-semibold hover:underline">
+        <AdminPageAccess href="/admin/podcasts"><Link href="/admin/podcasts" className="text-[#FFBF00] text-sm font-semibold hover:underline">
           Retour aux podcasts
-        </Link>
+        </Link></AdminPageAccess>
       </div>
     );
   }
@@ -340,7 +342,7 @@ export default function AdminPodcastDetailsPage() {
 
   return (
     <div className="w-full flex flex-col pb-32 text-white relative">
-      
+
       {showDeleteModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}>
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6 w-full max-w-md shadow-2xl relative" onClick={e => e.stopPropagation()}>
@@ -353,10 +355,10 @@ export default function AdminPodcastDetailsPage() {
             </p>
             <div className="flex items-center justify-end gap-3">
               <Button variant="ghost" className="text-[#B8B8B8] hover:text-white" onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>Annuler</Button>
-              <Button className="bg-red-500 hover:bg-red-600 text-white font-bold" onClick={handleDelete} disabled={isDeleting}>
+              <AdminAction permission="catalog.delete"><Button className="bg-red-500 hover:bg-red-600 text-white font-bold" onClick={handleDelete} disabled={isDeleting}>
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
                 Oui, supprimer
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         </div>
@@ -391,10 +393,10 @@ export default function AdminPodcastDetailsPage() {
               });
               setHasUnsavedChanges(false);
             }}>Annuler les modifications</Button>
-            <Button className="bg-[#FFBF00] text-[#0B0B0B] hover:bg-[#E5AB00] font-bold" onClick={handleSave} disabled={isSaving}>
+            <AdminAction permission="catalog.edit"><Button className="bg-[#FFBF00] text-[#0B0B0B] hover:bg-[#E5AB00] font-bold" onClick={handleSave} disabled={isSaving}>
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Enregistrer
-            </Button>
+            </Button></AdminAction>
           </div>
         </div>
       )}
@@ -402,9 +404,9 @@ export default function AdminPodcastDetailsPage() {
       {/* Top Header & Back Link */}
       <div className="space-y-6 mb-6">
         <div>
-          <Link href="/admin/podcasts" className="inline-flex items-center text-sm font-semibold text-[#757575] hover:text-[#FFBF00] transition-colors">
+          <AdminPageAccess href="/admin/podcasts"><Link href="/admin/podcasts" className="inline-flex items-center text-sm font-semibold text-[#757575] hover:text-[#FFBF00] transition-colors">
             <ChevronLeft className="w-4 h-4 mr-1" /> Retour aux podcasts
-          </Link>
+          </Link></AdminPageAccess>
         </div>
 
         {/* Podcast Identity Header */}
@@ -430,7 +432,7 @@ export default function AdminPodcastDetailsPage() {
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {podcast.status === "PUBLISHED" && (
               <Link href={`/podcasts/${podcast.slug}`}>
@@ -439,9 +441,9 @@ export default function AdminPodcastDetailsPage() {
                 </Button>
               </Link>
             )}
-            <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" onClick={handleSave} disabled={isSaving || !hasUnsavedChanges}>
+            <AdminAction permission="catalog.edit"><Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold" onClick={handleSave} disabled={isSaving || !hasUnsavedChanges}>
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Enregistrer"}
-            </Button>
+            </Button></AdminAction>
           </div>
         </div>
       </div>
@@ -455,8 +457,8 @@ export default function AdminPodcastDetailsPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`pb-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-                isActive 
-                  ? "border-[#FFBF00] text-white" 
+                isActive
+                  ? "border-[#FFBF00] text-white"
                   : "border-transparent text-[#757575] hover:text-white"
               }`}
             >
@@ -468,7 +470,7 @@ export default function AdminPodcastDetailsPage() {
 
       {/* Tab Content */}
       <div className="animate-fade-in">
-        
+
         {/* ONGLET: INFORMATIONS */}
         {activeTab === "Informations" && (
           <div className="flex flex-col lg:flex-row gap-6">
@@ -478,16 +480,16 @@ export default function AdminPodcastDetailsPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-base font-bold text-white">Informations de l'émission</h2>
                   {!isEditingInfo ? (
-                    <Button variant="outline" className="h-8 text-xs bg-[#0B0B0B] border-[#2A2A2A] text-white hover:bg-[#262626]" onClick={() => setIsEditingInfo(true)}>
+                    <AdminAction permission="catalog.edit"><Button variant="outline" className="h-8 text-xs bg-[#0B0B0B] border-[#2A2A2A] text-white hover:bg-[#262626]" onClick={() => setIsEditingInfo(true)}>
                       <Edit3 className="w-3.5 h-3.5 mr-2" /> Modifier
-                    </Button>
+                    </Button></AdminAction>
                   ) : (
                     <Button variant="ghost" className="h-8 text-xs text-[#757575] hover:text-white hover:bg-transparent" onClick={() => setIsEditingInfo(false)}>
                       Annuler
                     </Button>
                   )}
                 </div>
-                
+
                 {podcast.origin === "Flux RSS" && (
                   <div className="mb-6 bg-[#262626]/50 border border-[#2A2A2A] rounded-lg p-3 flex items-start gap-3">
                     <RssIcon className="w-5 h-5 text-[#FFBF00] shrink-0 mt-0.5" />
@@ -512,7 +514,7 @@ export default function AdminPodcastDetailsPage() {
                       <p className="text-xs font-bold text-[#757575] uppercase mb-1">Description complète</p>
                       <p className="text-sm text-white whitespace-pre-wrap">{raw.description || "-"}</p>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <p className="text-xs font-bold text-[#757575] uppercase mb-1">Langue</p>
@@ -557,7 +559,7 @@ export default function AdminPodcastDetailsPage() {
                       <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Description complète</label>
                       <textarea rows={5} value={editData.description || ""} onChange={e => handleChange("description", e.target.value)} className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white resize-none" />
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Langue</label>
@@ -642,10 +644,10 @@ export default function AdminPodcastDetailsPage() {
                 </div>
                 {podcast.status === "DRAFT" && (
                   <div className="pt-4 mt-4 border-t border-[#2A2A2A]">
-                    <Button onClick={handlePublish} disabled={isSaving} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold">
+                    <AdminAction permission="catalog.edit"><Button onClick={handlePublish} disabled={isSaving} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold">
                       {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                       Publier le podcast
-                    </Button>
+                    </Button></AdminAction>
                   </div>
                 )}
               </div>
@@ -660,7 +662,7 @@ export default function AdminPodcastDetailsPage() {
             <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
               <h2 className="text-base font-bold text-white mb-2">Paramètres du podcast</h2>
               <p className="text-sm text-[#757575] mb-6">Gérez les configurations avancées du podcast.</p>
-              
+
               <div className="space-y-6">
                 <div>
                   <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Propriétaire (Organisation)</label>
@@ -698,7 +700,7 @@ export default function AdminPodcastDetailsPage() {
             <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
               <h2 className="text-base font-bold text-white mb-2">Redirection (301)</h2>
               <p className="text-sm text-[#757575] mb-6">Redirigez temporairement ou définitivement le trafic de ce podcast vers une autre URL.</p>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-[#757575] uppercase mb-2">URL de redirection (Optionnel)</label>
@@ -712,9 +714,9 @@ export default function AdminPodcastDetailsPage() {
             <div className="bg-[#1A0B0B] border border-[#3A1010] rounded-xl p-6">
               <h2 className="text-base font-bold text-red-500 mb-2">Zone de danger</h2>
               <p className="text-xs text-[#B8B8B8] mb-4">La suppression définitive retirera ce podcast et tous ses épisodes de la base de données. Cette action est irréversible.</p>
-              <Button variant="destructive" className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-colors" onClick={() => setShowDeleteModal(true)}>
+              <AdminAction permission="catalog.delete"><Button variant="destructive" className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-colors" onClick={() => setShowDeleteModal(true)}>
                 <Trash2 className="w-4 h-4 mr-2" /> Supprimer définitivement
-              </Button>
+              </Button></AdminAction>
             </div>
           </div>
         )}
@@ -722,7 +724,7 @@ export default function AdminPodcastDetailsPage() {
         {/* ONGLET: ÉPISODES */}
         {activeTab === "Épisodes" && (
           <div className="space-y-6 relative">
-            
+
             {showNewEpisodeModal && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowNewEpisodeModal(false)}>
                 <form className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6 w-full max-w-md shadow-2xl relative" onClick={e => e.stopPropagation()} onSubmit={handleCreateEpisode}>
@@ -730,14 +732,14 @@ export default function AdminPodcastDetailsPage() {
                   <p className="text-sm text-[#B8B8B8] mb-6">
                     Saisissez un lien YouTube ou Spotify pour importer automatiquement les informations.
                   </p>
-                  
+
                   <div className="mb-4">
                     <label className="block text-xs font-bold text-[#757575] uppercase mb-2">Lien (optionnel)</label>
                     <div className="flex items-center gap-2">
                       <input type="text" value={newEpisodeUrl} onChange={e => setNewEpisodeUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="flex-1 bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white" />
-                      <Button type="button" variant="outline" onClick={handleFetchPreview} disabled={!newEpisodeUrl || isFetchingPreview} className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]">
+                      <AdminAction permission="catalog.edit"><Button type="button" variant="outline" onClick={handleFetchPreview} disabled={!newEpisodeUrl || isFetchingPreview} className="border-[#2A2A2A] text-white hover:bg-[#2A2A2A]">
                         {isFetchingPreview ? <Loader2 className="w-4 h-4 animate-spin" /> : "Importer"}
-                      </Button>
+                      </Button></AdminAction>
                     </div>
                   </div>
 
@@ -768,18 +770,18 @@ export default function AdminPodcastDetailsPage() {
               </div>
               <div className="flex gap-2">
                   {episodes?.some((ep: any) => ep.status === "DRAFT") && (
-                    <Button 
+                    <AdminAction permission="catalog.edit"><Button
                       onClick={handleBulkPublish}
                       disabled={isBulkPublishing}
                       className="bg-green-600 hover:bg-green-700 text-white font-bold"
                     >
                       {isBulkPublishing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                       Publier les brouillons ({episodes.filter((ep: any) => ep.status === "DRAFT").length})
-                    </Button>
+                    </Button></AdminAction>
                   )}
-                  <Button onClick={() => router.push(`/admin/podcasts/${id}/episodes/new`)} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
+                  <AdminAction permission="catalog.create"><Button onClick={() => router.push(`/admin/podcasts/${id}/episodes/new`)} className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
                 Ajouter un épisode <Plus className="w-4 h-4 ml-2" />
-              </Button>
+              </Button></AdminAction>
                 </div>
             </div>
 
@@ -835,11 +837,11 @@ export default function AdminPodcastDetailsPage() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2 transition-opacity">
-                              <Link href={`/admin/episodes/${ep.slug || ep.id}`}>
+                              <AdminPageAccess href={`/admin/episodes/${ep.slug || ep.id}`}><Link href={`/admin/episodes/${ep.slug || ep.id}`}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-[#757575] hover:text-white hover:bg-[#2A2A2A]">
                                   <Edit3 className="w-4 h-4" />
                                 </Button>
-                              </Link>
+                              </Link></AdminPageAccess>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -875,7 +877,7 @@ export default function AdminPodcastDetailsPage() {
                   </span>
                 )}
               </div>
-              
+
               {raw.rssFeed ? (
                 <div className="space-y-6">
                   {/* Adresse et état de connexion */}
@@ -938,7 +940,7 @@ export default function AdminPodcastDetailsPage() {
 
                   {/* Actions de gestion du flux */}
                   <div className="flex flex-wrap items-center gap-3">
-                    <Button 
+                    <AdminAction permission="catalog.edit"><Button
                       className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-9 px-4"
                       onClick={async () => {
                         alert("Synchronisation immédiate lancée en tâche de fond...");
@@ -946,23 +948,23 @@ export default function AdminPodcastDetailsPage() {
                       }}
                     >
                       <RefreshCw className="w-3.5 h-3.5 mr-2" /> Synchroniser maintenant
-                    </Button>
-                    <Button 
-                      variant="outline" 
+                    </Button></AdminAction>
+                    <AdminAction permission="catalog.edit"><Button
+                      variant="outline"
                       className="bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#222222] text-white text-xs h-9"
                       onClick={() => alert("Modification des réglages de scrutation et publication automatique.")}
                     >
                       Modifier les réglages
-                    </Button>
-                    <Button 
-                      variant="outline" 
+                    </Button></AdminAction>
+                    <AdminAction permission="catalog.edit"><Button
+                      variant="outline"
                       className="bg-[#0B0B0B] border-[#2A2A2A] hover:bg-[#222222] text-amber-400 text-xs h-9"
                       onClick={() => alert("La synchronisation automatique a été suspendue.")}
                     >
                       <PauseCircle className="w-3.5 h-3.5 mr-1.5" /> Suspendre la synchronisation
-                    </Button>
-                    <Button 
-                      variant="outline" 
+                    </Button></AdminAction>
+                    <AdminAction permission="catalog.edit"><Button
+                      variant="outline"
                       className="bg-[#0B0B0B] border-red-500/20 hover:bg-red-500/10 text-red-400 text-xs h-9"
                       onClick={async () => {
                         if (confirm("Déconnecter le flux conserve tous les épisodes déjà importés sur Bamako Podcast, mais arrêtera définitivement leur mise à jour automatique. Voulez-vous continuer ?")) {
@@ -971,7 +973,7 @@ export default function AdminPodcastDetailsPage() {
                       }}
                     >
                       <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Déconnecter le flux
-                    </Button>
+                    </Button></AdminAction>
                   </div>
 
                   {/* Avertissement explicite sur la déconnexion */}
@@ -1030,12 +1032,12 @@ export default function AdminPodcastDetailsPage() {
                       Cette émission est actuellement gérée manuellement. Vous pouvez connecter un flux RSS existant pour synchroniser automatiquement les futurs épisodes.
                     </p>
                   </div>
-                  <Button 
+                  <AdminAction permission="catalog.create"><Button
                     onClick={() => router.push("/admin/podcasts/import-rss")}
                     className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-10 px-5 mt-2"
                   >
                     Connecter un flux RSS
-                  </Button>
+                  </Button></AdminAction>
                 </div>
               )}
             </div>
@@ -1093,7 +1095,7 @@ export default function AdminPodcastDetailsPage() {
           <div className="space-y-6 max-w-4xl">
             <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl p-6">
               <h2 className="text-base font-bold text-white mb-6">Historique des modifications</h2>
-              
+
               <div className="relative pl-6 border-l border-[#2A2A2A] space-y-8">
                 <div className="relative">
                   <div className="absolute -left-[31px] bg-[#0B0B0B] p-1 rounded-full">
@@ -1102,7 +1104,7 @@ export default function AdminPodcastDetailsPage() {
                   <p className="text-sm font-bold text-white mb-1">Dernière mise à jour</p>
                   <p className="text-xs text-[#757575]">{new Date(raw.updatedAt).toLocaleString('fr-FR')}</p>
                 </div>
-                
+
                 <div className="relative">
                   <div className="absolute -left-[31px] bg-[#0B0B0B] p-1 rounded-full">
                     <div className="w-3 h-3 bg-[#2A2A2A] rounded-full" />

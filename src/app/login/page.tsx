@@ -194,6 +194,16 @@ function AuthComponent() {
         const decision = resolvePostAuthDecision(json.data.user, redirect);
         router.push(decision.path);
       } else {
+        if (json.error?.code === "ACCOUNT_SUSPENDED") {
+          const details = json.error.details || {};
+          sessionStorage.setItem("bko_suspended_details", JSON.stringify(details));
+          localStorage.setItem("bko_suspended_profile", JSON.stringify(details));
+          if (details.supportToken) {
+            localStorage.setItem("bko_support_token", details.supportToken);
+          }
+          router.push("/suspended");
+          return;
+        }
         setError(json.message || "Identifiant ou mot de passe incorrect.");
       }
     } catch (err: any) {
@@ -276,6 +286,16 @@ function AuthComponent() {
         const decision = resolvePostAuthDecision(json.data.user, redirect);
         router.push(decision.path);
       } else {
+        if (json.error?.code === "ACCOUNT_SUSPENDED") {
+          const details = json.error.details || {};
+          sessionStorage.setItem("bko_suspended_details", JSON.stringify(details));
+          localStorage.setItem("bko_suspended_profile", JSON.stringify(details));
+          if (details.supportToken) {
+            localStorage.setItem("bko_support_token", details.supportToken);
+          }
+          router.push("/suspended");
+          return;
+        }
         setError(json.message || "Code incorrect ou expiré.");
       }
     } catch (err: any) {

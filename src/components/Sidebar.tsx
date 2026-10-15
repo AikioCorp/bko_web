@@ -24,7 +24,7 @@ import { useAuthStore } from "@/store/authStore";
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
-  const { hasConsole } = useConsoleAccess();
+  const { hasConsole, landing } = useConsoleAccess();
   const { user, isAuthenticated } = useAuthStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -40,7 +40,7 @@ export const Sidebar: React.FC = () => {
     user?.permissions?.includes("publish:episodes")
   );
 
-  const showConsole = hasConsole || isAdmin;
+  const showConsole = hasConsole;
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Navigation Principale (Sobre, épurée, sans gros pavé de monétisation en tête)
@@ -86,7 +86,7 @@ export const Sidebar: React.FC = () => {
     ),
     // Console d'administration
     ...(showConsole
-      ? [{ label: "Console d'administration", href: "/admin/dashboard", icon: ShieldCheck, exact: false }]
+      ? [{ label: "Console d'administration", href: landing, icon: ShieldCheck, exact: false }]
       : []
     ),
   ];

@@ -1,4 +1,5 @@
 "use client";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState } from "react";
 import useSWR from "swr";
@@ -215,13 +216,13 @@ export default function AdminSubscriptionsPage() {
           </p>
         </div>
 
-        <Button
+        <AdminAction permission="subscriptions.create"><Button
           onClick={handleOpenCreate}
           className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs rounded-xl shadow-sm flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
           <span>Nouvelle Formule</span>
-        </Button>
+        </Button></AdminAction>
       </div>
 
       {/* Notifications */}
@@ -296,7 +297,7 @@ export default function AdminSubscriptionsPage() {
                   </div>
 
                   {/* Badge statut visibilité */}
-                  <button
+                  <AdminAction permission="subscriptions.edit"><button
                     onClick={() => handleToggleActive(plan)}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
                       plan.isActive
@@ -316,7 +317,7 @@ export default function AdminSubscriptionsPage() {
                         <span>Masqué</span>
                       </>
                     )}
-                  </button>
+                  </button></AdminAction>
                 </div>
 
                 {/* Prix et récurrence */}
@@ -369,7 +370,7 @@ export default function AdminSubscriptionsPage() {
 
               {/* Actions de bas de carte */}
               <div className="pt-5 mt-5 border-t border-[#1F1F1F] flex items-center justify-between gap-2">
-                <button
+                <AdminAction permission="subscriptions.edit"><button
                   type="button"
                   onClick={() => handleToggleActive(plan)}
                   className="text-xs font-semibold text-[#888888] hover:text-white flex items-center gap-1.5"
@@ -385,23 +386,23 @@ export default function AdminSubscriptionsPage() {
                       <span>Publier</span>
                     </>
                   )}
-                </button>
+                </button></AdminAction>
 
                 <div className="flex items-center gap-2">
-                  <button
+                  <AdminAction permission="subscriptions.edit"><button
                     onClick={() => handleOpenEdit(plan)}
                     className="p-2 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-[#CCCCCC] hover:text-white transition-colors"
                     title="Modifier la formule"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
+                  </button></AdminAction>
+                  <AdminAction permission="subscriptions.delete"><button
                     onClick={() => handleDeletePlan(plan)}
                     className="p-2 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-900/60 text-red-400 hover:text-red-300 transition-colors"
                     title="Supprimer la formule"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  </button></AdminAction>
                 </div>
               </div>
             </div>
@@ -414,12 +415,12 @@ export default function AdminSubscriptionsPage() {
           <p className="text-xs text-[#888888] max-w-md mx-auto">
             Créez votre première offre d'abonnement pour permettre à vos auditeurs de soutenir le média et d'écouter en illimité.
           </p>
-          <Button
+          <AdminAction permission="subscriptions.create"><Button
             onClick={handleOpenCreate}
             className="bg-[#FFBF00] text-[#0B0B0B] font-bold text-xs"
           >
             Créer un Pass Premium
-          </Button>
+          </Button></AdminAction>
         </div>
       )}
 
@@ -444,7 +445,7 @@ export default function AdminSubscriptionsPage() {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+            <AdminAction permission={editingPlan ? "subscriptions.edit" : "subscriptions.create"}><form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Nom & Slug */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -603,7 +604,7 @@ export default function AdminSubscriptionsPage() {
                   {isSaving ? "Enregistrement..." : editingPlan ? "Mettre à jour" : "Créer la formule"}
                 </Button>
               </div>
-            </form>
+            </form></AdminAction>
           </div>
         </div>
       )}

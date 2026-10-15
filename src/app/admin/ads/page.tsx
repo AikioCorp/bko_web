@@ -1,12 +1,13 @@
 "use client";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState } from "react";
 import useSWR, { mutate } from "swr";
 import Image from "next/image";
 import { fetchApi } from "@/lib/api";
-import { 
-  Megaphone, Plus, Eye, MousePointerClick, TrendingUp, 
-  Calendar, CheckCircle2, AlertCircle, X, Trash2, 
+import {
+  Megaphone, Plus, Eye, MousePointerClick, TrendingUp,
+  Calendar, CheckCircle2, AlertCircle, X, Trash2,
   ExternalLink, Mail, Phone, Building2, Clock, Check, RefreshCw
 } from "lucide-react";
 
@@ -153,13 +154,13 @@ export default function AdminAdsPage() {
             Gérez les emplacements commerciaux d'Explorer, analysez les performances et traitez les demandes annonceurs.
           </p>
         </div>
-        <button
+        <AdminAction permission="ads.create"><button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FFBF00] text-[#0B0B0B] font-bold text-xs hover:bg-[#e6ac00] transition-colors shadow-sm self-start sm:self-auto shrink-0"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           Nouvelle Campagne
-        </button>
+        </button></AdminAction>
       </div>
 
       {/* KPI Stats Grid */}
@@ -248,12 +249,12 @@ export default function AdminAdsPage() {
               <p className="text-xs text-[#757575]">
                 Créez une première bannière sponsorisée pour les emplacements de découverte.
               </p>
-              <button
+              <AdminAction permission="ads.create"><button
                 onClick={() => setIsModalOpen(true)}
                 className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FFBF00] text-[#0B0B0B] font-bold text-xs"
               >
                 <Plus className="w-3.5 h-3.5" /> Créer une campagne
-              </button>
+              </button></AdminAction>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
@@ -354,7 +355,7 @@ export default function AdminAdsPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <button
+                        <AdminAction permission="ads.edit"><button
                           onClick={() => toggleCampaignStatus(camp.id, camp.status)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                             camp.status === "ACTIVE"
@@ -363,14 +364,14 @@ export default function AdminAdsPage() {
                           }`}
                         >
                           {camp.status === "ACTIVE" ? "Suspendre" : "Activer"}
-                        </button>
-                        <button
+                        </button></AdminAction>
+                        <AdminAction permission="ads.delete"><button
                           onClick={() => deleteCampaign(camp.id)}
                           className="p-1.5 text-[#666666] hover:text-red-400 transition-colors"
                           title="Supprimer"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </button></AdminAction>
                       </div>
                     </div>
                   </div>
@@ -457,20 +458,20 @@ export default function AdminAdsPage() {
 
                     <div className="flex items-center gap-1.5">
                       {inq.status === "PENDING" && (
-                        <button
+                        <AdminAction permission="ads.edit"><button
                           onClick={() => updateInquiryStatus(inq.id, "CONTACTED")}
                           className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs font-semibold transition-colors"
                         >
                           Marquer contacté
-                        </button>
+                        </button></AdminAction>
                       )}
                       {inq.status !== "ARCHIVED" && (
-                        <button
+                        <AdminAction permission="ads.edit"><button
                           onClick={() => updateInquiryStatus(inq.id, "ARCHIVED")}
                           className="px-2.5 py-1 rounded-lg bg-[#222222] text-[#888888] hover:text-white text-xs transition-colors"
                         >
                           Archiver
-                        </button>
+                        </button></AdminAction>
                       )}
                     </div>
                   </div>
@@ -505,7 +506,7 @@ export default function AdminAdsPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateCampaign} className="space-y-4 text-xs">
+            <AdminAction permission="ads.create"><form onSubmit={handleCreateCampaign} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="font-semibold text-[#A0A0A0]">Nom de l'Annonceur *</label>
@@ -659,7 +660,7 @@ export default function AdminAdsPage() {
                   {isSubmitting ? "Enregistrement..." : "Créer et diffuser"}
                 </button>
               </div>
-            </form>
+            </form></AdminAction>
           </div>
         </div>
       )}

@@ -10,7 +10,7 @@ import { useAuthStore } from "@/store/authStore";
 type Notif = { id: string; type: string; title: string; body?: string | null; link?: string | null; readAt?: string | null; createdAt: string };
 
 /** Cloche de notifications : compteur de non-lues (interrogé toutes les 60 s) et liste déroulante. */
-export function NotificationBell({ align = "right" }: { align?: "right" | "left" }) {
+export function NotificationBell({ align = "right", allHref = "/notifications" }: { align?: "right" | "left"; allHref?: string }) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
@@ -34,9 +34,10 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
     if (!isAuthenticated) return;
     try {
       const res = await studioApi<{ unread: number }>("/me/notifications/unread-count");
+      if(useAuthStore.getState().user?.id!==user?.id)return;
       setUnread(res.unread ?? 0);
     } catch {}
-  }, [isAuthenticated]);
+  }, [isAuthenticated,user?.id]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -67,6 +68,7 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
     if (next) {
       try {
         const r = await studioApi<{ items: Notif[]; unread: number }>("/me/notifications?limit=10");
+        if(useAuthStore.getState().user?.id!==user?.id)return;
         setItems(r.items);
         setUnread(r.unread);
       } catch {
@@ -190,7 +192,7 @@ export function NotificationBell({ align = "right" }: { align?: "right" | "left"
               ))
             )}
           </div>
-          <Link href="/notifications" onClick={() => setOpen(false)} className="block text-center text-xs font-bold text-[#FFBF00] py-3 hover:bg-[#1A1A1A]">
+          <Link href={allHref} onClick={() => setOpen(false)} className="block text-center text-xs font-bold text-[#FFBF00] py-3 hover:bg-[#1A1A1A]">
             Voir toutes les notifications
           </Link>
         </div>

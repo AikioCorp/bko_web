@@ -1,22 +1,23 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { gsap } from "gsap";
-import { 
-  Users, 
-  AlertTriangle, 
-  Radio, 
-  HardDrive, 
-  ShieldAlert, 
-  Activity, 
-  Loader2, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  CheckCircle2, 
-  ChevronRight, 
-  Clock, 
+import {
+  Users,
+  AlertTriangle,
+  Radio,
+  HardDrive,
+  ShieldAlert,
+  Activity,
+  Loader2,
+  ArrowUpRight,
+  ArrowDownRight,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
   FileText,
   RefreshCw
 } from "lucide-react";
@@ -175,9 +176,9 @@ export default function AdminDashboardPage() {
             size="sm"
             className="h-9 px-3.5 bg-[#FFBF00] hover:bg-[#E5A800] text-[#0E0E0E] text-xs font-bold"
           >
-            <Link href="/admin/episodes">
+            <AdminPageAccess href="/admin/episodes"><Link href="/admin/episodes">
               Modérer ({totalPending})
-            </Link>
+            </Link></AdminPageAccess>
           </Button>
         </div>
       </div>
@@ -185,7 +186,7 @@ export default function AdminDashboardPage() {
       {/* KPI Cards Grid - Level 1 Metric Hierarchy */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Active Listeners */}
-        <Link href="/admin/analytics" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] rounded-xl">
+        <AdminPageAccess href="/admin/analytics"><Link href="/admin/analytics" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] rounded-xl">
           <Card className="bg-[#111111] border-[#222222] hover:border-[#333333] hover:bg-[#141414] transition-colors p-4 h-full">
             <div className="flex items-center justify-between pb-2">
               <span className="text-xs font-medium text-[#888888] uppercase tracking-wider">Auditeurs actifs (24h)</span>
@@ -203,10 +204,10 @@ export default function AdminDashboardPage() {
               <span className="text-[#666666]">écoutes (7 jours)</span>
             </div>
           </Card>
-        </Link>
+        </Link></AdminPageAccess>
 
         {/* KPI 2: Published Episodes */}
-        <Link href="/admin/episodes" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] rounded-xl">
+        <AdminPageAccess href="/admin/episodes"><Link href="/admin/episodes" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] rounded-xl">
           <Card className="bg-[#111111] border-[#222222] hover:border-[#333333] hover:bg-[#141414] transition-colors p-4 h-full">
             <div className="flex items-center justify-between pb-2">
               <span className="text-xs font-medium text-[#888888] uppercase tracking-wider">Épisodes en ligne</span>
@@ -223,13 +224,13 @@ export default function AdminDashboardPage() {
               <span className="text-[#666666]">cette semaine</span>
             </div>
           </Card>
-        </Link>
+        </Link></AdminPageAccess>
 
         {/* KPI 3: Open Reports */}
-        <Link href="/admin/reports" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] rounded-xl">
+        <AdminPageAccess href="/admin/reports"><Link href="/admin/reports" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] rounded-xl">
           <Card className={`p-4 h-full transition-colors border ${
-            kpis.openReports > 0 
-              ? "bg-[#141010] border-red-900/40 hover:border-red-700/60" 
+            kpis.openReports > 0
+              ? "bg-[#141010] border-red-900/40 hover:border-red-700/60"
               : "bg-[#111111] border-[#222222] hover:border-[#333333] hover:bg-[#141414]"
           }`}>
             <div className="flex items-center justify-between pb-2">
@@ -250,10 +251,10 @@ export default function AdminDashboardPage() {
               {kpis.openReports > 0 ? "Modération en attente de décision" : "Aucun litige actif"}
             </div>
           </Card>
-        </Link>
+        </Link></AdminPageAccess>
 
         {/* KPI 4: Cloud Storage & System Health */}
-        <Link href="/admin/media" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] rounded-xl">
+        <AdminPageAccess href="/admin/media"><Link href="/admin/media" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] rounded-xl">
           <Card className="bg-[#111111] border-[#222222] hover:border-[#333333] hover:bg-[#141414] transition-colors p-4 h-full">
             <div className="flex items-center justify-between pb-2">
               <span className="text-xs font-medium text-[#888888] uppercase tracking-wider">Stockage Médias</span>
@@ -271,12 +272,12 @@ export default function AdminDashboardPage() {
               {kpis.pendingCreatorAccess} demande(s) créateur en attente
             </div>
           </Card>
-        </Link>
+        </Link></AdminPageAccess>
       </div>
 
       {/* Level 2: Moderation Priority Queue & Operational Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Left 2 Cols: Moderation & System Health */}
         <div className="lg:col-span-2 space-y-6">
           {/* Moderation Fast Queue */}
@@ -290,10 +291,10 @@ export default function AdminDashboardPage() {
                 <p className="text-xs text-[#888888] mt-0.5">Contenus soumis nécessitant une revue avant diffusion.</p>
               </div>
               <Button asChild variant="ghost" size="sm" className="text-xs text-[#AAAAAA] hover:text-white hover:bg-[#1A1A1A]">
-                <Link href="/admin/episodes">
+                <AdminPageAccess href="/admin/episodes"><Link href="/admin/episodes">
                   Voir tout ({totalPending})
                   <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                </Link>
+                </Link></AdminPageAccess>
               </Button>
             </div>
 
@@ -304,7 +305,7 @@ export default function AdminDashboardPage() {
                   <div className="text-xl font-bold text-white mt-1">{pendingReview?.episodes || 0}</div>
                 </div>
                 <Button asChild size="sm" className="h-8 bg-[#202020] hover:bg-[#2A2A2A] text-white border border-[#333333] text-xs">
-                  <Link href="/admin/episodes">Examiner</Link>
+                  <AdminPageAccess href="/admin/episodes"><Link href="/admin/episodes">Examiner</Link></AdminPageAccess>
                 </Button>
               </div>
 
@@ -314,7 +315,7 @@ export default function AdminDashboardPage() {
                   <div className="text-xl font-bold text-white mt-1">{pendingReview?.podcasts || 0}</div>
                 </div>
                 <Button asChild size="sm" className="h-8 bg-[#202020] hover:bg-[#2A2A2A] text-white border border-[#333333] text-xs">
-                  <Link href="/admin/podcasts">Examiner</Link>
+                  <AdminPageAccess href="/admin/podcasts"><Link href="/admin/podcasts">Examiner</Link></AdminPageAccess>
                 </Button>
               </div>
             </div>
@@ -410,41 +411,41 @@ export default function AdminDashboardPage() {
           <div className="bg-[#111111] border border-[#222222] rounded-xl p-5">
             <h2 className="text-base font-semibold text-white mb-1">Raccourcis de Gestion</h2>
             <p className="text-xs text-[#888888] mb-4">Accès direct aux modules d'exploitation.</p>
-            
+
             <div className="space-y-2.5">
               <Button asChild className="w-full justify-start bg-[#161616] hover:bg-[#202020] text-white border border-[#262626] h-10 text-xs font-medium">
-                <Link href="/admin/episodes">
+                <AdminPageAccess href="/admin/episodes"><Link href="/admin/episodes">
                   <Radio className="w-4 h-4 mr-2.5 text-emerald-400" />
                   Gérer les épisodes ({kpis.episodesPublished})
-                </Link>
+                </Link></AdminPageAccess>
               </Button>
 
               <Button asChild className="w-full justify-start bg-[#161616] hover:bg-[#202020] text-white border border-[#262626] h-10 text-xs font-medium">
-                <Link href="/admin/reports">
+                <AdminPageAccess href="/admin/reports"><Link href="/admin/reports">
                   <AlertTriangle className="w-4 h-4 mr-2.5 text-red-400" />
                   Modérer les signalements ({kpis.openReports})
-                </Link>
+                </Link></AdminPageAccess>
               </Button>
 
               <Button asChild className="w-full justify-start bg-[#161616] hover:bg-[#202020] text-white border border-[#262626] h-10 text-xs font-medium">
-                <Link href="/admin/users">
+                <AdminPageAccess href="/admin/users"><Link href="/admin/users">
                   <Users className="w-4 h-4 mr-2.5 text-[#38BDF8]" />
                   Répertoire utilisateurs
-                </Link>
+                </Link></AdminPageAccess>
               </Button>
 
               <Button asChild className="w-full justify-start bg-[#161616] hover:bg-[#202020] text-white border border-[#262626] h-10 text-xs font-medium">
-                <Link href="/admin/analytics">
+                <AdminPageAccess href="/admin/analytics"><Link href="/admin/analytics">
                   <Activity className="w-4 h-4 mr-2.5 text-[#FFBF00]" />
                   Statistiques & Audiences
-                </Link>
+                </Link></AdminPageAccess>
               </Button>
 
               <Button asChild className="w-full justify-start bg-[#161616] hover:bg-[#202020] text-white border border-[#262626] h-10 text-xs font-medium">
-                <Link href="/admin/media">
+                <AdminPageAccess href="/admin/media"><Link href="/admin/media">
                   <HardDrive className="w-4 h-4 mr-2.5 text-purple-400" />
                   Santé de l'infrastructure
-                </Link>
+                </Link></AdminPageAccess>
               </Button>
             </div>
           </div>

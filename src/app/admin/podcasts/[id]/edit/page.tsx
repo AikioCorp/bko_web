@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -227,15 +229,15 @@ export default function EditPodcast() {
 
   return (
     <div className="w-full flex flex-col pb-32 text-white animate-in fade-in duration-300">
-      
+
       {/* Fil d'Ariane & Titre */}
       <div className="space-y-4 mb-8">
-        <Link 
+        <AdminPageAccess href={`/admin/podcasts/${id}`}><Link
           href={`/admin/podcasts/${id}`}
           className="inline-flex items-center text-xs font-semibold text-[#888888] hover:text-[#FFBF00] transition-colors"
         >
           <ChevronLeft className="w-4 h-4 mr-1" /> Retour à l'émission
-        </Link>
+        </Link></AdminPageAccess>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-[#FFBF00] uppercase tracking-wider mb-1">
@@ -267,10 +269,10 @@ export default function EditPodcast() {
 
       {/* Disposition principale : Formulaire (gauche) + Aperçu en direct (droite) */}
       <div className="flex flex-col lg:flex-row gap-8 items-start">
-        
+
         {/* Colonne Formulaire (2/3 sur desktop) */}
         <div className="w-full lg:flex-1 space-y-8">
-          
+
           {/* BLOC 1 : IDENTITÉ */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6">
             <div className="border-b border-[#2A2A2A] pb-4">
@@ -283,13 +285,13 @@ export default function EditPodcast() {
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                   Nom de l'émission <span className="text-[#FFBF00]">*</span>
                 </label>
-                <input 
-                  type="text" 
-                  name="name" 
-                  value={formData.name} 
-                  onChange={handleChange} 
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
                   placeholder="Ex: Les Voix du Mandé, Économie Bamako..."
-                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                 />
               </div>
 
@@ -297,13 +299,13 @@ export default function EditPodcast() {
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                   Résumé court (Slogan / Accroche)
                 </label>
-                <input 
-                  type="text" 
-                  name="descriptionShort" 
-                  value={formData.descriptionShort} 
-                  onChange={handleChange} 
+                <input
+                  type="text"
+                  name="descriptionShort"
+                  value={formData.descriptionShort}
+                  onChange={handleChange}
                   placeholder="Ex: Le rendez-vous hebdomadaire des récits et traditions orales."
-                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                 />
               </div>
 
@@ -311,13 +313,13 @@ export default function EditPodcast() {
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                   Description complète <span className="text-[#FFBF00]">*</span>
                 </label>
-                <textarea 
-                  name="description" 
-                  rows={5} 
-                  value={formData.description} 
-                  onChange={handleChange} 
+                <textarea
+                  name="description"
+                  rows={5}
+                  value={formData.description}
+                  onChange={handleChange}
                   placeholder="Présentez le concept de l'émission, les thèmes abordés, le ton et la fréquence de diffusion..."
-                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555] resize-none" 
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555] resize-none"
                 />
               </div>
             </div>
@@ -351,13 +353,13 @@ export default function EditPodcast() {
                   </div>
 
                   <div className="flex-1 space-y-3 w-full">
-                    <input 
-                      type="text" 
-                      name="cover" 
-                      value={formData.cover} 
-                      onChange={handleChange} 
+                    <input
+                      type="text"
+                      name="cover"
+                      value={formData.cover}
+                      onChange={handleChange}
                       placeholder="URL directe de l'image (https://...)"
-                      className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                      className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                     />
                     <label className="w-full flex items-center justify-center bg-[#0B0B0B] border border-[#2A2A2A] border-dashed text-white hover:bg-[#202020] rounded-lg h-10 px-4 cursor-pointer text-xs font-semibold transition-colors">
                       {uploadingCover ? (
@@ -365,15 +367,15 @@ export default function EditPodcast() {
                       ) : (
                         <><UploadCloud className="w-4 h-4 mr-2 text-[#FFBF00]" /> Importer un fichier image (JPG, PNG, WebP)</>
                       )}
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         accept="image/jpeg,image/png,image/webp"
-                        className="hidden" 
+                        className="hidden"
                         disabled={uploadingCover}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) handleImageFile(file, "covers");
-                        }} 
+                        }}
                       />
                     </label>
                   </div>
@@ -386,13 +388,13 @@ export default function EditPodcast() {
                   Bannière de couverture (Optionnel, format paysage 16:9)
                 </label>
                 <div className="space-y-3">
-                  <input 
-                    type="text" 
-                    name="banner" 
-                    value={formData.banner} 
-                    onChange={handleChange} 
+                  <input
+                    type="text"
+                    name="banner"
+                    value={formData.banner}
+                    onChange={handleChange}
                     placeholder="URL directe de la bannière (https://...)"
-                    className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                    className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-lg p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                   />
                   <label className="w-full flex items-center justify-center bg-[#0B0B0B] border border-[#2A2A2A] border-dashed text-white hover:bg-[#202020] rounded-lg h-10 px-4 cursor-pointer text-xs font-semibold transition-colors">
                     {uploadingBanner ? (
@@ -400,15 +402,15 @@ export default function EditPodcast() {
                     ) : (
                       <><UploadCloud className="w-4 h-4 mr-2 text-[#FFBF00]" /> Importer une bannière</>
                     )}
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      className="hidden" 
+                      className="hidden"
                       disabled={uploadingBanner}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleImageFile(file, "banners");
-                      }} 
+                      }}
                     />
                   </label>
                 </div>
@@ -429,9 +431,9 @@ export default function EditPodcast() {
                   <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                     Langue principale <span className="text-[#FFBF00]">*</span>
                   </label>
-                  <select 
-                    name="primaryLanguageCode" 
-                    value={formData.primaryLanguageCode} 
+                  <select
+                    name="primaryLanguageCode"
+                    value={formData.primaryLanguageCode}
                     onChange={handleChange}
                     className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white appearance-none"
                   >
@@ -519,13 +521,13 @@ export default function EditPodcast() {
                 <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                   Ville d'enregistrement (Optionnel)
                 </label>
-                <input 
-                  type="text" 
-                  name="city" 
-                  value={formData.city} 
-                  onChange={handleChange} 
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
                   placeholder="Ex: Bamako, Ségou, Sikasso..."
-                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                  className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                 />
               </div>
             </div>
@@ -579,13 +581,13 @@ export default function EditPodcast() {
                   <label className="block text-xs font-bold text-[#888888] uppercase mb-2">
                     Site web officiel (Optionnel)
                   </label>
-                  <input 
-                    type="url" 
-                    name="website" 
-                    value={formData.website} 
-                    onChange={handleChange} 
+                  <input
+                    type="url"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleChange}
                     placeholder="https://..."
-                    className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+                    className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
                   />
                 </div>
               </div>
@@ -594,13 +596,13 @@ export default function EditPodcast() {
 
           {/* BARRE D'ACTIONS DU FORMULAIRE */}
           <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-end gap-4">
-            <Link
+            <AdminPageAccess href={`/admin/podcasts/${id}`}><Link
               href={`/admin/podcasts/${id}`}
               className="px-5 py-2.5 rounded-xl border border-[#2A2A2A] text-white text-xs font-semibold hover:bg-[#222222] transition-colors"
             >
               Annuler
-            </Link>
-            <Button
+            </Link></AdminPageAccess>
+            <AdminAction permission="catalog.edit"><Button
               type="button"
               disabled={isSubmitting}
               onClick={handleSave}
@@ -611,7 +613,7 @@ export default function EditPodcast() {
               ) : (
                 <><Save className="w-4 h-4 mr-2" /> Enregistrer les modifications</>
               )}
-            </Button>
+            </Button></AdminAction>
           </div>
 
         </div>

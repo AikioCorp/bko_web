@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -29,7 +31,7 @@ import { Button } from "@/components/ui/button";
 
 export default function RssImportPage() {
   const router = useRouter();
-  
+
   // 4 Steps strictly following specifications:
   // 1: Adresse du flux
   // 2: Prévisualisation
@@ -98,7 +100,7 @@ export default function RssImportPage() {
       if (!res.success) throw new Error(res.message || "Impossible d'analyser ce flux RSS.");
 
       setPreviewData(res.data);
-      
+
       // Préremplissage des réglages pour l'étape 3
       if (!res.data.existingPodcast) {
         setFormData(prev => ({
@@ -208,15 +210,15 @@ export default function RssImportPage() {
 
   return (
     <div className="w-full py-4 pb-32 text-white space-y-8 animate-in fade-in">
-      
+
       {/* En-tête & Fil d'Ariane */}
       <div className="space-y-3">
-        <Link 
-          href="/admin/podcasts" 
+        <AdminPageAccess href="/admin/podcasts"><Link
+          href="/admin/podcasts"
           className="inline-flex items-center text-xs font-semibold text-[#888888] hover:text-[#FFBF00] transition-colors"
         >
           <ChevronLeft className="w-4 h-4 mr-1" /> Retour aux émissions
-        </Link>
+        </Link></AdminPageAccess>
         <div className="flex items-center gap-2 text-xs font-bold text-[#FFBF00] uppercase tracking-wider">
           <span>Assistant d'importation RSS</span>
           <span>•</span>
@@ -245,8 +247,8 @@ export default function RssImportPage() {
               <div
                 key={s.id}
                 className={`p-3 rounded-xl border text-left transition-all ${
-                  isActive 
-                    ? "bg-[#222222] border-[#FFBF00] text-white" 
+                  isActive
+                    ? "bg-[#222222] border-[#FFBF00] text-white"
                     : isDone
                     ? "bg-[#141414] border-[#2A2A2A] text-[#B8B8B8]"
                     : "bg-[#0E0E0E] border-[#222222] text-[#555555] opacity-60"
@@ -288,12 +290,12 @@ export default function RssImportPage() {
             <label className="block text-xs font-bold text-[#888888] uppercase">
               URL du flux RSS <span className="text-[#FFBF00]">*</span>
             </label>
-            <input 
-              type="url" 
-              value={url} 
-              onChange={(e) => setUrl(e.target.value)} 
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
               placeholder="https://anchor.fm/s/123456/podcast/rss"
-              className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]" 
+              className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl p-3.5 text-sm focus:border-[#FFBF00] outline-none text-white placeholder-[#555555]"
             />
           </div>
 
@@ -306,8 +308,8 @@ export default function RssImportPage() {
           </div>
 
           <div className="pt-4 border-t border-[#2A2A2A] flex justify-end">
-            <Button 
-              onClick={handleAnalyze} 
+            <AdminAction permission="catalog.create"><Button
+              onClick={handleAnalyze}
               disabled={!url.trim() || isAnalyzing}
               className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-11 px-6 disabled:opacity-40"
             >
@@ -316,7 +318,7 @@ export default function RssImportPage() {
               ) : (
                 <>Analyser le flux <ArrowRight className="w-4 h-4 ml-2" /></>
               )}
-            </Button>
+            </Button></AdminAction>
           </div>
         </div>
       )}
@@ -326,7 +328,7 @@ export default function RssImportPage() {
       {/* ========================================================= */}
       {currentStep === 2 && previewData && (
         <div className="space-y-6 animate-in fade-in">
-          
+
           {/* Cas particulier : Flux déjà connecté en base */}
           {previewData.existingPodcast ? (
             <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-8 text-center space-y-4">
@@ -340,11 +342,11 @@ export default function RssImportPage() {
                 </p>
               </div>
               <div className="pt-2">
-                <Link href={`/admin/podcasts/${previewData.existingPodcast.id}`}>
+                <AdminPageAccess href={`/admin/podcasts/${previewData.existingPodcast.id}`}><Link href={`/admin/podcasts/${previewData.existingPodcast.id}`}>
                   <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-10 px-6">
                     Ouvrir l'émission existante
                   </Button>
-                </Link>
+                </Link></AdminPageAccess>
               </div>
             </div>
           ) : (
@@ -532,11 +534,11 @@ export default function RssImportPage() {
                   { id: "LAST_10", label: "Les 10 derniers", desc: "Pour les émissions très volumineuses" },
                   { id: "SELECT", label: "Sélection manuelle", desc: "Choisir un par un après import" },
                 ].map(opt => (
-                  <label 
-                    key={opt.id} 
+                  <label
+                    key={opt.id}
                     className={`p-3.5 rounded-xl border cursor-pointer transition-colors ${
-                      formData.importScope === opt.id 
-                        ? "bg-[#222222] border-[#FFBF00]" 
+                      formData.importScope === opt.id
+                        ? "bg-[#222222] border-[#FFBF00]"
                         : "bg-[#0B0B0B] border-[#2A2A2A] hover:border-[#444444]"
                     }`}
                   >
@@ -626,7 +628,7 @@ export default function RssImportPage() {
       {/* ========================================================= */}
       {currentStep === 4 && (
         <div className="bg-[#171717] border border-[#2A2A2A] rounded-2xl p-6 md:p-8 space-y-6 animate-in fade-in">
-          
+
           {!importResult && !isImporting && (
             <div className="space-y-6">
               <div>
@@ -670,12 +672,12 @@ export default function RssImportPage() {
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" /> Modifier les réglages
                 </Button>
-                <Button
+                <AdminAction permission="catalog.create"><Button
                   onClick={handleStartImport}
                   className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-11 px-8"
                 >
                   Importer en brouillon
-                </Button>
+                </Button></AdminAction>
               </div>
             </div>
           )}
@@ -690,7 +692,7 @@ export default function RssImportPage() {
               </div>
 
               <div className="w-full max-w-md bg-[#0B0B0B] border border-[#2A2A2A] rounded-full h-3 overflow-hidden">
-                <div 
+                <div
                   className="bg-[#FFBF00] h-full transition-all duration-300 rounded-full"
                   style={{ width: `${importProgress}%` }}
                 />
@@ -719,23 +721,23 @@ export default function RssImportPage() {
                   <ul className="text-xs text-red-300 list-disc pl-4 space-y-1">
                     {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
                   </ul>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <AdminAction permission="catalog.create"><Button
+                    size="sm"
+                    variant="outline"
                     onClick={handleStartImport}
                     className="text-xs bg-[#171717] border-red-500/30 text-white mt-2"
                   >
                     <RotateCcw className="w-3.5 h-3.5 mr-1" /> Réessayer les éléments en erreur
-                  </Button>
+                  </Button></AdminAction>
                 </div>
               )}
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2A2A2A]">
-                <Link href="/admin/podcasts">
+                <AdminPageAccess href="/admin/podcasts"><Link href="/admin/podcasts">
                   <Button variant="ghost" className="text-xs text-[#888888] hover:text-white">
                     Retour à la liste des émissions
                   </Button>
-                </Link>
+                </Link></AdminPageAccess>
                 <Button
                   onClick={() => router.push(`/admin/podcasts/${importResult.createdPodcastId || "imported"}`)}
                   className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-11 px-6"

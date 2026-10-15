@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -188,9 +190,9 @@ export default function AdminYoutubeImportPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222222] pb-5">
         <div>
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
-            <Link href="/admin/podcasts" className="hover:text-white flex items-center gap-1">
+            <AdminPageAccess href="/admin/podcasts"><Link href="/admin/podcasts" className="hover:text-white flex items-center gap-1">
               <ChevronLeft className="w-3.5 h-3.5" /> Émissions
-            </Link>
+            </Link></AdminPageAccess>
             <span>/</span>
             <span className="text-[#FF0000] font-bold">YouTube Hub</span>
           </div>
@@ -211,13 +213,13 @@ export default function AdminYoutubeImportPage() {
           >
             Chaînes connectées ({channels.length})
           </Button>
-          <Button
+          <AdminAction permission="catalog.create"><Button
             variant={activeTab === "new" ? "default" : "outline"}
             onClick={() => setActiveTab("new")}
             className={activeTab === "new" ? "bg-[#FF0000] text-white font-bold" : "border-[#333333] text-gray-300"}
           >
             <Plus className="w-4 h-4 mr-1.5" /> Connecter une chaîne
-          </Button>
+          </Button></AdminAction>
         </div>
       </div>
 
@@ -259,9 +261,9 @@ export default function AdminYoutubeImportPage() {
               <p className="text-xs text-gray-400 max-w-md mx-auto">
                 Connectez une chaîne YouTube pour alimenter le catalogue Bamako Podcast avec des émissions vidéo natives.
               </p>
-              <Button onClick={() => setActiveTab("new")} className="bg-[#FF0000] text-white font-bold text-xs mt-2">
+              <AdminAction permission="catalog.create"><Button onClick={() => setActiveTab("new")} className="bg-[#FF0000] text-white font-bold text-xs mt-2">
                 Connecter la première chaîne
-              </Button>
+              </Button></AdminAction>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
@@ -297,12 +299,12 @@ export default function AdminYoutubeImportPage() {
                         </div>
                         <p className="text-xs text-gray-400">
                           Émission :{" "}
-                          <Link
+                          <AdminPageAccess href={`/admin/podcasts/${c.podcast?.id}`}><Link
                             href={`/admin/podcasts/${c.podcast?.id}`}
                             className="text-[#FFBF00] font-bold hover:underline"
                           >
                             {c.podcast?.name || "Sans nom"}
-                          </Link>{" "}
+                          </Link></AdminPageAccess>{" "}
                           • <span className="font-mono text-[11px]">ID : {c.channelId}</span>
                         </p>
                         <div className="flex items-center gap-3 text-[11px] text-gray-500 pt-0.5">
@@ -322,14 +324,14 @@ export default function AdminYoutubeImportPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <Button
+                      <AdminAction permission="catalog.edit"><Button
                         size="sm"
                         onClick={() => handleSyncNow(c.podcastId)}
                         className="bg-[#FFBF00] hover:bg-[#F5B82E] text-black text-xs font-bold"
                       >
                         <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Synchroniser
-                      </Button>
-                      <Button
+                      </Button></AdminAction>
+                      <AdminAction permission="catalog.edit"><Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleToggleSync(c.podcastId, c.syncEnabled)}
@@ -337,15 +339,15 @@ export default function AdminYoutubeImportPage() {
                       >
                         {c.syncEnabled ? <Pause className="w-3.5 h-3.5 mr-1" /> : <Play className="w-3.5 h-3.5 mr-1" />}
                         {c.syncEnabled ? "Suspendre" : "Reprendre"}
-                      </Button>
-                      <Button
+                      </Button></AdminAction>
+                      <AdminAction permission="catalog.delete"><Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleDisconnect(c.podcastId)}
                         className="border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs font-bold"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                      </Button></AdminAction>
                     </div>
                   </div>
                 );
@@ -358,7 +360,7 @@ export default function AdminYoutubeImportPage() {
       {/* Onglet 2 : Connexion d'une nouvelle chaîne */}
       {activeTab === "new" && (
         <div className="space-y-6">
-          <form onSubmit={handleAnalyze} className="bg-[#111111] border border-[#222222] rounded-2xl p-6 space-y-4">
+          <AdminAction permission="catalog.create"><form onSubmit={handleAnalyze} className="bg-[#111111] border border-[#222222] rounded-2xl p-6 space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-white uppercase tracking-wider">
                 URL ou identifiant de la chaîne YouTube
@@ -386,7 +388,7 @@ export default function AdminYoutubeImportPage() {
                 {isAnalyzing ? "Analyse..." : "Analyser la chaîne"}
               </Button>
             </div>
-          </form>
+          </form></AdminAction>
 
           {previewData && (
             <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 space-y-6">
@@ -589,14 +591,14 @@ export default function AdminYoutubeImportPage() {
 
               {/* Bouton d'action */}
               <div className="pt-4 border-t border-[#222222] flex justify-end">
-                <Button
+                <AdminAction permission="catalog.create"><Button
                   onClick={handleLaunchImport}
                   disabled={isSubmitting || selectedVideoIds.size === 0}
                   className="bg-[#FF0000] hover:bg-[#CC0000] text-white font-extrabold px-8 py-3 text-sm"
                 >
                   {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                   {isSubmitting ? "Lancement de l'import..." : `Lancer l'importation (${selectedVideoIds.size} vidéos)`}
-                </Button>
+                </Button></AdminAction>
               </div>
             </div>
           )}

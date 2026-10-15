@@ -1,4 +1,5 @@
 "use client";
+import { AdminAction } from "@/components/admin/AdminAccess";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -9,7 +10,7 @@ export default function AdminReportsPage() {
   const [statusFilter, setStatusFilter] = useState("OPEN");
   const [page, setPage] = useState(1);
   const limit = 20;
-  
+
   const fetcher = (url: string) => adminApi(url).then(res => res.data);
   const { data: reportsData, mutate, isLoading } = useSWR(`/admin/reports?page=${page}&limit=${limit}${statusFilter ? `&status=${statusFilter}` : ""}`, fetcher);
 
@@ -126,7 +127,7 @@ export default function AdminReportsPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-[#888]">
-                      Signalé par : <span className="font-semibold text-white">{report.reporter?.fullName || "Anonyme"}</span> 
+                      Signalé par : <span className="font-semibold text-white">{report.reporter?.fullName || "Anonyme"}</span>
                       {report.reporter && <span className="font-mono">({report.reporter.id})</span>}
                     </div>
                   </div>
@@ -155,23 +156,23 @@ export default function AdminReportsPage() {
                     <div className="flex flex-col gap-2 mt-4">
                       {report.status === "OPEN" && (
                         <>
-                          <Button 
-                            size="sm" 
+                          <AdminAction permission="moderation.edit"><Button
+                            size="sm"
                             disabled={processingId === report.id}
                             className="bg-red-600 hover:bg-red-700 text-white font-bold"
                             onClick={() => handleAction(report.id, "RESOLVED", "SUSPEND_TARGET")}
                           >
                             <Ban className="w-4 h-4 mr-2" /> Suspendre la cible
-                          </Button>
-                          <Button 
-                            size="sm" 
+                          </Button></AdminAction>
+                          <AdminAction permission="moderation.edit"><Button
+                            size="sm"
                             variant="outline"
                             disabled={processingId === report.id}
                             className="bg-[#222] border-[#333] text-white hover:bg-[#333]"
                             onClick={() => handleAction(report.id, "DISMISSED")}
                           >
                             Classer sans suite
-                          </Button>
+                          </Button></AdminAction>
                         </>
                       )}
                     </div>
@@ -181,7 +182,7 @@ export default function AdminReportsPage() {
             ))}
           </div>
         )}
-        
+
         {/* Pagination Simple */}
         {reportsData && reportsData.total > limit && (
           <div className="p-4 border-t border-[#222] flex items-center justify-between">

@@ -1,4 +1,6 @@
 "use client";
+import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminAction } from "@/components/admin/AdminAccess";
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
@@ -268,12 +270,12 @@ export default function EditorialEditPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
-          <Link
+          <AdminPageAccess href="/admin/editorial"><Link
             href="/admin/editorial"
             className="p-2 hover:bg-[#1A1A1A] rounded-full transition-colors text-[#888888] hover:text-white"
           >
             <ChevronLeft className="w-5 h-5" />
-          </Link>
+          </Link></AdminPageAccess>
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-white leading-tight">
@@ -300,7 +302,7 @@ export default function EditorialEditPage() {
               Enregistré !
             </div>
           )}
-          <button
+          <AdminAction permission="catalog.edit"><button
             onClick={handleSave}
             disabled={isSaving}
             className="bg-white text-black px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm"
@@ -311,7 +313,7 @@ export default function EditorialEditPage() {
               <Save className="w-4 h-4" />
             )}
             Enregistrer
-          </button>
+          </button></AdminAction>
         </div>
       </div>
 
@@ -459,7 +461,7 @@ export default function EditorialEditPage() {
                     : "Masqué (inactif)"}
                 </div>
               </div>
-              <button
+              <AdminAction permission="catalog.edit"><button
                 type="button"
                 onClick={() =>
                   setFormData({ ...formData, isActive: !formData.isActive })
@@ -475,7 +477,7 @@ export default function EditorialEditPage() {
                     formData.isActive ? "translate-x-5" : "translate-x-0"
                   )}
                 />
-              </button>
+              </button></AdminAction>
             </div>
           </div>
 
@@ -501,7 +503,7 @@ export default function EditorialEditPage() {
                   >
                     Annuler
                   </button>
-                  <button
+                  <AdminAction permission="catalog.edit"><button
                     onClick={handleDeleteSection}
                     disabled={isDeleting}
                     className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors flex items-center justify-center gap-2"
@@ -512,16 +514,16 @@ export default function EditorialEditPage() {
                       <Trash2 className="w-3.5 h-3.5" />
                     )}
                     Confirmer
-                  </button>
+                  </button></AdminAction>
                 </div>
               </div>
             ) : (
-              <button
+              <AdminAction permission="catalog.edit"><button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="w-full text-center px-4 py-2 rounded-xl text-xs font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors border border-red-500/30"
               >
                 Supprimer cette section
-              </button>
+              </button></AdminAction>
             )}
           </div>
         </div>
@@ -538,13 +540,13 @@ export default function EditorialEditPage() {
                   {section.items?.length || 0} élément(s) configuré(s)
                 </p>
               </div>
-              <button
+              <AdminAction permission="catalog.edit"><button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 className="bg-white text-black hover:bg-gray-100 px-4 py-2 rounded-xl font-semibold text-sm transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 Ajouter un élément
-              </button>
+              </button></AdminAction>
             </div>
 
             {/* Search Box */}
@@ -653,12 +655,12 @@ export default function EditorialEditPage() {
                             </p>
                           </div>
                         </div>
-                        <button
+                        <AdminAction permission="catalog.edit"><button
                           onClick={() => handleAddItem(res)}
                           className="shrink-0 text-xs font-bold bg-[#FFBF00] text-black px-3.5 py-1.5 rounded-full hover:bg-[#E5AC00] transition-colors"
                         >
                           Ajouter
-                        </button>
+                        </button></AdminAction>
                       </li>
                     ))}
                   </ul>
@@ -737,7 +739,7 @@ export default function EditorialEditPage() {
 
                       {/* Controls: Move Up/Down + Delete */}
                       <div className="flex items-center gap-1 shrink-0">
-                        <button
+                        <AdminAction permission="catalog.edit"><button
                           type="button"
                           onClick={() => handleMoveItem(index, "up")}
                           disabled={index === 0}
@@ -745,8 +747,8 @@ export default function EditorialEditPage() {
                           className="p-1.5 text-[#888888] hover:text-white hover:bg-[#1A1A1A] rounded-lg transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
                         >
                           <ChevronUp className="w-4 h-4" />
-                        </button>
-                        <button
+                        </button></AdminAction>
+                        <AdminAction permission="catalog.edit"><button
                           type="button"
                           onClick={() => handleMoveItem(index, "down")}
                           disabled={index === (section.items?.length || 0) - 1}
@@ -754,15 +756,15 @@ export default function EditorialEditPage() {
                           className="p-1.5 text-[#888888] hover:text-white hover:bg-[#1A1A1A] rounded-lg transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
                         >
                           <ChevronDown className="w-4 h-4" />
-                        </button>
-                        <button
+                        </button></AdminAction>
+                        <AdminAction permission="catalog.edit"><button
                           type="button"
                           onClick={() => handleRemoveItem(item.id)}
                           className="p-1.5 text-[#888888] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ml-1"
                           title="Retirer de la section"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </button></AdminAction>
                       </div>
                     </div>
                   );
