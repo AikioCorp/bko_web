@@ -87,7 +87,7 @@ function AdminShellContent({ children }: { children: React.ReactNode }) {
     {
       label: "Suivi",
       items: [
-        { name: "Marchés", href: "/admin/markets", icon: Library },
+        { name: "Pays et marchés", href: "/admin/markets", icon: Library },
         { name: "Imports et médias", href: "/admin/media", icon: FileDown },
         { name: "Statistiques", href: "/admin/analytics", icon: BarChart3 },
       ]

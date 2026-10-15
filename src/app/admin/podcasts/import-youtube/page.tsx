@@ -1,9 +1,11 @@
 "use client";
 import { AdminPageAccess } from "@/components/admin/AdminAccess";
+import { AdminCountryPicker } from "@/components/admin/CountryManager";
 import { AdminAction } from "@/components/admin/AdminAccess";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { adminApi } from "@/lib/api";
 import {
@@ -26,6 +28,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 export default function AdminYoutubeImportPage() {
+  const router=useRouter();
+  const archivesOpened=useRef(false);
   const [activeTab, setActiveTab] = useState<"list" | "new">("list");
 
   // Step state for new import
@@ -42,7 +46,6 @@ export default function AdminYoutubeImportPage() {
   const [cover, setCover] = useState("");
   const [languageCode, setLanguageCode] = useState("fr");
   const [countryId, setCountryId] = useState("");
-  const {data:countries}=useSWR("/countries",u=>adminApi(u).then(r=>r.data));
   const [autoSyncFuture,setAutoSyncFuture]=useState(true);
   const [initialImportMode,setInitialImportMode]=useState<"SELECT"|"FUTURE_ONLY">("SELECT");
   const [loadingMore,setLoadingMore]=useState(false);
@@ -144,6 +147,13 @@ export default function AdminYoutubeImportPage() {
     setError(null);setIsAnalyzing(true);
     try{const r=await adminApi("/admin/youtube/preview",{method:"POST",body:JSON.stringify({url:c.channelId,podcastId:c.podcastId})});setTargetMode("existing");setExistingPodcastId(c.podcastId);setUrl(c.channelId);setPreviewData(r.data);setSelectedVideoIds(new Set());setArchivesMode(true);setAutoPublish(c.importSettings?.autoPublish===true);setAutoSyncFuture(c.syncEnabled===true);setExcludeShorts(c.importSettings?.excludeShorts!==false);setInitialImportMode("SELECT");setActiveTab("new");}catch(e:any){setError(e.message);}finally{setIsAnalyzing(false);}
   };
+  useEffect(()=>{
+    const query=new URLSearchParams(window.location.search);
+    if(query.get("archives")!=="1"||archivesOpened.current)return;
+    const id=query.get("podcastId");const channel=channelsData?.find((c:any)=>c.podcastId===id);
+    if(channel){archivesOpened.current=true;void openArchives(channel);}
+  },[channelsData]);
+
   const handleLaunchImport = async () => {
     if (!previewData) return;
     setIsSubmitting(true);
@@ -314,7 +324,8 @@ export default function AdminYoutubeImportPage() {
                 return (
                   <div
                     key={c.id}
-                    className="bg-[#111111] border border-[#222222] hover:border-[#333333] rounded-2xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 transition"
+                    onClick={e=>{if(!(e.target as HTMLElement).closest("a,button,input,select,textarea"))router.push(`/admin/podcasts/${c.podcastId}/youtube`);}}
+                    className="bg-[#111111] border border-[#222222] hover:border-[#333333] rounded-2xl p-5 cursor-pointer flex flex-col lg:flex-row lg:items-center justify-between gap-4 transition"
                   >
                     <div className="flex items-start gap-4">
                       {c.thumbnailUrl && (
@@ -326,7 +337,7 @@ export default function AdminYoutubeImportPage() {
                       )}
                       <div className="space-y-1">
                         <div className="flex items-center gap-2.5">
-                          <h4 className="text-white font-bold text-sm">{c.channelTitle}</h4>
+                          <h4 className="text-white font-bold text-sm"><Link href={`/admin/podcasts/${c.podcastId}/youtube`} className="hover:text-[#FFBF00] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FFBF00]">{c.channelTitle}</Link></h4>
                           <span
                             className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
                               c.syncStatus === "SYNCING"
@@ -566,7 +577,7 @@ export default function AdminYoutubeImportPage() {
                   {previewData.nextPageToken&&<button type="button" disabled={loadingMore} onClick={()=>void loadMoreVideos()} className="text-sm text-[#FFBF00]">{loadingMore?"Chargement…":"Charger les vidéos suivantes / anciennes"}</button>}
                   <label className="block text-sm">Import initial<select disabled={archivesMode} value={initialImportMode} onChange={e=>setInitialImportMode(e.target.value as any)} className="ml-3 rounded-lg bg-[#222] p-2"><option value="SELECT">Importer les vidéos sélectionnées</option><option value="FUTURE_ONLY">Aucune ancienne vidéo, prochaines publications uniquement</option></select></label>
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={archivesMode} checked={autoSyncFuture} onChange={e=>setAutoSyncFuture(e.target.checked)}/>Importer automatiquement les prochaines publications</label>
-                  {targetMode==="new"&&<label className="block text-sm">Pays de l’émission<select value={countryId} onChange={e=>setCountryId(e.target.value)} className="ml-3 rounded-lg bg-[#222] p-2"><option value="">Choisir un pays</option>{(countries||[]).map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>}
+                  {targetMode==="new"&&<AdminCountryPicker value={countryId} onChange={setCountryId}/>}
                   <h4 className="text-white font-bold">Vidéos à importer ({selectedVideoIds.size}/{(previewData.videos || previewData.items || []).length})</h4>
                   <div className="flex items-center gap-3">
                     <button
