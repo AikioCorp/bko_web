@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Play, Pause, Share2, Bookmark, BookmarkCheck, ListMusic, Smartphone, Crown, Lock, Heart, Check } from "lucide-react";
+import { Play, Pause, Share2, Bookmark, BookmarkCheck, ListMusic, Smartphone, Crown, Lock, Heart, Check, ChevronDown } from "lucide-react";
 import { studioApi } from "@/lib/studioApi";
 import { fetchApi } from "@/lib/api";
 import { formatClock, formatDate, formatDuration, shareOrCopy, toPlayerEpisode } from "@/lib/playback";
@@ -62,6 +62,7 @@ export default function EpisodePage() {
   const [notice, setNotice] = useState("");
   const [isAppModalOpen, setIsAppModalOpen] = useState(false);
   const [isQueueingDownload, setIsQueueingDownload] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -320,7 +321,29 @@ export default function EpisodePage() {
 
       {tab === "about" && (
         <div className="space-y-5 max-w-5xl">
-          <p className="text-base sm:text-lg text-[#CFCFCF] leading-relaxed whitespace-pre-wrap">{ep.description}</p>
+          <div>
+            <p
+              className={`text-base sm:text-lg text-[#CFCFCF] leading-relaxed whitespace-pre-wrap transition-all ${
+                descExpanded ? "" : "line-clamp-4"
+              }`}
+            >
+              {ep.description}
+            </p>
+            {ep.description && ep.description.length > 250 && (
+              <button
+                type="button"
+                onClick={() => setDescExpanded(!descExpanded)}
+                className="text-xs sm:text-sm font-bold text-[#FFBF00] hover:underline mt-2.5 inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>{descExpanded ? "Réduire la description" : "Lire la suite"}</span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-200 ${
+                    descExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            )}
+          </div>
           {ep.people.length > 0 && (
             <div className="space-y-2">
               <h2 className="text-xs font-bold uppercase tracking-wide text-[#8A8A8A]">Intervenants</h2>

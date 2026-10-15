@@ -41,7 +41,12 @@ export default function AdminYoutubeImportPage() {
   const [description, setDescription] = useState("");
   const [cover, setCover] = useState("");
   const [languageCode, setLanguageCode] = useState("fr");
-  const [countryId, setCountryId] = useState("ML");
+  const [countryId, setCountryId] = useState("");
+  const {data:countries}=useSWR("/countries",u=>adminApi(u).then(r=>r.data));
+  const [autoSyncFuture,setAutoSyncFuture]=useState(true);
+  const [initialImportMode,setInitialImportMode]=useState<"SELECT"|"FUTURE_ONLY">("SELECT");
+  const [loadingMore,setLoadingMore]=useState(false);
+  const [archivesMode,setArchivesMode]=useState(false);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [autoPublish, setAutoPublish] = useState(false);
   const [excludeShorts, setExcludeShorts] = useState(true);
@@ -52,7 +57,8 @@ export default function AdminYoutubeImportPage() {
   // SWR hooks
   const { data: channelsData, mutate: mutateChannels, isLoading: loadingChannels } = useSWR(
     "/admin/youtube/imports",
-    (u) => adminApi(u).then((res) => res.data)
+    (u) => adminApi(u).then((res) => res.data),
+    {refreshInterval:10000}
   );
 
   const { data: podcastsData } = useSWR("/admin/catalog", (u) => adminApi(u).then((res) => res.data));
@@ -71,11 +77,13 @@ export default function AdminYoutubeImportPage() {
     setIsAnalyzing(true);
     setError(null);
     setPreviewData(null);
+    setSelectedVideoIds(new Set());
+    setArchivesMode(false);
 
     try {
       const res = await adminApi("/admin/youtube/preview", {
         method: "POST",
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: url.trim(),podcastId:targetMode==="existing"?existingPodcastId:undefined }),
       });
       if (!res.success) throw new Error(res.message || "Erreur de résolution.");
 
@@ -91,7 +99,7 @@ export default function AdminYoutubeImportPage() {
         const vid = item.videoId || item.youtubeVideoId;
         const isAlready = item.alreadyImported ?? item.isAlreadyImported ?? false;
         const isShort = item.isLikelyShort === true;
-        if (!isAlready && vid && (!excludeShorts || !isShort)) {
+        if (!isAlready && item.embeddable !== false && vid && (!excludeShorts || !isShort)) {
           unimported.add(vid);
         }
       });
@@ -101,6 +109,13 @@ export default function AdminYoutubeImportPage() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const loadMoreVideos=async()=>{
+    if(!previewData?.nextPageToken||loadingMore)return;setLoadingMore(true);setError(null);
+    try{const r=await adminApi("/admin/youtube/preview",{method:"POST",body:JSON.stringify({url:previewData.channel.channelId,pageToken:previewData.nextPageToken,podcastId:targetMode==="existing"?existingPodcastId:undefined})});
+      setPreviewData((prev:any)=>{const merged=Array.from(new Map([...(prev.videos||prev.items||[]),...(r.data.videos||[])].map((v:any)=>[v.videoId,v])).values());return {...r.data,videos:merged,items:merged};});
+    }catch(e:any){setError(e.message);}finally{setLoadingMore(false);}
   };
 
   const handleToggleExcludeShorts = (val: boolean) => {
@@ -125,15 +140,21 @@ export default function AdminYoutubeImportPage() {
     setSelectedVideoIds(next);
   };
 
+  const openArchives=async(c:any)=>{
+    setError(null);setIsAnalyzing(true);
+    try{const r=await adminApi("/admin/youtube/preview",{method:"POST",body:JSON.stringify({url:c.channelId,podcastId:c.podcastId})});setTargetMode("existing");setExistingPodcastId(c.podcastId);setUrl(c.channelId);setPreviewData(r.data);setSelectedVideoIds(new Set());setArchivesMode(true);setAutoPublish(c.importSettings?.autoPublish===true);setAutoSyncFuture(c.syncEnabled===true);setExcludeShorts(c.importSettings?.excludeShorts!==false);setInitialImportMode("SELECT");setActiveTab("new");}catch(e:any){setError(e.message);}finally{setIsAnalyzing(false);}
+  };
   const handleLaunchImport = async () => {
     if (!previewData) return;
     setIsSubmitting(true);
     setError(null);
 
     try {
+      if(selectedVideoIds.size>500)throw new Error("Sélectionnez au maximum 500 vidéos par import. Vous pourrez lancer un autre lot ensuite.");
       const payload: any = {
         channelUrl: url.trim(),
         autoPublish,
+        autoSyncFuture, initialImportMode,
         excludeShorts,
         selectedVideoIds: Array.from(selectedVideoIds),
       };
@@ -142,6 +163,7 @@ export default function AdminYoutubeImportPage() {
         if (!existingPodcastId) throw new Error("Veuillez sélectionner une émission existante.");
         payload.existingPodcastId = existingPodcastId;
       } else {
+        if (!countryId) throw new Error("Choisissez le pays de l’émission.");
         if (!name.trim()) throw new Error("Le nom de l'émission est requis.");
         payload.name = name.trim();
         payload.description = description.trim();
@@ -151,9 +173,9 @@ export default function AdminYoutubeImportPage() {
         payload.categoryIds = selectedCategoryIds;
       }
 
-      const res = await adminApi("/admin/youtube/imports", {
+      const res = await adminApi(archivesMode?`/admin/podcasts/${existingPodcastId}/youtube/historical-import`:"/admin/youtube/imports", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(archivesMode?{selectedVideoIds:Array.from(selectedVideoIds)}:payload),
       });
 
       if (!res.success) throw new Error(res.message || "Erreur lors du lancement de l'import.");
@@ -328,6 +350,7 @@ export default function AdminYoutubeImportPage() {
                           • <span className="font-mono text-[11px]">ID : {c.channelId}</span>
                         </p>
                         <div className="flex items-center gap-3 text-[11px] text-gray-500 pt-0.5">
+                          {c.errorMessage&&<p className="whitespace-pre-wrap text-red-400">{c.errorMessage}</p>}
                           <span>Vidéos : <strong className="text-white">{c._count?.importedVideos || 0}</strong></span>
                           <span>•</span>
                           <span>Dernier sync : {c.lastSyncAt ? new Date(c.lastSyncAt).toLocaleString("fr-FR") : "Jamais"}</span>
@@ -335,7 +358,7 @@ export default function AdminYoutubeImportPage() {
                             <>
                               <span>•</span>
                               <span className="text-emerald-400 font-bold">
-                                +{latestRun.episodesImported} nouveau(x)
+                                +{latestRun.videosImported} nouveau(x)
                               </span>
                             </>
                           )}
@@ -344,7 +367,8 @@ export default function AdminYoutubeImportPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <AdminAction permission="catalog.edit"><Button
+                      <AdminAction permission="catalog.edit"><button type="button" onClick={()=>void openArchives(c)} className="rounded-full border border-[#333] px-3 py-2 text-xs">Importer des archives</button></AdminAction>
+                        <AdminAction permission="catalog.edit"><Button
                         size="sm"
                         onClick={() => handleSyncNow(c.podcastId)}
                         className="bg-[#FFBF00] hover:bg-[#F5B82E] text-black text-xs font-bold"
@@ -380,7 +404,7 @@ export default function AdminYoutubeImportPage() {
       {/* Onglet 2 : Connexion d'une nouvelle chaîne */}
       {activeTab === "new" && (
         <div className="space-y-6">
-          <AdminAction permission="catalog.create"><form onSubmit={handleAnalyze} className="bg-[#111111] border border-[#222222] rounded-2xl p-6 space-y-4">
+          <AdminAction permission="catalog.view"><form onSubmit={handleAnalyze} className="bg-[#111111] border border-[#222222] rounded-2xl p-6 space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-white uppercase tracking-wider">
                 URL ou identifiant de la chaîne YouTube
@@ -396,7 +420,7 @@ export default function AdminYoutubeImportPage() {
                 type="text"
                 placeholder="Ex : https://www.youtube.com/@lespitchounestv"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => {setUrl(e.target.value);setPreviewData(null);setSelectedVideoIds(new Set());setArchivesMode(false);}}
                 className="flex-1 bg-black border border-[#222222] focus:border-[#FFBF00] text-white text-sm px-4 py-3 rounded-xl outline-none placeholder:text-gray-600"
               />
               <Button
@@ -515,6 +539,7 @@ export default function AdminYoutubeImportPage() {
                     <input
                       type="checkbox"
                       checked={autoPublish}
+                      disabled={archivesMode}
                       onChange={(e) => setAutoPublish(e.target.checked)}
                       className="w-4 h-4 rounded text-[#FFBF00]"
                     />
@@ -525,6 +550,7 @@ export default function AdminYoutubeImportPage() {
                     <input
                       type="checkbox"
                       checked={excludeShorts}
+                      disabled={archivesMode}
                       onChange={(e) => handleToggleExcludeShorts(e.target.checked)}
                       className="w-4 h-4 rounded text-[#FFBF00]"
                     />
@@ -536,6 +562,11 @@ export default function AdminYoutubeImportPage() {
               {/* Liste des vidéos sélectionnables */}
               <div className="space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-b border-[#222222] pb-2">
+                  <p className="text-sm text-[#A0A0A0]">{previewData.note}</p>{archivesMode&&<p className="text-sm text-[#FFBF00]">Cet import conserve les réglages actuels de la chaîne. Les vidéos déjà présentes seront ignorées.</p>}
+                  {previewData.nextPageToken&&<button type="button" disabled={loadingMore} onClick={()=>void loadMoreVideos()} className="text-sm text-[#FFBF00]">{loadingMore?"Chargement…":"Charger les vidéos suivantes / anciennes"}</button>}
+                  <label className="block text-sm">Import initial<select disabled={archivesMode} value={initialImportMode} onChange={e=>setInitialImportMode(e.target.value as any)} className="ml-3 rounded-lg bg-[#222] p-2"><option value="SELECT">Importer les vidéos sélectionnées</option><option value="FUTURE_ONLY">Aucune ancienne vidéo, prochaines publications uniquement</option></select></label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={archivesMode} checked={autoSyncFuture} onChange={e=>setAutoSyncFuture(e.target.checked)}/>Importer automatiquement les prochaines publications</label>
+                  {targetMode==="new"&&<label className="block text-sm">Pays de l’émission<select value={countryId} onChange={e=>setCountryId(e.target.value)} className="ml-3 rounded-lg bg-[#222] p-2"><option value="">Choisir un pays</option>{(countries||[]).map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>}
                   <h4 className="text-white font-bold">Vidéos à importer ({selectedVideoIds.size}/{(previewData.videos || previewData.items || []).length})</h4>
                   <div className="flex items-center gap-3">
                     <button
@@ -557,7 +588,7 @@ export default function AdminYoutubeImportPage() {
                         const all = new Set<string>();
                         (previewData.videos || previewData.items || []).forEach((i: any) => {
                           const vid = i.videoId || i.youtubeVideoId;
-                          if (vid) all.add(vid);
+                          if (vid && !i.isAlreadyImported && !i.alreadyImported && i.embeddable!==false && (!excludeShorts || !i.isLikelyShort)) all.add(vid);
                         });
                         setSelectedVideoIds(all);
                       }}
@@ -580,7 +611,7 @@ export default function AdminYoutubeImportPage() {
                     return (
                       <div
                         key={vid}
-                        onClick={() => toggleVideo(vid)}
+                        onClick={() => {if(!isAlready && item.embeddable!==false && (!excludeShorts || !item.isLikelyShort))toggleVideo(vid);}}
                         className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer text-xs transition ${
                           isChecked
                             ? "bg-[#1A2234] border-[#E5A93C]/40"
@@ -591,6 +622,7 @@ export default function AdminYoutubeImportPage() {
                           <input
                             type="checkbox"
                             checked={isChecked}
+                            disabled={isAlready || item.embeddable===false || (excludeShorts && item.isLikelyShort)}
                             onChange={() => {}}
                             className="w-4 h-4 rounded text-[#FFBF00] shrink-0"
                           />
@@ -629,7 +661,7 @@ export default function AdminYoutubeImportPage() {
                             ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                             : "bg-gray-800 text-gray-500"
                         }`}>
-                          {isAlready ? "Déjà importé" : isChecked ? "Sélectionné" : "Exclu"}
+                          {item.embeddable===false?"Intégration indisponible":isAlready ? "Déjà importé" : isChecked ? "Sélectionné" : "Exclu"}
                         </span>
                       </div>
                     );
@@ -639,13 +671,13 @@ export default function AdminYoutubeImportPage() {
 
               {/* Bouton d'action */}
               <div className="pt-4 border-t border-[#222222] flex justify-end">
-                <AdminAction permission="catalog.create"><Button
+                <AdminAction permission={targetMode==="existing"?"catalog.edit":"catalog.create"}><Button
                   onClick={handleLaunchImport}
-                  disabled={isSubmitting || selectedVideoIds.size === 0}
+                  disabled={isSubmitting || (initialImportMode==="SELECT" && selectedVideoIds.size===0)}
                   className="bg-[#FF0000] hover:bg-[#CC0000] text-white font-extrabold px-8 py-3 text-sm"
                 >
                   {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  {isSubmitting ? "Lancement de l'import..." : `Lancer l'importation (${selectedVideoIds.size} vidéos)`}
+                  {isSubmitting ? "Lancement de l'import..." : initialImportMode==="FUTURE_ONLY"?"Connecter sans importer les anciennes vidéos":`Importer ${selectedVideoIds.size} vidéos sélectionnées`}
                 </Button></AdminAction>
               </div>
             </div>

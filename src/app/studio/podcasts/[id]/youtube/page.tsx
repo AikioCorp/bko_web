@@ -36,6 +36,10 @@ export default function PodcastYoutubePage() {
   // Sélection & Filtres
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [autoPublish, setAutoPublish] = useState(false);
+  const [initialImportMode,setInitialImportMode]=useState<"SELECT"|"FUTURE_ONLY">("SELECT");
+  const [loadingMore,setLoadingMore]=useState(false);
+  const [historicalSelected,setHistoricalSelected]=useState<Set<string>>(new Set());
+  const [importingHistorical,setImportingHistorical]=useState(false);
   const [autoSync, setAutoSync] = useState(true);
   const [keepManualEdits, setKeepManualEdits] = useState(true);
   const [excludeShorts, setExcludeShorts] = useState(true);
@@ -66,26 +70,31 @@ export default function PodcastYoutubePage() {
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {
-          setChannelStatus(json.data);
+          const status=json.data.channel || json.data;
+          setChannelStatus({...status,counts:json.data.counts});
+          setAutoSync(status.syncEnabled===true);
+          json.data=status;
           if (json.data.importSettings) {
             setAutoPublish(!!json.data.importSettings.autoPublish);
             setKeepManualEdits(json.data.importSettings.keepManualEdits !== false);
             if (json.data.importSettings.excludeShorts !== undefined) {
               setExcludeShorts(json.data.importSettings.excludeShorts);
             }
-            setIncludeKeywords(json.data.importSettings.includeKeywords?.join(", ") || "");
+            setIncludeKeywords((json.data.importSettings.filterKeywords || json.data.importSettings.includeKeywords)?.join(", ") || "");
             setExcludeKeywords(json.data.importSettings.excludeKeywords?.join(", ") || "");
           }
         } else {
           setChannelStatus(null);
         }
       })
-      .catch(() => {})
+      .catch(() => setErrorMessage("Impossible de charger le statut de la chaîne. Réessayez avant de la reconnecter."))
       .finally(() => setLoadingStatus(false));
   };
 
   useEffect(() => {
     fetchStatus();
+    const timer=setInterval(()=>{if(document.visibilityState==="visible")fetchStatus();},10000);
+    return ()=>clearInterval(timer);
   }, [podcastId]);
 
   // Analyse et prévisualisation d'une URL de chaîne
@@ -125,7 +134,7 @@ export default function PodcastYoutubePage() {
           const vid = item.youtubeVideoId || item.videoId;
           const isAlready = item.isAlreadyImported ?? item.alreadyImported ?? false;
           const isShort = item.isLikelyShort === true;
-          if (!isAlready && vid && (!excludeShorts || !isShort)) unimported.add(vid);
+          if (!isAlready && item.embeddable!==false && vid && (!excludeShorts || !isShort)) unimported.add(vid);
         });
         setSelectedIds(unimported);
       }
@@ -136,6 +145,14 @@ export default function PodcastYoutubePage() {
     }
   };
 
+  const loadMoreVideos=async()=>{
+    if(!previewData?.nextPageToken||loadingMore)return;setLoadingMore(true);setErrorMessage("");
+    try{const res=await fetch(API_BASE_URL+"/creator/youtube/preview",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+getAccessToken()},body:JSON.stringify({url:previewData.channel.channelId,podcastId,pageToken:previewData.nextPageToken})});const json=await res.json();if(!res.ok||!json.success)throw new Error(json.error?.message||"Chargement impossible");setPreviewData((prev:any)=>{const items=Array.from(new Map([...(prev.items||[]),...(json.data.items||[])].map((i:any)=>[i.videoId,i])).values());return {...json.data,items,videos:items};});}catch(e:any){setErrorMessage(e.message);}finally{setLoadingMore(false);}
+  };
+  const importHistorical=async()=>{
+    if(!historicalSelected.size)return;setImportingHistorical(true);setHistoricalError("");
+    try{const res=await fetch(API_BASE_URL+"/creator/podcasts/"+podcastId+"/youtube/historical-import",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+getAccessToken()},body:JSON.stringify({selectedVideoIds:Array.from(historicalSelected)})});const json=await res.json();if(!res.ok||!json.success)throw new Error(json.error?.message||"Import impossible");setHistoricalSelected(new Set());setShowHistoricalModal(false);setInfoMessage("Importation des archives placée en file d’attente.");fetchStatus();}catch(e:any){setHistoricalError(e.message);}finally{setImportingHistorical(false);}
+  };
   // Filtrage local en temps réel des vidéos prévisualisées
   const filteredPreviewItems = useMemo(() => {
     const rawList = previewData?.items || previewData?.videos;
@@ -155,6 +172,11 @@ export default function PodcastYoutubePage() {
     });
   }, [previewData, includeKeywords, excludeKeywords, excludeShorts]);
 
+  useEffect(()=>{
+    const allowed=new Set(filteredPreviewItems.filter((i:any)=>!i.isAlreadyImported && !i.alreadyImported && i.embeddable!==false).map((i:any)=>i.videoId||i.youtubeVideoId));
+    setSelectedIds(previous=>{const next=new Set(Array.from(previous).filter(id=>allowed.has(id)));return next.size===previous.size?previous:next;});
+  },[filteredPreviewItems]);
+
   const toggleSelect = (videoId: string) => {
     const next = new Set(selectedIds);
     if (next.has(videoId)) next.delete(videoId);
@@ -166,7 +188,7 @@ export default function PodcastYoutubePage() {
     const all = new Set<string>();
     filteredPreviewItems.forEach((i: any) => {
       const vid = i.youtubeVideoId || i.videoId;
-      if (vid) all.add(vid);
+      if (vid && !i.isAlreadyImported && !i.alreadyImported && i.embeddable!==false) all.add(vid);
     });
     setSelectedIds(all);
   };
@@ -178,6 +200,7 @@ export default function PodcastYoutubePage() {
   // Connexion de la chaîne
   const handleConnect = async () => {
     if (!previewData) return;
+    if(selectedIds.size>500){setErrorMessage("Sélectionnez au maximum 500 vidéos par import.");return;}
     setConnecting(true);
     setErrorMessage("");
 
@@ -202,10 +225,11 @@ export default function PodcastYoutubePage() {
           selectedVideoIds: Array.from(selectedIds),
           settings: {
             autoPublish,
+            initialImportMode,
             keepManualEdits,
             autoSyncFuture: autoSync,
             excludeShorts,
-            includeKeywords: includeKeywords.split(",").map((s) => s.trim()).filter(Boolean),
+            filterKeywords: includeKeywords.split(",").map((s) => s.trim()).filter(Boolean),
             excludeKeywords: excludeKeywords.split(",").map((s) => s.trim()).filter(Boolean),
             importScope: selectedIds.size > 0 ? "SELECT" : "ALL",
           },
@@ -411,7 +435,7 @@ export default function PodcastYoutubePage() {
                   ID : {channelStatus.channelId} {channelStatus.customUrl && `• ${channelStatus.customUrl}`}
                 </p>
                 <p className="text-[11px] text-gray-500">
-                  Abonnement WebSub : {channelStatus.webSubActive ? "Actif (Push)" : "Passif (Polling 6h)"}
+                  Abonnement WebSub : {channelStatus.webSubStatus === "ACTIVE" ? "Actif (Push)" : "Passif (Polling 6h)"}
                 </p>
               </div>
             </div>
@@ -473,7 +497,7 @@ export default function PodcastYoutubePage() {
             <div className="bg-[#0A0D14] p-4 rounded-xl border border-[#1E2638] space-y-1">
               <span className="text-gray-500">Prochaine Vérification</span>
               <p className="text-xs font-bold text-gray-300">
-                {channelStatus.nextSyncAt ? new Date(channelStatus.nextSyncAt).toLocaleString("fr-FR") : "Automatique"}
+                {channelStatus.nextSyncAt ? new Date(channelStatus.nextSyncAt).toLocaleString("fr-FR") : channelStatus.syncEnabled ? "En attente" : "Désactivée"}
               </p>
             </div>
 
@@ -502,9 +526,11 @@ export default function PodcastYoutubePage() {
                       )}
                     </div>
                     <div className="text-gray-400 flex items-center gap-3">
-                      <span>Nouveaux : <strong className="text-white">{run.episodesImported}</strong></span>
-                      <span>Mis à jour : <strong className="text-white">{run.episodesUpdated}</strong></span>
-                      <span>Ignorés : <strong className="text-slate-400">{run.episodesSkipped}</strong></span>
+                      {run.errorMessage&&<p className="w-full whitespace-pre-wrap text-red-400">{run.errorMessage}</p>}
+                      <span>Erreurs : {run.videosFailed || 0}</span>
+                      <span>Nouveaux : <strong className="text-white">{run.videosImported}</strong></span>
+                      <span>Mis à jour : <strong className="text-white">{run.videosUpdated}</strong></span>
+                      <span>Ignorés : <strong className="text-slate-400">{run.videosSkipped}</strong></span>
                       <span className="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-bold">
                         {run.status}
                       </span>
@@ -518,6 +544,9 @@ export default function PodcastYoutubePage() {
       ) : (
         /* État 2 : Pas encore connecté -> Formulaire de connexion */
         <div className="space-y-6">
+          <p className="text-sm text-gray-400">{previewData?.note}</p>
+          {previewData?.nextPageToken&&<button disabled={loadingMore} onClick={()=>void loadMoreVideos()} className="text-sm text-[#FFBF00]">{loadingMore?"Chargement…":"Charger les vidéos suivantes / anciennes"}</button>}
+          {previewData&&<label className="block text-sm">Import initial<select value={initialImportMode} onChange={e=>setInitialImportMode(e.target.value as any)} className="ml-3 rounded-lg bg-[#222] p-2"><option value="SELECT">Importer les vidéos sélectionnées</option><option value="FUTURE_ONLY">Ne suivre que les prochaines publications</option></select></label>}
           <form onSubmit={handlePreview} className="bg-[#121722] border border-[#1E2638] rounded-2xl p-6 sm:p-8 space-y-4">
             <div className="space-y-1">
               <label htmlFor="channel-url" className="text-xs font-bold text-white uppercase tracking-wider">
@@ -536,7 +565,7 @@ export default function PodcastYoutubePage() {
                 type="text"
                 placeholder="Ex : https://www.youtube.com/@lespitchounestv"
                 value={channelInput}
-                onChange={(e) => setChannelInput(e.target.value)}
+                onChange={(e) => {setChannelInput(e.target.value);setPreviewData(null);setSelectedIds(new Set());}}
                 className="flex-1 bg-[#0A0D14] border border-[#1E2638] focus:border-[#E5A93C] text-white text-sm px-4 py-3 rounded-xl outline-none placeholder:text-gray-600"
               />
               <button
@@ -758,7 +787,7 @@ export default function PodcastYoutubePage() {
 
                 <button
                   onClick={handleConnect}
-                  disabled={connecting}
+                  disabled={connecting || (initialImportMode==="SELECT"&&!selectedIds.size)}
                   className="bg-[#E5A93C] hover:bg-[#F5B82E] text-black font-extrabold px-8 py-3 rounded-xl text-xs flex items-center gap-2 transition disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -802,7 +831,8 @@ export default function PodcastYoutubePage() {
 
               <div className="space-y-2">
                 {historicalVideos.map((item: any) => (
-                  <div key={item.youtubeVideoId} className="bg-[#0A0D14] p-3 rounded-lg border border-[#1E2638] flex items-center gap-3 text-xs">
+                  <div key={item.videoId} className="bg-[#0A0D14] p-3 rounded-lg border border-[#1E2638] flex items-center gap-3 text-xs">
+                    <input type="checkbox" aria-label={"Importer "+item.title} disabled={item.alreadyImported || item.embeddable===false} checked={historicalSelected.has(item.videoId)} onChange={()=>setHistoricalSelected(prev=>{const next=new Set(prev);if(next.has(item.videoId))next.delete(item.videoId);else next.add(item.videoId);return next;})}/>
                     {item.thumbnailUrl && (
                       <img src={item.thumbnailUrl} alt={item.title} className="w-16 h-10 object-cover rounded bg-black" />
                     )}
@@ -824,7 +854,8 @@ export default function PodcastYoutubePage() {
             </div>
 
             <div className="p-4 border-t border-[#1E2638] flex items-center justify-between text-xs">
-              <span className="text-gray-400">{historicalVideos.length} vidéo(s) récupérée(s)</span>
+              <span className="text-gray-400">{historicalVideos.length} vidéo(s) chargée(s)</span>
+              <button disabled={importingHistorical||!historicalSelected.size} onClick={()=>void importHistorical()} className="rounded-full bg-[#FFBF00] px-4 py-2 text-black disabled:opacity-50">Importer {historicalSelected.size} sélectionnées</button>
               {historicalNextPageToken && (
                 <button
                   onClick={() => handleFetchHistorical(historicalNextPageToken)}

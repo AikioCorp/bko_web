@@ -19,6 +19,7 @@ import {
   Radio,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
   Clock,
   FolderPlus,
   Sparkles,
@@ -111,6 +112,16 @@ export default function PodcastPage() {
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const [playlistEpisodeId, setPlaylistEpisodeId] = useState<string | null>(null);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [expandedEpisodeIds, setExpandedEpisodeIds] = useState<Set<string>>(new Set());
+
+  const toggleEpisodeDescription = (episodeId: string) => {
+    setExpandedEpisodeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(episodeId)) next.delete(episodeId);
+      else next.add(episodeId);
+      return next;
+    });
+  };
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -536,9 +547,33 @@ export default function PodcastPage() {
                       </h3>
                     </Link>
 
-                    <p className="text-xs text-[#999999] line-clamp-2 leading-relaxed">
-                      {ep.description}
-                    </p>
+                    <div>
+                      <p
+                        className={`text-xs text-[#999999] leading-relaxed transition-all ${
+                          expandedEpisodeIds.has(ep.id) ? "whitespace-pre-wrap" : "line-clamp-2"
+                        }`}
+                      >
+                        {ep.description}
+                      </p>
+                      {ep.description && ep.description.length > 120 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleEpisodeDescription(ep.id);
+                          }}
+                          className="text-[11px] font-bold text-[#FFBF00] hover:underline mt-1 inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>{expandedEpisodeIds.has(ep.id) ? "Réduire" : "Lire la suite"}</span>
+                          <ChevronDown
+                            className={`w-3 h-3 transition-transform duration-200 ${
+                              expandedEpisodeIds.has(ep.id) ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                      )}
+                    </div>
 
                     {/* Barre de progression d'écoute */}
                     {pct > 0 && !prog?.completed && (
