@@ -8,6 +8,7 @@ import { PersistentPlayer } from "./player/PersistentPlayer";
 import { StudioShell } from "./studio/StudioShell";
 import { AdminShell } from "./admin/AdminShell";
 import { AliChatBubble } from "./chat/AliChatBubble";
+import { PreferencesCatchUpModal } from "./modals/PreferencesCatchUpModal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -69,6 +70,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Ali Cultural Advisor Draggable Floating Chat */}
       <AliChatBubble />
+
+      {/* Preferences Catch-Up Modal for eligible accounts */}
+      <PreferencesCatchUpModal />
     </>
   );
 }

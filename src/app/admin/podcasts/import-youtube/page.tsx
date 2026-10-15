@@ -83,8 +83,11 @@ export default function AdminYoutubeImportPage() {
 
       // Sélectionner par défaut toutes les vidéos non encore importées
       const unimported = new Set<string>();
-      res.data.items?.forEach((item: any) => {
-        if (!item.isAlreadyImported) unimported.add(item.youtubeVideoId);
+      const videoList = res.data.videos || res.data.items || [];
+      videoList.forEach((item: any) => {
+        const vid = item.videoId || item.youtubeVideoId;
+        const isAlready = item.alreadyImported ?? item.isAlreadyImported ?? false;
+        if (!isAlready && vid) unimported.add(vid);
       });
       setSelectedVideoIds(unimported);
     } catch (err: any) {
@@ -407,7 +410,7 @@ export default function AdminYoutubeImportPage() {
                 </div>
 
                 <div className="text-xs text-right text-gray-400">
-                  <p>Vidéos dans le flux : <strong className="text-white">{previewData.items?.length || 0}</strong></p>
+                  <p>Vidéos dans le flux : <strong className="text-white">{(previewData.videos || previewData.items || []).length}</strong></p>
                   <p>Sélectionnées : <strong className="text-[#FFBF00]">{selectedVideoIds.size}</strong></p>
                 </div>
               </div>
@@ -501,12 +504,15 @@ export default function AdminYoutubeImportPage() {
               {/* Liste des vidéos sélectionnables */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs border-b border-[#222222] pb-2">
-                  <h4 className="text-white font-bold">Vidéos à importer ({selectedVideoIds.size}/{previewData.items?.length})</h4>
+                  <h4 className="text-white font-bold">Vidéos à importer ({selectedVideoIds.size}/{(previewData.videos || previewData.items || []).length})</h4>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => {
                         const all = new Set<string>();
-                        previewData.items?.forEach((i: any) => all.add(i.youtubeVideoId));
+                        (previewData.videos || previewData.items || []).forEach((i: any) => {
+                          const vid = i.videoId || i.youtubeVideoId;
+                          if (vid) all.add(vid);
+                        });
                         setSelectedVideoIds(all);
                       }}
                       className="text-[#FFBF00] font-bold hover:underline"
@@ -521,12 +527,14 @@ export default function AdminYoutubeImportPage() {
                 </div>
 
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {previewData.items?.map((item: any) => {
-                    const isChecked = selectedVideoIds.has(item.youtubeVideoId);
+                  {(previewData.videos || previewData.items || []).map((item: any) => {
+                    const vid = item.videoId || item.youtubeVideoId;
+                    const isChecked = selectedVideoIds.has(vid);
+                    const isAlready = item.alreadyImported ?? item.isAlreadyImported ?? false;
                     return (
                       <div
-                        key={item.youtubeVideoId}
-                        onClick={() => toggleVideo(item.youtubeVideoId)}
+                        key={vid}
+                        onClick={() => toggleVideo(vid)}
                         className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer text-xs transition ${
                           isChecked
                             ? "bg-[#1A2234] border-[#E5A93C]/40"
@@ -545,16 +553,33 @@ export default function AdminYoutubeImportPage() {
                           )}
                           <div className="min-w-0">
                             <p className="font-bold text-white truncate max-w-lg">{item.title}</p>
-                            <span className="text-[11px] text-gray-500">
-                              {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("fr-FR") : "Date inconnue"}
-                            </span>
+                            <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                              <span>
+                                {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("fr-FR") : "Date inconnue"}
+                              </span>
+                              {item.durationLabel && (
+                                <>
+                                  <span>•</span>
+                                  <span>{item.durationLabel}</span>
+                                </>
+                              )}
+                              {item.isLikelyShort && (
+                                <span className="text-[10px] bg-red-950/60 text-red-400 border border-red-800/40 px-1 rounded">
+                                  Short
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded shrink-0 ${
-                          isChecked ? "bg-emerald-500/10 text-emerald-400" : "bg-gray-800 text-gray-500"
+                          isAlready
+                            ? "bg-slate-800 text-slate-400"
+                            : isChecked
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            : "bg-gray-800 text-gray-500"
                         }`}>
-                          {isChecked ? "Sélectionné" : "Exclu"}
+                          {isAlready ? "Déjà importé" : isChecked ? "Sélectionné" : "Exclu"}
                         </span>
                       </div>
                     );

@@ -25,6 +25,7 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { API_BASE_URL } from "@/lib/api";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
+import { resolvePostAuthDecision } from "@/lib/auth-navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -103,13 +104,15 @@ function AuthComponent() {
     return "/";
   };
 
-  // Si l'utilisateur est déjà authentifié, le rediriger directement selon ses droits
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Si l'utilisateur est déjà authentifié, le rediriger directement selon la décision canonique
   useEffect(() => {
     if (isAuthenticated && user && !isNavigating) {
-      const destination = getDestinationForUser(user.roles || [], redirect);
-      router.replace(destination);
+      const decision = resolvePostAuthDecision(user, redirect);
+      router.replace(decision.path);
     }
-  }, [isAuthenticated, user, redirect, router]);
+  }, [isAuthenticated, user, redirect, router, isNavigating]);
 
   const [activeTab, setActiveTab] = useState<"login" | "register">(
     tabParam === "register" ? "register" : "login"
@@ -159,7 +162,6 @@ function AuthComponent() {
 
   // UI state
   const [loading, setLoading] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
   const [error, setError] = useState("");
 
   const toggleLanguage = (lang: string) => {
@@ -189,8 +191,8 @@ function AuthComponent() {
       if (json.success && json.data) {
         setIsNavigating(true);
         setAuth(json.data.user, json.data.accessToken, json.data.refreshToken);
-        const destination = getDestinationForUser(json.data.user?.roles || [], redirect);
-        router.push(destination);
+        const decision = resolvePostAuthDecision(json.data.user, redirect);
+        router.push(decision.path);
       } else {
         setError(json.message || "Identifiant ou mot de passe incorrect.");
       }
@@ -271,8 +273,8 @@ function AuthComponent() {
       if (json.success && json.data) {
         setIsNavigating(true);
         setAuth(json.data.user, json.data.accessToken, json.data.refreshToken);
-        const destination = getDestinationForUser(json.data.user?.roles || [], redirect);
-        router.push(destination);
+        const decision = resolvePostAuthDecision(json.data.user, redirect);
+        router.push(decision.path);
       } else {
         setError(json.message || "Code incorrect ou expiré.");
       }
@@ -655,7 +657,7 @@ function AuthComponent() {
             </div>
 
             {/* Google Sign In */}
-            <GoogleLoginButton mode="login" />
+            <GoogleLoginButton mode="login" onNavigating={() => setIsNavigating(true)} />
 
             {/* Free Listening Card */}
             <div className="bg-[#0E0E0E] border border-[#242424] rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
@@ -842,7 +844,7 @@ function AuthComponent() {
             </button>
 
             {/* Google Sign Up */}
-            <GoogleLoginButton mode="register" />
+            <GoogleLoginButton mode="register" onNavigating={() => setIsNavigating(true)} />
 
             {/* Assurance note */}
             <p className="text-[10px] text-center text-[#757575] flex items-center justify-center gap-1">

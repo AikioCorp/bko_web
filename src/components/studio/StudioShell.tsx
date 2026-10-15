@@ -21,7 +21,8 @@ import {
   User,
   ShieldCheck,
   Menu,
-  X
+  X,
+  Video
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 
@@ -65,6 +66,7 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
   const creationNav = [
     { name: "Nouvel Épisode", href: "/studio/episodes/new", icon: PlusCircle },
     { name: "Nouvelle Émission", href: "/studio/podcasts/new", icon: Mic2 },
+    { name: "Connecter YouTube", href: "/studio/import-youtube", icon: Video },
   ];
 
   const configNav = [

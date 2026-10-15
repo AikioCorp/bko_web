@@ -6,11 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { API_BASE_URL } from "@/lib/api";
 
+import { resolvePostAuthDecision } from "@/lib/auth-navigation";
+
 interface GoogleLoginButtonProps {
   mode?: "login" | "register";
+  onNavigating?: () => void;
 }
 
-export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ mode = "login" }) => {
+export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ mode = "login", onNavigating }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setAuth } = useAuthStore();
@@ -41,18 +44,17 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ mode = "lo
       const data = await res.json();
 
       if (data.success && data.data) {
-        const { user: backendUser, accessToken } = data.data;
+        if (onNavigating) onNavigating();
+        const { user: backendUser, accessToken, refreshToken } = data.data;
         const userObj = {
-          id: backendUser.id,
-          email: backendUser.email,
-          fullName: backendUser.fullName,
-          avatar: backendUser.avatar,
+          ...backendUser,
           roles: backendUser.roles || ["USER"],
-          permissions: [],
+          permissions: backendUser.permissions || [],
         };
 
-        setAuth(userObj as any, accessToken);
-        router.push(redirectTarget);
+        setAuth(userObj as any, accessToken, refreshToken);
+        const decision = resolvePostAuthDecision(userObj, redirectTarget);
+        router.push(decision.path);
       } else {
         setErrorMsg(data.error?.message || "Échec de l'authentification avec Google");
       }

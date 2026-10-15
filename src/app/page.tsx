@@ -282,22 +282,26 @@ function PodcastShelfRow({ sec }: { sec: any }) {
         className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x scroll-smooth"
       >
         {sec.items.map((item: any) => {
-          const pod = item.podcast || item;
+          const pod = item.podcast || item.collection || item;
+          const isCollection = !!item.collection;
+          const targetUrl = isCollection
+            ? `/discovery/sections/${pod.slug || pod.id}`
+            : `/podcasts/${pod.slug || pod.id}`;
           const epCount =
-            pod._count?.episodes ?? pod.episodesCount ?? pod.episodes?.length ?? 0;
+            pod._count?.episodes ?? pod.episodesCount ?? pod.episodes?.length ?? (isCollection ? (pod._count?.items ?? 0) : 0);
           return (
             <TrackedCard
               key={item.id || pod.id}
               batchId={item.attribution?.batchId}
               sectionId={sec.id}
               sectionSlug={sec.slug}
-              targetType="PODCAST"
+              targetType={isCollection ? ("COLLECTION" as any) : "PODCAST"}
               targetId={pod.id}
               position={item.position ?? 0}
               reason={item.reason}
               className="snap-start shrink-0 w-[180px] sm:w-[210px] bg-[#141414] hover:bg-[#1A1A1A] rounded-2xl p-3 border border-[#242424] hover:border-[#383838] transition-colors group cursor-pointer"
             >
-              <Link href={`/podcasts/${pod.slug || pod.id}`} className="block">
+              <Link href={targetUrl} className="block">
                 <div className="w-full aspect-square rounded-xl overflow-hidden bg-[#0B0B0B] relative mb-3">
                   <img
                     src={
@@ -826,8 +830,8 @@ function HomeContent() {
                 );
               }
 
-              // C. Section Podcasts (Découverte, Éditoriale, etc.)
-              if (sec.type === "PODCAST_ROW") {
+              // C. Section Podcasts ou Collections (Découverte, Éditoriale, etc.)
+              if (sec.type === "PODCAST_ROW" || sec.type === "COLLECTION_ROW") {
                 return <PodcastShelfRow key={sec.id} sec={sec} />;
               }
 

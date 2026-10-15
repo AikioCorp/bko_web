@@ -70,7 +70,7 @@ export default function SuspendedPage() {
         {/* Actions directes */}
         <div className="space-y-3 pt-2">
           <a
-            href="mailto:support@bamakopodcast.com?subject=Demande%20de%20révision%20de%20suspension%20de%20compte"
+            href="/support"
             className="w-full py-3 px-4 rounded-xl bg-[#FFBF00] hover:bg-[#E5A800] text-black font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors"
           >
             <Mail className="w-4 h-4" />
@@ -87,7 +87,7 @@ export default function SuspendedPage() {
         </div>
 
         <p className="text-[11px] text-[#555555]">
-          Si vous estimez qu&apos;il s&apos;agit d&apos;une erreur, notre équipe support répond dans un délai moyen de 24 à 48 heures.
+          Si vous estimez qu&apos;il s&apos;agit d&apos;une erreur, vous pouvez demander une révision à notre équipe d’assistance.
         </p>
       </div>
     </div>

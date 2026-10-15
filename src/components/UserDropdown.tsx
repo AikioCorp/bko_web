@@ -140,6 +140,7 @@ export function UserDropdown() {
                   <Bookmark className="w-3.5 h-3.5" />
                   <span>Ma Bibliothèque</span>
                 </Link>
+                <Link href="/support" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-lg text-xs text-[#B8B8B8] hover:text-white">Aide et mes demandes</Link>
                 <Link
                   href="/settings/subscription"
                   onClick={() => setIsOpen(false)}

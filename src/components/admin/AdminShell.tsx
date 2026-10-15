@@ -9,7 +9,7 @@ import {
   Library, Tags, ShieldAlert, BadgeCheck, FileDown, 
   BarChart3, Settings, Database, Activity, Shield, 
   ChevronLeft, ChevronRight, LogOut, ArrowLeft, CreditCard,
-  Loader2, Megaphone, Crown
+  Loader2, Megaphone, Crown, Video
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { UserDropdown } from "../UserDropdown";
@@ -23,7 +23,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const isSuperAdmin = user?.roles?.some(r => r.toUpperCase() === "SUPER_ADMIN") || false;
   const isAdmin = user?.roles?.some(r => r.toUpperCase() === "ADMIN") || false;
-  const canAccessConsole = isSuperAdmin || isAdmin;
+  const canSupport = isSuperAdmin || !!user?.permissions?.includes("support.view");
+  const canAccessConsole = isSuperAdmin || isAdmin || (canSupport && pathname?.startsWith("/admin/support"));
 
   // Redirection automatique vers la page de connexion si non authentifié
   useEffect(() => {
@@ -48,6 +49,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       items: [
         { name: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard },
         { name: "Émissions", href: "/admin/podcasts", icon: Podcast },
+        { name: "Connecter YouTube", href: "/admin/podcasts/import-youtube", icon: Video },
         { name: "Épisodes", href: "/admin/episodes", icon: Mic2 },
         { name: "Créateurs", href: "/admin/creators", icon: UserCog },
         { name: "Utilisateurs", href: "/admin/users", icon: Users },
@@ -66,6 +68,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     {
       label: "Modération",
       items: [
+        ...(canSupport ? [{ name: "Assistance", href: "/admin/support", icon: ShieldAlert }] : []),
         { name: "Signalements", href: "/admin/reports", icon: ShieldAlert },
         { name: "Revendications", href: "/admin/claims", icon: BadgeCheck },
       ]

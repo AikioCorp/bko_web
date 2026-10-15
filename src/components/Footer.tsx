@@ -24,6 +24,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li><Link href="/explore?view=episodes" className="hover:text-[#FFBF00] transition-colors">Tous les épisodes</Link></li>
               <li><Link href="/explore?view=podcasts" className="hover:text-[#FFBF00] transition-colors">Toutes les émissions</Link></li>
+              <li><Link href="/support" className="hover:text-[#FFBF00] transition-colors">Contacter l’assistance</Link></li>
               <li><Link href="/explore" className="hover:text-[#FFBF00] transition-colors">Thématiques & Catégories</Link></li>
               <li><Link href="/library" className="hover:text-[#FFBF00] transition-colors">Bibliothèque & Favoris</Link></li>
             </ul>

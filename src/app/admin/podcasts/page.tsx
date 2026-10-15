@@ -297,6 +297,13 @@ export default function AdminPodcastsPage() {
           <Button 
             variant="outline" 
             className="bg-[#171717] hover:bg-[#262626] border-[#2A2A2A] text-white" 
+            onClick={() => router.push("/admin/podcasts/import-youtube")}
+          >
+            <Video className="w-4 h-4 mr-2 text-red-500" /> Connecter YouTube
+          </Button>
+          <Button 
+            variant="outline" 
+            className="bg-[#171717] hover:bg-[#262626] border-[#2A2A2A] text-white" 
             onClick={() => router.push("/admin/podcasts/import-rss")}
           >
             <Rss className="w-4 h-4 mr-2 text-[#FFBF00]" /> Importer via RSS

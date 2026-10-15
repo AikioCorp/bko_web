@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ShieldCheck, ArrowRight, RotateCw, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { resolvePostAuthDecision } from "@/lib/auth-navigation";
 
 function VerifyOtpInner() {
   const router = useRouter();
@@ -68,17 +69,9 @@ function VerifyOtpInner() {
           setAuth(json.data.user, json.data.accessToken, json.data.refreshToken);
         }
         setTimeout(() => {
-          const roles = (json.data.user?.roles || []).map((r: string) => r.toUpperCase());
-          if (destination && destination !== "/") {
-            router.push(destination);
-          } else if (roles.includes("SUPER_ADMIN") || roles.includes("ADMIN")) {
-            router.push("/admin/dashboard");
-          } else if (roles.includes("CREATOR") || roles.includes("EDITOR")) {
-            router.push("/studio");
-          } else {
-            router.push("/onboarding");
-          }
-        }, 1200);
+          const decision = resolvePostAuthDecision(json.data.user, destination);
+          router.push(decision.path);
+        }, 1000);
       } else {
         // En mode test / dev local, fallback si code dev
         if (devCode && codeToVerify === devCode) {

@@ -714,7 +714,12 @@ export const PersistentPlayer = () => {
                 {hoverCover && <Maximize2 className="absolute inset-0 m-auto w-3.5 h-3.5 text-white" />}
               </div>
               <div className="min-w-0 flex-1">
-                <ScrollingTitle title={decodeHtmlEntities(currentEpisode.title)} className="text-xs font-bold text-white group-hover:text-[#FFBF00] transition-colors" />
+                <div className="flex items-center justify-between gap-2">
+                  <ScrollingTitle title={decodeHtmlEntities(currentEpisode.title)} className="text-xs font-bold text-white group-hover:text-[#FFBF00] transition-colors" />
+                  <span className="text-[10px] font-mono font-bold text-[#FFBF00] shrink-0">
+                    {fmt(currentTime)} / {fmt(total)}
+                  </span>
+                </div>
                 <Link
                   href={`/podcasts/${currentEpisode.podcast.slug}`}
                   onClick={(e) => e.stopPropagation()}
@@ -725,8 +730,8 @@ export const PersistentPlayer = () => {
                 </Link>
               </div>
             </div>
-            <div className="mt-1 h-1 bg-[#242424] rounded-full w-full relative overflow-hidden">
-              <div className="absolute left-0 top-0 bottom-0 bg-[#FFBF00] rounded-full" style={{ width: `${progressPercent}%` }}></div>
+            <div className="mt-1 h-1.5 bg-[#262626] rounded-full w-full relative overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 bg-[#FFBF00] rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
             </div>
           </div>
 

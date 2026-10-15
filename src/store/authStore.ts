@@ -17,9 +17,22 @@ export interface UserProfile {
   hasPassword?: boolean;
   roles: string[];
   permissions: string[];
-  languagePreferences?: Array<{ languageCode: string }>;
-  topicPreferences?: Array<{ topicId: string }>;
-  countryPreferences?: Array<{ countryId: string }>;
+  isVerified?: boolean;
+  isSuspended?: boolean;
+  suspendedReason?: string | null;
+  onboardingCompleted?: boolean;
+  onboardingState?: "NOT_PROMPTED" | "PROMPTED" | "COMPLETED" | "DISMISSED" | string;
+  hasPreferences?: boolean;
+  isNewUser?: boolean;
+  recommendationProfile?: {
+    onboardingCompleted?: boolean;
+    onboardingState?: string;
+    onboardingPromptedAt?: string | null;
+    onboardingDismissedAt?: string | null;
+  };
+  languagePreferences?: Array<{ languageCode: string; language?: any }>;
+  topicPreferences?: Array<{ topicId: string; topic?: any }>;
+  countryPreferences?: Array<{ countryId: string; country?: any }>;
 }
 
 interface AuthState {

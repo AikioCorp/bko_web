@@ -3,7 +3,7 @@
 import React from "react";
 import useSWR from "swr";
 import Link from "next/link";
-import { Plus, Podcast as PodcastIcon, Rss, ExternalLink, Settings, Loader2, Image as ImageIcon } from "lucide-react";
+import { Plus, Podcast as PodcastIcon, Rss, Video, ExternalLink, Settings, Loader2, Image as ImageIcon } from "lucide-react";
 
 import { fetchApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,13 @@ export default function StudioPodcastsPage() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="bg-[#111] border-[#333] text-white hover:bg-[#222]" asChild>
-            <Link href="/studio/podcasts/new">
+            <Link href="/studio/import-youtube">
+              <Video className="w-4 h-4 mr-2 text-red-500" />
+              Connecter YouTube
+            </Link>
+          </Button>
+          <Button variant="outline" className="bg-[#111] border-[#333] text-white hover:bg-[#222]" asChild>
+            <Link href="/studio/import-rss">
               <Rss className="w-4 h-4 mr-2 text-orange-400" />
               Connecter un flux RSS
             </Link>

@@ -116,8 +116,11 @@ export default function PodcastYoutubePage() {
         setPreviewData(json.data);
         // Par défaut, sélectionner toutes les vidéos non encore importées
         const unimported = new Set<string>();
-        json.data.items?.forEach((item: any) => {
-          if (!item.isAlreadyImported) unimported.add(item.youtubeVideoId);
+        const list = json.data.items || json.data.videos || [];
+        list.forEach((item: any) => {
+          const vid = item.youtubeVideoId || item.videoId;
+          const isAlready = item.isAlreadyImported ?? item.alreadyImported ?? false;
+          if (!isAlready && vid) unimported.add(vid);
         });
         setSelectedIds(unimported);
       }
@@ -130,16 +133,17 @@ export default function PodcastYoutubePage() {
 
   // Filtrage local en temps réel des vidéos prévisualisées
   const filteredPreviewItems = useMemo(() => {
-    if (!previewData?.items) return [];
-    return previewData.items.filter((item: any) => {
-      const titleLower = item.title.toLowerCase();
+    const rawList = previewData?.items || previewData?.videos;
+    if (!rawList) return [];
+    return rawList.filter((item: any) => {
+      const titleLower = (item.title || "").toLowerCase();
       if (includeKeywords) {
         const inc = includeKeywords.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
-        if (inc.length > 0 && !inc.some((k) => titleLower.includes(k))) return false;
+        if (inc.length > 0 && !inc.some((k: string) => titleLower.includes(k))) return false;
       }
       if (excludeKeywords) {
         const exc = excludeKeywords.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
-        if (exc.length > 0 && exc.some((k) => titleLower.includes(k))) return false;
+        if (exc.length > 0 && exc.some((k: string) => titleLower.includes(k))) return false;
       }
       return true;
     });
@@ -154,7 +158,10 @@ export default function PodcastYoutubePage() {
 
   const selectAll = () => {
     const all = new Set<string>();
-    filteredPreviewItems.forEach((i: any) => all.add(i.youtubeVideoId));
+    filteredPreviewItems.forEach((i: any) => {
+      const vid = i.youtubeVideoId || i.videoId;
+      if (vid) all.add(vid);
+    });
     setSelectedIds(all);
   };
 
@@ -560,7 +567,7 @@ export default function PodcastYoutubePage() {
 
                 <div className="text-xs text-right text-gray-400 shrink-0">
                   <p>
-                    Vidéos détectées dans le flux : <strong className="text-white">{previewData.items?.length || 0}</strong>
+                    Vidéos détectées dans le flux : <strong className="text-white">{(previewData.items || previewData.videos || []).length}</strong>
                   </p>
                   <p>
                     Sélectionnées pour import : <strong className="text-[#FFBF00]">{selectedIds.size}</strong>
@@ -651,11 +658,13 @@ export default function PodcastYoutubePage() {
               {/* Grille / Liste des vidéos prévisualisées */}
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
                 {filteredPreviewItems.map((video: any) => {
-                  const isChecked = selectedIds.has(video.youtubeVideoId);
+                  const vid = video.youtubeVideoId || video.videoId;
+                  const isChecked = selectedIds.has(vid);
+                  const isAlready = video.isAlreadyImported ?? video.alreadyImported ?? false;
                   return (
                     <div
-                      key={video.youtubeVideoId}
-                      onClick={() => toggleSelect(video.youtubeVideoId)}
+                      key={vid}
+                      onClick={() => toggleSelect(vid)}
                       className={`p-3.5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer transition ${
                         isChecked
                           ? "bg-[#1A2234] border-[#E5A93C]/40"
@@ -683,7 +692,7 @@ export default function PodcastYoutubePage() {
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {video.duration ? `${Math.floor(video.duration / 60)} min` : "Durée inconnue"}
+                              {video.durationSeconds || video.duration ? `${Math.floor((video.durationSeconds || video.duration) / 60)} min` : (video.durationLabel || "Durée inconnue")}
                             </span>
                             <a
                               href={video.canonicalUrl}
@@ -700,7 +709,7 @@ export default function PodcastYoutubePage() {
                       </div>
 
                       <div className="shrink-0">
-                        {video.isAlreadyImported ? (
+                        {isAlready ? (
                           <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded">
                             Déjà importé
                           </span>
