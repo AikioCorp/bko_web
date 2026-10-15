@@ -22,7 +22,17 @@ import {
   Sparkles,
   Eye,
   EyeOff,
-  Check
+  Check,
+  Calendar,
+  Mail,
+  Phone,
+  MessageSquare,
+  AlertCircle,
+  Search,
+  ExternalLink,
+  ChevronRight,
+  Filter,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -46,6 +56,36 @@ export default function StudioOffersAdminPage() {
   const [featureInput, setFeatureInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<"offers" | "bookings">("offers");
+  const [bookingStatusFilter, setBookingStatusFilter] = useState<string>("ALL");
+  const [bookingSearch, setBookingSearch] = useState<string>("");
+  const [selectedBookingForStatus, setSelectedBookingForStatus] = useState<any>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<string>("PENDING");
+  const [updatingNotes, setUpdatingNotes] = useState<string>("");
+  const [isSavingBookingStatus, setIsSavingBookingStatus] = useState(false);
+
+  const { data: bookingsResult, mutate: mutateBookings, isLoading: isBookingsLoading } = useSWR(
+    "/admin/studio/bookings",
+    fetcher
+  );
+
+  const bookingsList: any[] = bookingsResult?.items || (Array.isArray(bookingsResult) ? bookingsResult : []);
+  const pendingBookingsCount = bookingsList.filter((b: any) => b.status === "PENDING").length;
+
+  const filteredBookings = bookingsList.filter((b: any) => {
+    if (bookingStatusFilter !== "ALL" && b.status !== bookingStatusFilter) return false;
+    if (bookingSearch.trim()) {
+      const q = bookingSearch.toLowerCase();
+      const matchRef = b.reference?.toLowerCase().includes(q);
+      const matchName = b.contactName?.toLowerCase().includes(q);
+      const matchEmail = b.email?.toLowerCase().includes(q);
+      const matchPhone = b.phone?.toLowerCase().includes(q);
+      const matchPodcast = b.podcastName?.toLowerCase().includes(q);
+      if (!matchRef && !matchName && !matchEmail && !matchPhone && !matchPodcast) return false;
+    }
+    return true;
+  });
 
   const packages = offers?.filter((o: any) => o.type === "PACKAGE") || [];
   const services = offers?.filter((o: any) => o.type === "SERVICE") || [];
@@ -153,32 +193,85 @@ export default function StudioOffersAdminPage() {
     }
   };
 
+  const handleUpdateBookingStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBookingForStatus) return;
+    setIsSavingBookingStatus(true);
+    try {
+      await adminApi(`/admin/studio/bookings/${selectedBookingForStatus.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: updatingStatus,
+          adminNotes: updatingNotes,
+        }),
+      });
+      await mutateBookings();
+      setSelectedBookingForStatus(null);
+    } catch (err: any) {
+      alert("Erreur lors de la mise à jour: " + (err.message || err));
+    } finally {
+      setIsSavingBookingStatus(false);
+    }
+  };
+
   return (
     <div className="w-full pb-32">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 border-b border-[#222222] pb-6">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4 border-b border-[#222222] pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="p-1.5 rounded-lg bg-[#181818] text-[#FFBF00]">
               <Radio className="w-4 h-4" />
             </span>
-            <h1 className="text-2xl font-black text-white tracking-tight">Tarification du Studio</h1>
+            <h1 className="text-2xl font-black text-white tracking-tight">Studio & Tarification</h1>
           </div>
           <p className="text-sm text-[#888888]">
-            Configurez les formules d'enregistrement (Enregistrement Brut, Formule Express) et les tarifs par salle/espace.
+            Gestion des formules tarifaires et des demandes de réservation de sessions physiques.
           </p>
         </div>
 
-        <AdminAction permission="offers.create"><Button
-          onClick={() => handleOpenEdit()}
-          className="bg-[#FFBF00] text-black font-black hover:bg-[#E5AB00] transition-colors rounded-xl px-5 py-2.5 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Créer une Offre</span>
-        </Button></AdminAction>
+        {activeTab === "offers" && (
+          <AdminAction permission="offers.create"><Button
+            onClick={() => handleOpenEdit()}
+            className="bg-[#FFBF00] text-black font-black hover:bg-[#E5AB00] transition-colors rounded-xl px-5 py-2.5 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Créer une Offre</span>
+          </Button></AdminAction>
+        )}
       </div>
 
-      {isLoading && !offers ? (
+      {/* Navigation Onglets */}
+      <div className="flex items-center gap-2 mb-8 border-b border-[#222222] pb-3">
+        <button
+          onClick={() => setActiveTab("offers")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+            activeTab === "offers"
+              ? "bg-[#FFBF00] text-black"
+              : "bg-[#181818] text-[#888888] hover:text-white"
+          }`}
+        >
+          Grille Tarifaire ({offers?.length || 0})
+        </button>
+        <button
+          onClick={() => setActiveTab("bookings")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2 ${
+            activeTab === "bookings"
+              ? "bg-[#FFBF00] text-black"
+              : "bg-[#181818] text-[#888888] hover:text-white"
+          }`}
+        >
+          <span>Demandes de Réservation Studio</span>
+          {pendingBookingsCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black">
+              {pendingBookingsCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "offers" ? (
+        isLoading && !offers ? (
         <div className="flex justify-center p-16">
           <Loader2 className="w-8 h-8 text-[#FFBF00] animate-spin" />
         </div>
@@ -423,6 +516,284 @@ export default function StudioOffersAdminPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )) : (
+        /* VUE DES RÉSERVATIONS STUDIO */
+        <div className="space-y-6">
+          {/* Barre de filtres et recherche */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#141414] border border-[#222222] p-4 rounded-2xl">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-[#777] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Rechercher par référence, contact, téléphone, émission..."
+                value={bookingSearch}
+                onChange={(e) => setBookingSearch(e.target.value)}
+                className="w-full bg-[#1A1A1A] border border-[#282828] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-[#666] outline-none focus:border-[#FFBF00]"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Filter className="w-3.5 h-3.5 text-[#888]" />
+              <select
+                value={bookingStatusFilter}
+                onChange={(e) => setBookingStatusFilter(e.target.value)}
+                className="bg-[#1A1A1A] border border-[#282828] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FFBF00]"
+              >
+                <option value="ALL">Tous les statuts</option>
+                <option value="PENDING">En attente (PENDING)</option>
+                <option value="REVIEWING">En cours d'examen</option>
+                <option value="CONFIRMED">Confirmées</option>
+                <option value="COMPLETED">Terminées</option>
+                <option value="CANCELLED">Annulées</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Liste des demandes */}
+          {isBookingsLoading && !bookingsResult ? (
+            <div className="flex justify-center p-16">
+              <Loader2 className="w-8 h-8 text-[#FFBF00] animate-spin" />
+            </div>
+          ) : filteredBookings.length === 0 ? (
+            <div className="text-center py-16 border border-[#222] border-dashed rounded-3xl bg-[#111]">
+              <Package className="w-12 h-12 text-[#444] mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-white mb-1">Aucune demande de réservation trouvée</h3>
+              <p className="text-xs text-[#888888] max-w-sm mx-auto">
+                Les demandes soumises depuis le formulaire public ou l'application mobile apparaîtront ici.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {filteredBookings.map((b: any) => {
+                const statusColors: Record<string, string> = {
+                  PENDING: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+                  REVIEWING: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+                  CONFIRMED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+                  COMPLETED: "bg-purple-500/10 text-purple-400 border-purple-500/30",
+                  CANCELLED: "bg-red-500/10 text-red-400 border-red-500/30",
+                };
+
+                const needLabels: Record<string, string> = {
+                  AUDIO_PODCAST: "Podcast Audio",
+                  VIDEO_PODCAST: "Podcast Vidéo",
+                  EDITING: "Montage & Post-prod",
+                  SNIPPETS: "Extraits Shorts & Reels",
+                  COACHING: "Coaching Éditorial",
+                  CUSTOM: "Sur Mesure",
+                };
+
+                const cleanPhone = b.phone?.replace(/[^0-9]/g, "");
+                const waUrl = b.countryCode && cleanPhone
+                  ? `https://wa.me/${b.countryCode.replace("+", "")}${cleanPhone}?text=Bonjour%20${encodeURIComponent(b.contactName)},%20concernant%20votre%20demande%20Studio%20${b.reference}`
+                  : null;
+
+                return (
+                  <div
+                    key={b.id}
+                    className="bg-[#141414] border border-[#242424] hover:border-[#333] rounded-2xl p-5 transition-all space-y-4"
+                  >
+                    {/* Header carte */}
+                    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#202020] pb-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-[#FFBF00]">{b.reference}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColors[b.status] || "bg-[#222] text-white"}`}>
+                            {b.status}
+                          </span>
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#1E1E1E] text-[#AAA] border border-[#2E2E2E]">
+                            {needLabels[b.needType] || b.needType}
+                          </span>
+                        </div>
+                        <h4 className="text-base font-bold text-white flex items-center gap-2">
+                          <span>{b.contactName}</span>
+                          {b.company && <span className="text-xs text-[#888] font-normal">({b.company})</span>}
+                          {b.podcastName && <span className="text-xs text-[#FFBF00] font-normal">— « {b.podcastName} »</span>}
+                        </h4>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {waUrl && (
+                          <a
+                            href={waUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-semibold flex items-center gap-1.5 border border-[#25D366]/20 transition-colors"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </a>
+                        )}
+
+                        <button
+                          onClick={() => {
+                            setSelectedBookingForStatus(b);
+                            setUpdatingStatus(b.status);
+                            setUpdatingNotes(b.adminNotes || "");
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-[#202020] hover:bg-[#282828] text-white text-xs font-semibold flex items-center gap-1.5 border border-[#2E2E2E] transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 text-[#FFBF00]" />
+                          <span>Gérer le statut</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Détails du projet */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                      {b.preferredDate && (
+                        <div className="p-2.5 rounded-xl bg-[#181818] border border-[#222]">
+                          <span className="text-[10px] uppercase font-bold text-[#777] block">Date & Horaire</span>
+                          <span className="text-white font-medium">
+                            {b.preferredDate} ({b.timeSlot || "Flexible"})
+                          </span>
+                        </div>
+                      )}
+
+                      {b.durationHours && (
+                        <div className="p-2.5 rounded-xl bg-[#181818] border border-[#222]">
+                          <span className="text-[10px] uppercase font-bold text-[#777] block">Durée & Participants</span>
+                          <span className="text-white font-medium">
+                            {b.durationHours}h — {b.participantsCount || 1} personne(s)
+                          </span>
+                        </div>
+                      )}
+
+                      {b.studioLocation && (
+                        <div className="p-2.5 rounded-xl bg-[#181818] border border-[#222]">
+                          <span className="text-[10px] uppercase font-bold text-[#777] block">Espace souhaité</span>
+                          <span className="text-white font-medium">{b.studioLocation}</span>
+                        </div>
+                      )}
+
+                      {b.estimatedPrice && (
+                        <div className="p-2.5 rounded-xl bg-[#181818] border border-[#222]">
+                          <span className="text-[10px] uppercase font-bold text-[#777] block">Tarif indicatif</span>
+                          <span className="text-[#FFBF00] font-bold">{b.estimatedPrice}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fichiers & Notes */}
+                    {(b.mediaFilesUrl || b.notes || b.adminNotes) && (
+                      <div className="space-y-1.5 text-xs pt-1 border-t border-[#1C1C1C]">
+                        {b.mediaFilesUrl && (
+                          <div className="flex items-center gap-2 text-[#AAA]">
+                            <ExternalLink className="w-3.5 h-3.5 text-[#FFBF00]" />
+                            <span>Fichiers bruts :</span>
+                            <a
+                              href={b.mediaFilesUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-white hover:underline truncate max-w-md"
+                            >
+                              {b.mediaFilesUrl}
+                            </a>
+                          </div>
+                        )}
+                        {b.notes && (
+                          <div className="text-[#888]">
+                            <strong className="text-[#CCC]">Précisions client :</strong> {b.notes}
+                          </div>
+                        )}
+                        {b.adminNotes && (
+                          <div className="p-2 rounded-lg bg-amber-950/20 border border-amber-900/30 text-amber-200 text-[11px]">
+                            <strong>Note interne régie :</strong> {b.adminNotes}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Footer coordonnées */}
+                    <div className="flex flex-wrap items-center justify-between text-[11px] text-[#777] pt-1">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <Mail className="w-3 h-3" />
+                          <a href={`mailto:${b.email}`} className="text-[#AAA] hover:underline">{b.email}</a>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Phone className="w-3 h-3" />
+                          <span>{b.countryCode} {b.phone}</span>
+                        </span>
+                      </div>
+                      <span>Reçu le {new Date(b.createdAt).toLocaleDateString("fr-FR")} à {new Date(b.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODAL DE GESTION DU STATUT RÉSERVATION STUDIO */}
+      {selectedBookingForStatus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setSelectedBookingForStatus(null)}
+          />
+          <div className="relative bg-[#141414] border border-[#282828] w-full max-w-md rounded-3xl shadow-2xl p-6 sm:p-7 flex flex-col space-y-4 animate-in zoom-in-95 text-white">
+            <div className="flex items-start justify-between border-b border-[#242424] pb-3">
+              <div>
+                <h3 className="text-base font-bold text-white">Mettre à jour la réservation</h3>
+                <p className="text-xs font-mono text-[#FFBF00]">{selectedBookingForStatus.reference}</p>
+              </div>
+              <button
+                onClick={() => setSelectedBookingForStatus(null)}
+                className="p-1 rounded-lg text-[#777] hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateBookingStatus} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#CCC]">Statut de la demande</label>
+                <select
+                  value={updatingStatus}
+                  onChange={(e) => setUpdatingStatus(e.target.value)}
+                  className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-2.5 text-xs text-white outline-none focus:border-[#FFBF00]"
+                >
+                  <option value="PENDING">En attente (PENDING)</option>
+                  <option value="REVIEWING">En cours d'examen (REVIEWING)</option>
+                  <option value="CONFIRMED">Confirmée (CONFIRMED)</option>
+                  <option value="COMPLETED">Terminée (COMPLETED)</option>
+                  <option value="CANCELLED">Annulée (CANCELLED)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#CCC]">Notes internes de production</label>
+                <textarea
+                  rows={3}
+                  value={updatingNotes}
+                  onChange={(e) => setUpdatingNotes(e.target.value)}
+                  placeholder="Créneau validé avec le régisseur, instructions d'accès..."
+                  className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-2.5 text-xs text-white outline-none focus:border-[#FFBF00] resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-[#242424]">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSelectedBookingForStatus(null)}
+                  className="text-xs text-[#888] hover:text-white"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSavingBookingStatus}
+                  className="bg-[#FFBF00] text-black font-bold text-xs rounded-xl px-5"
+                >
+                  {isSavingBookingStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
+                  Valider le statut
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

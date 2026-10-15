@@ -127,10 +127,7 @@ export const SubscriptionCheckoutModal: React.FC<SubscriptionCheckoutModalProps>
       setIsSubmitting(true);
       setStep("PROCESSING");
 
-      // Simulation réaliste de l'interrogation de la passerelle Mobile Money (1.8s)
-      await new Promise((resolve) => setTimeout(resolve, 1800));
-
-      let res;
+      let res: any;
       if (isEpisodePurchase && episode) {
         res = await fetchApi("/subscriptions/buy-episode", {
           method: "POST",
@@ -152,7 +149,12 @@ export const SubscriptionCheckoutModal: React.FC<SubscriptionCheckoutModalProps>
         });
       }
 
-      setCompletedTxRef(res?.data?.transaction?.transactionRef || `BKO-PAY-${Date.now().toString().slice(-6)}`);
+      const txRef = res?.data?.transaction?.transactionRef;
+      if (!res?.success || !txRef) {
+        throw new Error(res?.error?.message || res?.message || "La transaction n'a pas pu être validée par le serveur.");
+      }
+
+      setCompletedTxRef(txRef);
       setStep("SUCCESS");
 
       if (onSuccess) {

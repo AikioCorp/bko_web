@@ -38,10 +38,40 @@ interface PodcastItem {
   id: string;
   title?: string;
   name?: string;
+  cover?: string | null;
   coverUrl?: string | null;
   imageUrl?: string | null;
   authorName?: string | null;
   author?: { name?: string } | null;
+  permanentPersons?: Array<{ person?: { name?: string } }>;
+}
+
+function sanitizeCoverUrl(raw?: string | null): string {
+  if (!raw || typeof raw !== "string") return "/images/default-cover.jpg";
+  let url = raw.trim();
+  if (!url) return "/images/default-cover.jpg";
+
+  // Décodage des entités HTML couramment injectées par les flux RSS
+  url = url
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+    return url;
+  }
+
+  if (url.startsWith("/")) {
+    if (url.startsWith("/images/") || url.startsWith("/brand/") || url.endsWith(".png") || url.endsWith(".jpg")) {
+      return url;
+    }
+    const baseOrigin = API_BASE_URL.replace(/\/api\/v\d+\/?$/, "");
+    return `${baseOrigin}${url}`;
+  }
+
+  return "/images/default-cover.jpg";
 }
 
 function OnboardingContent() {
@@ -489,9 +519,15 @@ function OnboardingContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[44vh] overflow-y-auto pr-1">
                 {podcasts.map((podcast) => {
                   const isFollowed = selectedPodcasts.includes(podcast.id);
-                  const title = podcast.title || podcast.name || "Émission";
-                  const author = podcast.authorName || podcast.author?.name || "Bamako Podcast";
-                  const cover = podcast.coverUrl || podcast.imageUrl || "/images/default-cover.png";
+                  const title = podcast.name || podcast.title || "Émission";
+                  const author =
+                    podcast.authorName ||
+                    podcast.author?.name ||
+                    podcast.permanentPersons?.[0]?.person?.name ||
+                    "Bamako Podcast";
+                  const cover = sanitizeCoverUrl(
+                    podcast.cover || podcast.coverUrl || podcast.imageUrl
+                  );
 
                   return (
                     <div
@@ -499,14 +535,24 @@ function OnboardingContent() {
                       className="p-3 bg-[#0E0E0E] border border-[#242424] rounded-2xl flex items-center justify-between gap-3 hover:border-[#383838] transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-xl bg-[#1C1C1E] overflow-hidden shrink-0 relative">
-                          <Image
-                            src={cover}
-                            alt={title}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
+                        <div className="w-12 h-12 rounded-xl bg-[#1C1C1E] overflow-hidden shrink-0 relative flex items-center justify-center border border-[#262626]">
+                          {cover ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={cover}
+                              alt={title}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = "/images/default-cover.jpg";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-[#1A1A1A] flex items-center justify-center text-[#FFBF00]">
+                              <Radio className="w-5 h-5" />
+                            </div>
+                          )}
                         </div>
                         <div className="min-w-0">
                           <h2 className="text-xs font-bold text-white truncate">{title}</h2>
