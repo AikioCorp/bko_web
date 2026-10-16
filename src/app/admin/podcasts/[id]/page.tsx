@@ -32,7 +32,10 @@ import {
   Power,
   Headphones,
   Edit3,
-  Info
+  Info,
+  Shield,
+  UserCheck,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useSWR from "swr";
@@ -71,6 +74,22 @@ export default function AdminPodcastDetailsPage() {
   const { data: categories } = useSWR('/admin/categories', (url: string) => adminApi(url).then((res: any) => res.data || []));
   const { data: languages } = useSWR('/admin/languages', (url: string) => adminApi(url).then((res: any) => res.data || []));
   const { data: organizations } = useSWR('/admin/organizations', (url: string) => adminApi(url).then((res: any) => res.data || []));
+  const { data: teamMembersData, mutate: mutateTeamMembers, isLoading: isLoadingTeam } = useSWR(
+    id && activeTab === "Équipe" ? `/admin/podcasts/${id}/members` : null,
+    (url: string) => adminApi(url).then((res: any) => res.data || [])
+  );
+  const teamMembers = Array.isArray(teamMembersData) ? teamMembersData : [];
+
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState<any[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [selectedRole, setSelectedRole] = useState("EDITOR");
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [addMemberError, setAddMemberError] = useState<string | null>(null);
+  const [addMemberSuccess, setAddMemberSuccess] = useState<string | null>(null);
+  const [memberActionLoading, setMemberActionLoading] = useState<string | null>(null);
   const { data: episodes, mutate: mutateEpisodes } = useSWR(
     id && activeTab === "Épisodes" ? `/admin/podcasts/${id}/episodes` : null,
     (url: string) => adminApi(url).then((res: any) => res.data || [])
@@ -238,6 +257,88 @@ export default function AdminPodcastDetailsPage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleSearchUsers = async (query: string) => {
+    setUserSearchQuery(query);
+    if (!query || query.trim().length < 2) {
+      setUserSearchResults([]);
+      return;
+    }
+    setIsSearchingUsers(true);
+    try {
+      const res = await adminApi(`/admin/users/search?q=${encodeURIComponent(query.trim())}`);
+      setUserSearchResults(res.data || []);
+    } catch {
+      setUserSearchResults([]);
+    } finally {
+      setIsSearchingUsers(false);
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!selectedUser || !id) return;
+    setIsAddingMember(true);
+    setAddMemberError(null);
+    setAddMemberSuccess(null);
+    try {
+      const res = await adminApi(`/admin/podcasts/${id}/members`, {
+        method: "POST",
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          role: selectedRole,
+        }),
+      });
+      if (res.success) {
+        setAddMemberSuccess(`Utilisateur ${selectedUser.fullName || selectedUser.email} ajouté avec succès. Ses droits sont immédiatement actifs.`);
+        setSelectedUser(null);
+        setUserSearchQuery("");
+        setUserSearchResults([]);
+        await mutateTeamMembers();
+        setTimeout(() => {
+          setShowAddMemberModal(false);
+          setAddMemberSuccess(null);
+        }, 1200);
+      } else {
+        setAddMemberError(res.message || "Erreur lors de l'ajout du membre.");
+      }
+    } catch (e: any) {
+      setAddMemberError(e.message || "Impossible d'ajouter ce membre.");
+    } finally {
+      setIsAddingMember(false);
+    }
+  };
+
+  const handleUpdateRole = async (userId: string, newRole: string) => {
+    setMemberActionLoading(userId);
+    try {
+      await adminApi(`/admin/podcasts/${id}/members/${userId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ role: newRole }),
+      });
+      await mutateTeamMembers();
+    } catch (e: any) {
+      alert(e.message || "Impossible de modifier le rôle.");
+    } finally {
+      setMemberActionLoading(null);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string, memberName: string) => {
+    if (!confirm(`Retirer ${memberName} de l'équipe de ce podcast ? Ses droits d'accès seront immédiatement révoqués.`)) {
+      return;
+    }
+    setMemberActionLoading(userId);
+    try {
+      await adminApi(`/admin/podcasts/${id}/members/${userId}`, {
+        method: "DELETE",
+      });
+      await mutateTeamMembers();
+    } catch (e: any) {
+      alert(e.message || "Impossible de retirer ce membre.");
+    } finally {
+      setMemberActionLoading(null);
     }
   };
 
@@ -1046,47 +1147,373 @@ export default function AdminPodcastDetailsPage() {
 
         {/* ONGLET: ÉQUIPE */}
         {activeTab === "Équipe" && (
-          <div className="space-y-6 max-w-4xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white">Équipe du podcast</h2>
-                <p className="text-sm text-[#757575]">Personnalités (animateurs, producteurs) associées à ce podcast.</p>
+          <div className="space-y-8 max-w-4xl">
+            {/* 1. SECTION: MEMBRES DU STUDIO (Accès et Droits) */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-[#FFBF00]" />
+                    Membres autorisés du Studio
+                  </h2>
+                  <p className="text-sm text-[#757575]">
+                    Utilisateurs disposant d'un accès actif au Studio Bamako Podcast pour cette émission.
+                  </p>
+                </div>
+                <AdminAction permission="catalog.edit">
+                  <Button
+                    onClick={() => {
+                      setShowAddMemberModal(true);
+                      setAddMemberError(null);
+                      setAddMemberSuccess(null);
+                      setSelectedUser(null);
+                      setUserSearchQuery("");
+                      setUserSearchResults([]);
+                    }}
+                    className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-9 px-4 shrink-0"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Ajouter un membre existant
+                  </Button>
+                </AdminAction>
               </div>
-              <Button className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold">
-                <Plus className="w-4 h-4 mr-2" /> Ajouter un membre
-              </Button>
+
+              {/* Règle métier explicative */}
+              <div className="p-4 bg-[#141414] border border-[#2A2A2A] rounded-xl flex items-start gap-3 text-xs text-[#A0A0A0]">
+                <Info className="w-4 h-4 text-[#FFBF00] shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-white block mb-0.5">Règle d'ajout administratif direct :</strong>
+                  L'appartenance et les droits deviennent immédiatement actifs dès validation. Aucune acceptation n'est requise et aucun jeton d'invitation n'est nécessaire. L'utilisateur reçoit une notification in-app, un email et un push avec le bouton <strong>« Ouvrir l'émission »</strong>.
+                </div>
+              </div>
+
+              {/* Table des membres */}
+              <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl overflow-hidden">
+                {isLoadingTeam ? (
+                  <div className="p-12 flex flex-col items-center justify-center text-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#FFBF00] mb-2" />
+                    <p className="text-xs text-[#757575]">Chargement des membres de l'équipe…</p>
+                  </div>
+                ) : teamMembers.length === 0 ? (
+                  <div className="p-12 flex flex-col items-center text-center">
+                    <div className="w-12 h-12 bg-[#2A2A2A] rounded-full flex items-center justify-center mb-4">
+                      <Users className="w-6 h-6 text-[#757575]" />
+                    </div>
+                    <h3 className="text-white font-bold mb-1">Aucun membre collaborateur</h3>
+                    <p className="text-sm text-[#757575] max-w-sm">
+                      Cette émission ne compte actuellement aucun membre d'équipe enregistré. Cliquez sur « Ajouter un membre » pour affecter un utilisateur existant.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#2A2A2A]">
+                    {teamMembers.map((m: any) => {
+                      const ownerCount = teamMembers.filter((item: any) => item.role === "OWNER").length;
+                      const isLastOwner = m.role === "OWNER" && ownerCount <= 1;
+                      const isBusy = memberActionLoading === m.userId;
+
+                      return (
+                        <div key={m.userId} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#202020] transition-colors">
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-[#2A2A2A] border border-[#3A3A3A] flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
+                              {m.user?.avatar ? (
+                                <img src={m.user.avatar} alt={m.user.fullName || "Avatar"} className="w-full h-full object-cover" />
+                              ) : (
+                                (m.user?.fullName || m.user?.email || "U").charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-white truncate">{m.user?.fullName || "Utilisateur"}</p>
+                                {m.role === "OWNER" && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-[#FFBF00]/15 text-[#FFBF00] border border-[#FFBF00]/30">
+                                    PROPRIÉTAIRE
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-[#757575] truncate">{m.user?.email || "-"}</p>
+                              {m.user?.phoneNumber && (
+                                <p className="text-[11px] text-[#555555]">{m.user.phoneNumber}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                            {/* Sélecteur de rôle direct */}
+                            <AdminAction permission="catalog.edit">
+                              <select
+                                value={m.role}
+                                disabled={isBusy}
+                                onChange={(e) => {
+                                  const newRole = e.target.value;
+                                  if (isLastOwner && newRole !== "OWNER") {
+                                    alert("Impossible de modifier le rôle du dernier propriétaire de l'émission. Désignez d'abord un autre propriétaire.");
+                                    return;
+                                  }
+                                  handleUpdateRole(m.userId, newRole);
+                                }}
+                                className="bg-[#0B0B0B] border border-[#2A2A2A] hover:border-[#FFBF00]/50 text-white rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:border-[#FFBF00] outline-none"
+                              >
+                                <option value="OWNER">Propriétaire</option>
+                                <option value="ADMIN">Administrateur</option>
+                                <option value="EDITOR">Éditeur</option>
+                                <option value="ANALYST">Analyste</option>
+                              </select>
+                            </AdminAction>
+
+                            {/* Bouton de retrait */}
+                            <AdminAction permission="catalog.edit">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={isBusy || isLastOwner}
+                                title={isLastOwner ? "Le dernier propriétaire ne peut pas être retiré" : "Retirer ce membre de l'équipe"}
+                                onClick={() => handleRemoveMember(m.userId, m.user?.fullName || m.user?.email || "ce membre")}
+                                className={`h-8 px-2.5 text-xs ${
+                                  isLastOwner
+                                    ? "text-[#555555] cursor-not-allowed hover:bg-transparent"
+                                    : "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                }`}
+                              >
+                                {isBusy ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Trash2 className="w-3.5 h-3.5 mr-1" />
+                                    Retirer
+                                  </>
+                                )}
+                              </Button>
+                            </AdminAction>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl overflow-hidden">
-              {!raw.permanentPersons || raw.permanentPersons.length === 0 ? (
-                <div className="p-12 flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-[#2A2A2A] rounded-full flex items-center justify-center mb-4">
-                    <Users className="w-6 h-6 text-[#757575]" />
-                  </div>
-                  <h3 className="text-white font-bold mb-1">Aucun membre</h3>
-                  <p className="text-sm text-[#757575]">L'équipe de ce podcast est vide.</p>
+            {/* 2. SECTION: CRÉDITS PUBLICS / PERSONNALITÉS DU CATALOGUE */}
+            <div className="space-y-4 pt-4 border-t border-[#2A2A2A]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-white">Générique & Intervenants publics</h3>
+                  <p className="text-xs text-[#757575]">Personnalités (animateurs, producteurs, réalisateurs) affichées au public dans les crédits de l'émission.</p>
                 </div>
-              ) : (
-                <div className="divide-y divide-[#2A2A2A]">
-                  {raw.permanentPersons.map((pp: any) => (
-                    <div key={pp.id} className="p-4 flex items-center justify-between group hover:bg-[#2A2A2A]/30 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <img src={pp.person.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pp.person.name)}&background=2A2A2A&color=fff`} alt={pp.person.name} className="w-10 h-10 rounded-full object-cover border border-[#2A2A2A]" />
-                        <div>
-                          <p className="text-sm font-bold text-white">{pp.person.name}</p>
-                          <p className="text-xs text-[#757575]">{pp.role}</p>
+              </div>
+
+              <div className="bg-[#171717] border border-[#2A2A2A] rounded-xl overflow-hidden">
+                {!raw.permanentPersons || raw.permanentPersons.length === 0 ? (
+                  <div className="p-8 flex flex-col items-center text-center">
+                    <p className="text-xs text-[#757575]">Aucune personnalité associée dans les crédits publics de ce podcast.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#2A2A2A]">
+                    {raw.permanentPersons.map((pp: any) => (
+                      <div key={pp.id} className="p-3.5 flex items-center justify-between hover:bg-[#202020] transition-colors">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={pp.person.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pp.person.name)}&background=2A2A2A&color=fff`}
+                            alt={pp.person.name}
+                            className="w-8 h-8 rounded-full object-cover border border-[#2A2A2A]"
+                          />
+                          <div>
+                            <p className="text-xs font-bold text-white">{pp.person.name}</p>
+                            <p className="text-[11px] text-[#757575]">{pp.role}</p>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* MODAL: AJOUTER UN MEMBRE DIRECT (RÈGLE MÉTIER PRIORITAIRE) */}
+            {showAddMemberModal && (
+              <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+                <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl max-w-lg w-full p-6 text-white space-y-5 max-h-[90vh] overflow-y-auto">
+                  <div className="flex items-center justify-between border-b border-[#2A2A2A] pb-3">
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="w-5 h-5 text-[#FFBF00]" />
+                      <h3 className="text-base font-bold text-white">Ajouter un membre à l'équipe</h3>
+                    </div>
+                    <button
+                      onClick={() => setShowAddMemberModal(false)}
+                      className="p-1 rounded-lg text-[#757575] hover:text-white hover:bg-[#222222]"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Encadré règle prioritaire */}
+                  <div className="p-3.5 bg-[#1F1B0B] border border-[#FFBF00]/30 rounded-xl text-xs text-[#D8B146] space-y-1">
+                    <p className="font-bold text-[#FFBF00]">Ajout administratif direct et immédiat :</p>
+                    <p>
+                      Sélectionnez un compte utilisateur existant. L'appartenance et les permissions sont <strong>activées instantanément</strong>. Une notification in-app, un email et un push lui sont envoyés avec le bouton <strong>« Ouvrir l'émission »</strong>.
+                    </p>
+                  </div>
+
+                  {/* Recherche utilisateur existant */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#A0A0A0] uppercase tracking-wider block">
+                      1. Rechercher un utilisateur existant
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={userSearchQuery}
+                        onChange={(e) => handleSearchUsers(e.target.value)}
+                        placeholder="Recherche par nom, prénom, email ou téléphone..."
+                        className="w-full bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl px-4 py-2.5 text-xs text-white placeholder-[#555555] focus:border-[#FFBF00] outline-none pr-9"
+                      />
+                      {isSearchingUsers ? (
+                        <Loader2 className="w-4 h-4 text-[#FFBF00] animate-spin absolute right-3 top-3" />
+                      ) : (
+                        <Search className="w-4 h-4 text-[#757575] absolute right-3 top-3" />
+                      )}
+                    </div>
+
+                    {/* Résultats de recherche */}
+                    {userSearchResults.length > 0 && !selectedUser && (
+                      <div className="bg-[#0B0B0B] border border-[#2A2A2A] rounded-xl max-h-48 overflow-y-auto divide-y divide-[#222222]">
+                        {userSearchResults.map((u: any) => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedUser(u);
+                              setUserSearchResults([]);
+                            }}
+                            className="w-full text-left p-3 hover:bg-[#1A1A1A] flex items-center justify-between gap-3 transition-colors"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-white truncate">{u.fullName || "Utilisateur sans nom"}</p>
+                              <p className="text-[11px] text-[#757575] truncate">{u.email}</p>
+                              {u.phoneNumber && <p className="text-[10px] text-[#555555]">{u.phoneNumber}</p>}
+                            </div>
+                            <span className="text-xs font-bold text-[#FFBF00] shrink-0">Choisir →</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Utilisateur sélectionné */}
+                    {selectedUser && (
+                      <div className="p-3 bg-[#1A1A1A] border border-[#FFBF00]/40 rounded-xl flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-[#FFBF00]/20 text-[#FFBF00] flex items-center justify-center font-bold text-xs shrink-0">
+                            {(selectedUser.fullName || selectedUser.email).charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-white truncate">{selectedUser.fullName || "Sans nom"}</p>
+                            <p className="text-[11px] text-[#B8B8B8] truncate">{selectedUser.email}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedUser(null)}
+                          className="text-xs text-[#757575] hover:text-red-400 font-semibold"
+                        >
+                          Changer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Choix du rôle et permissions */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#A0A0A0] uppercase tracking-wider block">
+                      2. Choisir le rôle et les permissions
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {[
+                        {
+                          role: "OWNER",
+                          title: "Propriétaire",
+                          desc: "Contrôle intégral de l'émission, suppression et gestion des rôles.",
+                        },
+                        {
+                          role: "ADMIN",
+                          title: "Administrateur",
+                          desc: "Gestion complète des épisodes, saisons, flux et de l'équipe.",
+                        },
+                        {
+                          role: "EDITOR",
+                          title: "Éditeur",
+                          desc: "Création, modification et planification des épisodes et saisons.",
+                        },
+                        {
+                          role: "ANALYST",
+                          title: "Analyste",
+                          desc: "Consultation des statistiques d'écoute en lecture seule.",
+                        },
+                      ].map((item) => (
+                        <button
+                          key={item.role}
+                          type="button"
+                          onClick={() => setSelectedRole(item.role)}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            selectedRole === item.role
+                              ? "bg-[#FFBF00]/10 border-[#FFBF00] text-white"
+                              : "bg-[#0B0B0B] border-[#2A2A2A] text-[#888888] hover:border-[#444444]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-xs text-white">{item.title}</span>
+                            {selectedRole === item.role && (
+                              <span className="w-2 h-2 rounded-full bg-[#FFBF00]" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-[#757575] leading-tight">{item.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Parcours distinct si l'utilisateur n'existe pas */}
+                  <div className="p-3 bg-[#0B0B0B] border border-[#222222] rounded-xl text-[11px] text-[#757575]">
+                    <span className="text-white font-semibold">Le compte n'existe pas encore ?</span> Un compte inexistant ne peut pas recevoir d'appartenance active immédiate. Invitez d'abord la personne à créer son compte Bamako Podcast ou passez par une invitation externe par email.
+                  </div>
+
+                  {/* Messages d'erreur ou succès */}
+                  {addMemberError && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-300">
+                      {addMemberError}
+                    </div>
+                  )}
+                  {addMemberSuccess && (
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-300">
+                      {addMemberSuccess}
+                    </div>
+                  )}
+
+                  {/* Actions du modal */}
+                  <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#2A2A2A]">
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={() => setShowAddMemberModal(false)}
+                      className="text-xs text-[#757575] hover:text-white"
+                    >
+                      Annuler
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={!selectedUser || isAddingMember}
+                      onClick={handleAddMember}
+                      className="bg-[#FFBF00] hover:bg-[#E5AB00] text-[#0B0B0B] font-bold text-xs h-9 px-5 disabled:opacity-50"
+                    >
+                      {isAddingMember ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4 mr-1.5" />
+                      )}
+                      Ajouter immédiatement à l'équipe
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

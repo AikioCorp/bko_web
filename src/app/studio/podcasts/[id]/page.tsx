@@ -272,6 +272,20 @@ function TeamTab({ podcastId, role }: { podcastId: string; role: string }) {
   const isOwner = role === "OWNER";
   const [members, setMembers] = useState<Member[] | null>(null);
   const [invites, setInvites] = useState<Invitation[]>([]);
+
+  // Onglet d'ajout : direct (compte existant) vs invitation (sans compte)
+  const [addMode, setAddMode] = useState<"DIRECT" | "INVITE">("DIRECT");
+
+  // Ajout direct
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [directRole, setDirectRole] = useState("EDITOR");
+  const [directSuccess, setDirectSuccess] = useState<string | null>(null);
+  const [directLoading, setDirectLoading] = useState(false);
+
+  // Invitation par email
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("EDITOR");
   const [link, setLink] = useState("");
@@ -300,6 +314,46 @@ function TeamTab({ podcastId, role }: { podcastId: string; role: string }) {
     }
   };
 
+  const handleSearchUsers = async (q: string) => {
+    setSearchQuery(q);
+    if (!q || q.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const users = await studioApi<any[]>(`/creator/users/search?q=${encodeURIComponent(q.trim())}`);
+      setSearchResults(users || []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleDirectAdd = async () => {
+    if (!selectedUser) return;
+    setDirectLoading(true);
+    setError("");
+    setDirectSuccess(null);
+    try {
+      await studioApi(`/creator/podcasts/${podcastId}/members`, {
+        method: "POST",
+        body: { userId: selectedUser.id, role: directRole },
+      });
+      setDirectSuccess(`Utilisateur ${selectedUser.fullName || selectedUser.email} ajouté avec succès. Ses droits sont immédiatement actifs.`);
+      setSelectedUser(null);
+      setSearchQuery("");
+      setSearchResults([]);
+      await load();
+      setTimeout(() => setDirectSuccess(null), 3000);
+    } catch (e: any) {
+      setError(e.message || "Erreur lors de l'ajout du membre.");
+    } finally {
+      setDirectLoading(false);
+    }
+  };
+
   const invite = () =>
     act(async () => {
       const r = await studioApi<{ invitationToken: string; emailSent: boolean }>(`/creator/podcasts/${podcastId}/invitations`, {
@@ -317,83 +371,241 @@ function TeamTab({ podcastId, role }: { podcastId: string; role: string }) {
   return (
     <div className="space-y-6">
       {error && <ErrorBanner message={error} />}
+      {directSuccess && (
+        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 font-medium">
+          {directSuccess}
+        </div>
+      )}
+
+      {/* Liste des membres actifs */}
       <Card className="divide-y divide-[#262626]">
         {!members ? (
           <Loading />
         ) : (
-          members.map((m) => (
-            <div key={m.userId} className="p-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-bold">{m.user.fullName}</p>
-                <p className="text-xs text-gray-400">{m.user.email}</p>
+          members.map((m) => {
+            const ownerCount = members.filter((x) => x.role === "OWNER").length;
+            const isLastOwner = m.role === "OWNER" && ownerCount <= 1;
+
+            return (
+              <div key={m.userId} className="p-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold">{m.user.fullName || "Utilisateur"}</p>
+                    {m.role === "OWNER" && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-[#FFBF00]/15 text-[#FFBF00] border border-[#FFBF00]/30">
+                        PROPRIÉTAIRE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">{m.user.email}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {canManage && !(m.role === "OWNER" && !isOwner) && !(m.role === "ADMIN" && !isOwner) ? (
+                    <select
+                      value={m.role}
+                      onChange={(e) => {
+                        const newRole = e.target.value;
+                        if (isLastOwner && newRole !== "OWNER") {
+                          alert("Le dernier propriétaire ne peut pas changer de rôle. Désignez d'abord un autre propriétaire.");
+                          return;
+                        }
+                        act(() => studioApi(`/creator/podcasts/${podcastId}/members/${m.userId}`, { method: "PATCH", body: { role: newRole } }));
+                      }}
+                      className="bg-[#0B0B0B] border border-[#262626] rounded-lg px-2 py-1.5 text-xs text-white"
+                      aria-label={`Rôle de ${m.user.fullName}`}
+                    >
+                      {roleOptions.concat(roleOptions.includes(m.role) ? [] : [m.role]).map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_LABELS[r]}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Badge>{ROLE_LABELS[m.role]}</Badge>
+                  )}
+                  {canManage && !(m.role !== "EDITOR" && m.role !== "ANALYST" && !isOwner) && (
+                    <Btn
+                      variant="danger"
+                      disabled={isLastOwner}
+                      title={isLastOwner ? "Le dernier propriétaire ne peut pas être retiré" : undefined}
+                      onClick={() => {
+                        if (window.confirm(`Retirer ${m.user.fullName} de l'équipe ? Ses accès au Studio seront révoqués.`))
+                          act(() => studioApi(`/creator/podcasts/${podcastId}/members/${m.userId}`, { method: "DELETE" }));
+                      }}
+                    >
+                      Retirer
+                    </Btn>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {canManage && !(m.role === "OWNER" && !isOwner) && !(m.role === "ADMIN" && !isOwner) ? (
-                  <select
-                    value={m.role}
-                    onChange={(e) => act(() => studioApi(`/creator/podcasts/${podcastId}/members/${m.userId}`, { method: "PATCH", body: { role: e.target.value } }))}
-                    className="bg-[#0B0B0B] border border-[#262626] rounded-lg px-2 py-1.5 text-xs text-white"
-                    aria-label={`Rôle de ${m.user.fullName}`}
-                  >
-                    {roleOptions.concat(roleOptions.includes(m.role) ? [] : [m.role]).map((r) => (
-                      <option key={r} value={r}>
-                        {ROLE_LABELS[r]}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <Badge>{ROLE_LABELS[m.role]}</Badge>
-                )}
-                {canManage && !(m.role !== "EDITOR" && m.role !== "ANALYST" && !isOwner) && (
-                  <Btn
-                    variant="danger"
-                    onClick={() => {
-                      if (window.confirm(`Retirer ${m.user.fullName} de l'équipe ?`))
-                        act(() => studioApi(`/creator/podcasts/${podcastId}/members/${m.userId}`, { method: "DELETE" }));
-                    }}
-                  >
-                    Retirer
-                  </Btn>
-                )}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </Card>
 
+      {/* Gestion de l'ajout / invitation */}
       {canManage && (
-        <>
-          <Card className="p-5 space-y-3">
-            <h3 className="font-bold">Inviter un collaborateur</h3>
-            <div className="flex flex-wrap gap-2">
-              <input type="email" className={`${inputCls} flex-1 min-w-[220px]`} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemple.com" />
-              <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="bg-[#0B0B0B] border border-[#262626] rounded-lg px-3 text-sm text-white" aria-label="Rôle">
-                {roleOptions.map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABELS[r]}
-                  </option>
-                ))}
-              </select>
-              <Btn variant="primary" disabled={!email.includes("@")} onClick={invite}>
-                Inviter
-              </Btn>
-            </div>
-            <p className="text-[11px] text-gray-500">
-              La personne reçoit un email avec le lien d&apos;invitation. Elle devra se connecter (ou créer un compte) avec cette adresse email.
-            </p>
-            {sent === true && <p className="text-xs text-emerald-400">Email d&apos;invitation envoyé.</p>}
-            {sent === false && <p className="text-xs text-[#FFBF00]">L&apos;email n&apos;a pas pu être envoyé : transmettez-lui le lien ci-dessous.</p>}
-            {link && (
-              <div className="bg-[#0B0B0B] border border-[#262626] rounded-lg p-3 text-xs break-all flex items-center justify-between gap-3">
-                <span className="text-gray-300">{link}</span>
-                <Btn onClick={() => navigator.clipboard?.writeText(link)}>Copier</Btn>
-              </div>
-            )}
-          </Card>
+        <div className="space-y-4">
+          {/* Sélecteur de mode d'ajout */}
+          <div className="flex items-center gap-2 border-b border-[#262626] pb-2">
+            <button
+              type="button"
+              onClick={() => setAddMode("DIRECT")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                addMode === "DIRECT"
+                  ? "bg-[#FFBF00] text-[#0B0B0B]"
+                  : "bg-[#161616] text-[#A0A0A0] hover:text-white"
+              }`}
+            >
+              Ajouter un compte existant (accès immédiat)
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddMode("INVITE")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                addMode === "INVITE"
+                  ? "bg-[#FFBF00] text-[#0B0B0B]"
+                  : "bg-[#161616] text-[#A0A0A0] hover:text-white"
+              }`}
+            >
+              Inviter un collaborateur sans compte
+            </button>
+          </div>
 
+          {/* MODE 1 : AJOUT DIRECT D'UN COMPTE EXISTANT */}
+          {addMode === "DIRECT" && (
+            <Card className="p-5 space-y-4">
+              <div>
+                <h3 className="font-bold text-white text-sm">Ajouter un utilisateur existant</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  L'accès est activé immédiatement dès l'ajout sans acceptation ni jeton. Une notification in-app, un email et un push lui sont envoyés avec le bouton « Ouvrir l'émission ».
+                </p>
+              </div>
+
+              {/* Recherche utilisateur */}
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchUsers(e.target.value)}
+                  placeholder="Rechercher par nom, email ou téléphone..."
+                  className={`${inputCls} w-full`}
+                />
+                {searching && <p className="text-xs text-[#FFBF00] animate-pulse">Recherche en cours…</p>}
+
+                {/* Liste des résultats */}
+                {searchResults.length > 0 && !selectedUser && (
+                  <div className="bg-[#0B0B0B] border border-[#262626] rounded-xl max-h-40 overflow-y-auto divide-y divide-[#1F1F1F]">
+                    {searchResults.map((u: any) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedUser(u);
+                          setSearchResults([]);
+                        }}
+                        className="w-full text-left p-2.5 hover:bg-[#1A1A1A] flex items-center justify-between text-xs transition"
+                      >
+                        <div>
+                          <p className="font-bold text-white">{u.fullName || "Utilisateur"}</p>
+                          <p className="text-[11px] text-gray-400">{u.email}</p>
+                        </div>
+                        <span className="text-[#FFBF00] font-bold">Sélectionner →</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Utilisateur sélectionné */}
+                {selectedUser && (
+                  <div className="p-3 bg-[#1A1A1A] border border-[#FFBF00]/40 rounded-xl flex items-center justify-between gap-3 text-xs">
+                    <div>
+                      <p className="font-bold text-white">{selectedUser.fullName || "Utilisateur sélectionné"}</p>
+                      <p className="text-gray-400 text-[11px]">{selectedUser.email}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedUser(null)}
+                      className="text-[#FFBF00] hover:underline font-bold"
+                    >
+                      Changer
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Choix rôle et validation */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <select
+                  value={directRole}
+                  onChange={(e) => setDirectRole(e.target.value)}
+                  className="bg-[#0B0B0B] border border-[#262626] rounded-lg px-3 py-2 text-xs text-white"
+                  aria-label="Rôle"
+                >
+                  {roleOptions.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+
+                <Btn
+                  variant="primary"
+                  disabled={!selectedUser || directLoading}
+                  onClick={handleDirectAdd}
+                >
+                  {directLoading ? "Ajout en cours…" : "Ajouter immédiatement à l'équipe"}
+                </Btn>
+              </div>
+            </Card>
+          )}
+
+          {/* MODE 2 : INVITATION EXTERNE (POUR COMPTE INEXISTANT) */}
+          {addMode === "INVITE" && (
+            <Card className="p-5 space-y-3">
+              <h3 className="font-bold text-white text-sm">Inviter une personne sans compte</h3>
+              <p className="text-xs text-gray-400">
+                Utilisez cette option si la personne n'a pas encore de compte sur la plateforme. Elle recevra un lien d'invitation par email qu'elle pourra accepter après inscription.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  type="email"
+                  className={`${inputCls} flex-1 min-w-[220px]`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@exemple.com"
+                />
+                <select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  className="bg-[#0B0B0B] border border-[#262626] rounded-lg px-3 text-sm text-white"
+                  aria-label="Rôle"
+                >
+                  {roleOptions.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+                <Btn variant="primary" disabled={!email.includes("@")} onClick={invite}>
+                  Envoyer l'invitation
+                </Btn>
+              </div>
+              {sent === true && <p className="text-xs text-emerald-400">Email d&apos;invitation envoyé.</p>}
+              {sent === false && <p className="text-xs text-[#FFBF00]">L&apos;email n&apos;a pas pu être envoyé : transmettez-lui le lien ci-dessous.</p>}
+              {link && (
+                <div className="bg-[#0B0B0B] border border-[#262626] rounded-lg p-3 text-xs break-all flex items-center justify-between gap-3">
+                  <span className="text-gray-300">{link}</span>
+                  <Btn onClick={() => navigator.clipboard?.writeText(link)}>Copier</Btn>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Liste des invitations en attente */}
           {invites.length > 0 && (
             <Card className="divide-y divide-[#262626]">
-              <p className="p-4 text-xs font-bold uppercase tracking-wide text-gray-400">Invitations en attente</p>
+              <p className="p-4 text-xs font-bold uppercase tracking-wide text-gray-400">Invitations externes en attente</p>
               {invites.map((i) => (
                 <div key={i.id} className="p-4 flex items-center justify-between gap-3">
                   <div>
@@ -407,7 +619,7 @@ function TeamTab({ podcastId, role }: { podcastId: string; role: string }) {
               ))}
             </Card>
           )}
-        </>
+        </div>
       )}
     </div>
   );

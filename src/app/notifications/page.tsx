@@ -279,6 +279,13 @@ export default function NotificationsPage() {
                       <span className="text-[11px] text-[#757575] shrink-0">{timeAgo(n.createdAt)}</span>
                     </div>
                     {n.body && <p className="text-xs text-[#B8B8B8] mt-0.5 line-clamp-2">{n.body}</p>}
+                    {n.link && (n.type === "TEAM_MEMBER_ADDED" || n.link.includes("/studio/podcasts")) && (
+                      <div className="mt-2">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FFBF00] text-[#0B0B0B]">
+                          Ouvrir l’émission →
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button

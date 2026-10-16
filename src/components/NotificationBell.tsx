@@ -176,6 +176,11 @@ export function NotificationBell({ align = "right", allHref = "/notifications" }
                     <span className="min-w-0">
                       <span className="block text-xs font-bold text-white truncate">{n.title}</span>
                       {n.body && <span className="block text-[11px] text-[#B8B8B8] line-clamp-2">{n.body}</span>}
+                      {n.link && (n.type === "TEAM_MEMBER_ADDED" || n.link.includes("/studio/podcasts")) && (
+                        <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-[#FFBF00] text-[#0B0B0B]">
+                          Ouvrir l’émission →
+                        </span>
+                      )}
                       <span className="block text-[10px] text-[#757575] mt-0.5">{timeAgo(n.createdAt)}</span>
                     </span>
                   </button>
