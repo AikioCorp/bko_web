@@ -111,14 +111,18 @@ export default function EpisodePage() {
   const playable = ep.mediaSources.length > 0;
   const login = () => router.push(`/login?redirect=${encodeURIComponent(`/podcasts/${slug}/episodes/${episodeSlug}`)}`);
 
-  const start = (atMs = 0) => {
+  const start = (targetModeOrMs?: "AUDIO" | "VIDEO" | number, explicitMs = 0) => {
+    const targetMode = typeof targetModeOrMs === "string" ? targetModeOrMs : undefined;
+    const atMs = typeof targetModeOrMs === "number" ? targetModeOrMs : explicitMs;
     const resume = ep.viewer?.progress && !ep.viewer.progress.completed ? ep.viewer.progress.positionSeconds : 0;
-    if (isCurrent) {
+    const currentMode = usePlayerStore.getState().mode;
+    if (isCurrent && (!targetMode || targetMode === currentMode)) {
       if (atMs > 0) seek(atMs / 1000);
       else togglePlay();
       return;
     }
-    playEpisode(toPlayerEpisode(ep, ep.podcast), ep.defaultMode, atMs > 0 ? atMs / 1000 : resume);
+    const finalMode = targetMode || ep.defaultMode || "AUDIO";
+    playEpisode(toPlayerEpisode(ep, ep.podcast), finalMode, atMs > 0 ? atMs / 1000 : resume);
   };
 
   const toggleSave = async () => {
@@ -216,14 +220,42 @@ export default function EpisodePage() {
           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight font-extrabold text-white">{ep.title}</h1>
           <div className="flex flex-wrap items-center gap-3 pt-1">
             {hasAccess ? (
-              <button
-                onClick={() => start()}
-                disabled={!playable}
-                className="inline-flex items-center gap-2 bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-5 py-2.5 rounded-full disabled:opacity-40 hover:bg-[#E5AB00] transition-colors"
-              >
-                {isCurrent && isPlaying ? <Pause className="w-4 h-4 fill-current stroke-none" /> : <Play className="w-4 h-4 fill-current stroke-none" />}
-                {isCurrent && isPlaying ? "Pause" : ep.viewer?.progress && !ep.viewer.progress.completed && ep.viewer.progress.positionSeconds > 10 ? "Reprendre" : "Écouter"}
-              </button>
+              <>
+                {ep.mediaSources.some((s) => s.type === "AUDIO") && (
+                  <button
+                    onClick={() => start("AUDIO")}
+                    disabled={!playable}
+                    className="inline-flex items-center gap-2 bg-[#FFBF00] text-[#0B0B0B] text-sm font-bold px-5 py-2.5 rounded-full disabled:opacity-40 hover:bg-[#E5AB00] transition-colors"
+                  >
+                    {isCurrent && isPlaying && usePlayerStore.getState().mode === "AUDIO" ? (
+                      <Pause className="w-4 h-4 fill-current stroke-none" />
+                    ) : (
+                      <Play className="w-4 h-4 fill-current stroke-none" />
+                    )}
+                    {isCurrent && isPlaying && usePlayerStore.getState().mode === "AUDIO"
+                      ? "Pause"
+                      : ep.viewer?.progress && !ep.viewer.progress.completed && ep.viewer.progress.positionSeconds > 10
+                      ? "Reprendre l'audio"
+                      : "Écouter"}
+                  </button>
+                )}
+                {ep.mediaSources.some((s) => s.type === "VIDEO") && (
+                  <button
+                    onClick={() => start("VIDEO")}
+                    disabled={!playable}
+                    className="inline-flex items-center gap-2 bg-[#1A1A1A] border border-[#FFBF00] text-white text-sm font-bold px-5 py-2.5 rounded-full disabled:opacity-40 hover:bg-[#262626] transition-colors"
+                  >
+                    {isCurrent && isPlaying && usePlayerStore.getState().mode === "VIDEO" ? (
+                      <Pause className="w-4 h-4 text-[#FFBF00]" />
+                    ) : (
+                      <Play className="w-4 h-4 text-[#FFBF00]" />
+                    )}
+                    {isCurrent && isPlaying && usePlayerStore.getState().mode === "VIDEO"
+                      ? "Pause vidéo"
+                      : "Regarder"}
+                  </button>
+                )}
+              </>
             ) : (
               <a
                 href="#paywall-section"

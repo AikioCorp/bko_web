@@ -101,3 +101,59 @@ export function ReviewNotice({ status }: { status: string }) {
     </div>
   );
 }
+
+const ALLOWED_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+export async function uploadImage(
+  file: File,
+  folder: "covers" | "banners" | "avatars" = "covers"
+): Promise<string> {
+  if (!file || file.size <= 0) {
+    throw new Error("Le fichier image sélectionné est vide.");
+  }
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    throw new Error("L'image dépasse la taille maximale autorisée de 10 Mo.");
+  }
+  const mimeType = (file.type || "").toLowerCase();
+  if (!ALLOWED_IMAGE_MIMES.includes(mimeType)) {
+    throw new Error("Format d'image non supporté. Utilisez JPEG, PNG, WebP ou GIF.");
+  }
+
+  const { getAccessToken } = await import("@/lib/token");
+  const { API_BASE_URL } = await import("@/lib/api");
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error("Veuillez vous connecter pour téléverser une image.");
+  }
+
+  const res = await fetch(`${API_BASE_URL}/media/images/upload-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      mimeType,
+      sizeBytes: file.size,
+      folder,
+    }),
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json.success || !json.data?.uploadUrl) {
+    throw new Error(json.error?.message || "Impossible d'obtenir l'URL de téléversement.");
+  }
+
+  const putRes = await fetch(json.data.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": mimeType },
+    body: file,
+  });
+
+  if (!putRes.ok) {
+    throw new Error(`Le serveur de stockage a refusé l'image (HTTP ${putRes.status}).`);
+  }
+
+  return json.data.publicUrl as string;
+}

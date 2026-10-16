@@ -63,10 +63,11 @@ interface PlayerState {
   toggleRightPanel: () => void;
 }
 
-function pickSource(episode: PlayerEpisode, mode: "AUDIO" | "VIDEO") {
-  const audio = episode.mediaSources.find((s) => s.isPrimaryAudio) || episode.mediaSources.find((s) => s.type === "AUDIO");
-  const video = episode.mediaSources.find((s) => s.isPrimaryVideo) || episode.mediaSources.find((s) => s.type === "VIDEO");
-  return mode === "VIDEO" ? video || audio : audio || video;
+function pickSource(episode: PlayerEpisode, mode: "AUDIO" | "VIDEO"): PlayerMediaSource | null {
+  if (mode === "AUDIO") {
+    return episode.mediaSources.find((s) => s.isPrimaryAudio) || episode.mediaSources.find((s) => s.type === "AUDIO") || null;
+  }
+  return episode.mediaSources.find((s) => s.isPrimaryVideo) || episode.mediaSources.find((s) => s.type === "VIDEO") || null;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -86,12 +87,27 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   seekRequest: null,
   queue: [],
 
-  playEpisode: (episode, mode = "AUDIO", startAt = 0) => {
-    const selectedSource = pickSource(episode, mode);
+  playEpisode: (episode, requestedMode, startAt = 0) => {
+    const hasAudio = episode.mediaSources.some((s) => s.type === "AUDIO");
+    const hasVideo = episode.mediaSources.some((s) => s.type === "VIDEO");
+    const targetMode = requestedMode || (hasAudio ? "AUDIO" : hasVideo ? "VIDEO" : "AUDIO");
+    let selectedSource = pickSource(episode, targetMode);
+    let finalMode = targetMode;
+
+    if (!selectedSource) {
+      if (targetMode === "AUDIO" && hasVideo) {
+        selectedSource = pickSource(episode, "VIDEO");
+        finalMode = "VIDEO";
+      } else if (targetMode === "VIDEO" && hasAudio) {
+        selectedSource = pickSource(episode, "AUDIO");
+        finalMode = "AUDIO";
+      }
+    }
+
     set({
       currentEpisode: episode,
       activeSource: selectedSource || null,
-      mode: selectedSource?.type || mode,
+      mode: finalMode,
       isPlaying: !!selectedSource,
       currentTime: startAt,
       startAt,
@@ -138,9 +154,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const { currentEpisode, currentTime, isPlaying } = get();
     if (!currentEpisode) return;
     const selectedSource = pickSource(currentEpisode, mode);
+    if (!selectedSource) return;
     set((state) => ({
       mode,
-      activeSource: selectedSource || null,
+      activeSource: selectedSource,
       startAt: currentTime,
       seekRequest: { time: currentTime, n: (state.seekRequest?.n ?? 0) + 1 },
       isPlaying,

@@ -61,7 +61,7 @@ export default function PodcastRssPage() {
 
       const json = await res.json();
       if (!json.success) {
-        setErrorMessage(json.message || "Erreur d'analyse du flux RSS");
+        setErrorMessage(json.error?.message || json.message || "Erreur d'analyse du flux RSS");
       } else {
         setPreviewData(json.data);
       }
@@ -75,6 +75,7 @@ export default function PodcastRssPage() {
   const handleConnect = async () => {
     const token = getAccessToken();
     if (!token || !feedUrl) return;
+    setErrorMessage("");
 
     try {
       const res = await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss/connect`, {
@@ -92,7 +93,7 @@ export default function PodcastRssPage() {
         setFeedUrl("");
         fetchStatus();
       } else {
-        setErrorMessage(json.message);
+        setErrorMessage(json.error?.message || json.message || "Erreur lors de la connexion du flux RSS");
       }
     } catch (e) {
       setErrorMessage("Erreur de connexion");
@@ -101,19 +102,25 @@ export default function PodcastRssPage() {
 
   const handleSyncNow = async () => {
     setSyncing(true);
+    setErrorMessage("");
     const token = getAccessToken();
     if (!token) return;
 
     try {
-      await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss/sync`, {
+      const res = await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss/sync`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+      const json = await res.json();
+      if (!json.success) {
+        setErrorMessage(json.error?.message || json.message || "Erreur lors de la synchronisation");
+      }
       setTimeout(() => {
         fetchStatus();
         setSyncing(false);
       }, 2000);
     } catch (e) {
+      setErrorMessage("Erreur lors de la synchronisation");
       setSyncing(false);
     }
   };
@@ -125,12 +132,19 @@ export default function PodcastRssPage() {
     if (!token) return;
 
     try {
-      await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss`, {
+      const res = await fetch(`${API_BASE_URL}/creator/podcasts/${podcastId}/rss`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      fetchStatus();
-    } catch (e) {}
+      const json = await res.json();
+      if (json.success) {
+        setRssStatus(null);
+      } else {
+        setErrorMessage(json.error?.message || json.message || "Erreur lors de la déconnexion");
+      }
+    } catch (e) {
+      setErrorMessage("Erreur lors de la déconnexion");
+    }
   };
 
   return (

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { studioApi } from "@/lib/studioApi";
 import { Badge, Btn, Card, ErrorBanner, Loading } from "@/components/admin/ui";
-import { Field, inputCls, LANGUAGES } from "@/components/studio/bits";
+import { Field, inputCls, LANGUAGES, uploadImage } from "@/components/studio/bits";
 import { MediaDropzone } from "@/components/media/MediaDropzone";
 
 type Season = { id: string; number: number; title?: string | null };
@@ -16,7 +16,7 @@ type Preview = {
   externalUrl: string;
   meta: { title?: string; author?: string; thumbnail?: string };
 };
-type EpisodeState = { status: string; mediaSources: { id: string; mediaAsset?: { status: string } | null }[] };
+type EpisodeState = { status: string; mediaSources: { id: string; mediaAsset?: { status: string; errorReason?: string | null } | null }[] };
 
 const STEPS = ["Source", "Informations", "Publication"];
 const PROVIDER_LABEL: Record<string, string> = {
@@ -41,6 +41,7 @@ export default function NewEpisodePage() {
 
   const [form, setForm] = useState({ title: "", description: "", cover: "", seasonId: "", episodeNumber: "", languageCode: "fr" });
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   const [episodeId, setEpisodeId] = useState<string | null>(null);
   const [uploaded, setUploaded] = useState(false);
@@ -69,6 +70,21 @@ export default function NewEpisodePage() {
       setError(e.message);
     } finally {
       setAnalysing(false);
+    }
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setUploadingCover(true);
+    try {
+      const publicUrl = await uploadImage(file, "covers");
+      setForm((f) => ({ ...f, cover: publicUrl }));
+    } catch (err: any) {
+      setError(err.message || "Impossible d'envoyer l'image de couverture.");
+    } finally {
+      setUploadingCover(false);
     }
   };
 
@@ -151,9 +167,11 @@ export default function NewEpisodePage() {
     return () => clearInterval(t);
   }, [step, episodeId, refreshState]);
 
+  const mediaFailed =
+    !!state && state.mediaSources.some((m) => m.mediaAsset?.status === "FAILED");
   const mediaReady =
     !!state && state.mediaSources.length > 0 && state.mediaSources.every((m) => !m.mediaAsset || m.mediaAsset.status === "READY");
-  const fileProcessing = mode === "FILE" && uploaded && !mediaReady;
+  const fileProcessing = mode === "FILE" && uploaded && !mediaReady && !mediaFailed;
 
   const finish = async () => {
     if (!episodeId) return;
@@ -174,7 +192,7 @@ export default function NewEpisodePage() {
 
   const step0Ok = mode === "LINK" ? !!preview : true;
   const step1Ok = form.title.trim().length > 0 && form.description.trim().length > 0;
-  const noSource = mode === "FILE" ? !uploaded : false;
+  const noSource = mode === "FILE" ? !uploaded || mediaFailed : false;
   const needsMediaForPublish = publishMode !== "DRAFT" && (noSource || fileProcessing);
   const scheduleOk = publishMode !== "SCHEDULE" || (when && new Date(when) > new Date());
 
@@ -218,7 +236,7 @@ export default function NewEpisodePage() {
             <div className="space-y-3">
               <Field label="Lien de l'épisode">
                 <div className="flex gap-2">
-                  <input className={inputCls} value={url} onChange={(e) => { setUrl(e.target.value); setPreview(null); }} placeholder="https://www.youtube.com/watch?v=…" />
+                  <input className={inputCls} value={url} onChange={(e) => { setUrl(e.target.value); setPreview(null); setSourceAttached(false); }} placeholder="https://www.youtube.com/watch?v=…" />
                   <Btn variant="primary" disabled={analysing || url.trim().length < 8} onClick={analyse}>
                     {analysing ? "Analyse…" : "Analyser"}
                   </Btn>
@@ -242,7 +260,7 @@ export default function NewEpisodePage() {
                 </div>
               )}
               <p className="text-[11px] text-gray-500">
-                Les auditeurs seront dirigés vers la plateforme d&apos;origine pour écouter ; le titre et l&apos;image sont repris automatiquement quand c&apos;est possible.
+                Les vidéos YouTube sont lues dans le lecteur officiel intégré ; le titre et l&apos;image sont repris automatiquement quand c&apos;est possible.
               </p>
             </div>
           ) : (
@@ -298,12 +316,18 @@ export default function NewEpisodePage() {
               <input className={inputCls} type="number" min={0} value={form.episodeNumber} onChange={(e) => setForm({ ...form, episodeNumber: e.target.value })} />
             </Field>
           </div>
-          <Field label="Image de l'épisode (URL)" hint="Facultatif : par défaut, la couverture du podcast est utilisée.">
-            <input className={inputCls} value={form.cover} onChange={(e) => setForm({ ...form, cover: e.target.value })} placeholder="https://" />
+          <Field label="Image de l'épisode" hint="Facultatif : téléversez une image ou indiquez une URL (par défaut, la couverture du podcast est utilisée).">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input className={inputCls} value={form.cover} onChange={(e) => setForm({ ...form, cover: e.target.value })} placeholder="https://" />
+              <label className="px-4 py-2 rounded-lg bg-[#161616] hover:bg-[#222] border border-[#262626] text-xs font-bold text-white cursor-pointer shrink-0 flex items-center justify-center">
+                {uploadingCover ? "Envoi…" : "Choisir une image"}
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleCoverUpload} disabled={uploadingCover} className="hidden" />
+              </label>
+            </div>
           </Field>
           <div className="flex justify-between">
             <Btn onClick={() => setStep(0)} disabled={busy}>Retour</Btn>
-            <Btn variant="primary" disabled={!step1Ok || busy} onClick={saveDraftAndProceed}>
+            <Btn variant="primary" disabled={!step1Ok || busy || uploadingCover} onClick={saveDraftAndProceed}>
               {busy ? "Enregistrement…" : "Enregistrer et continuer"}
             </Btn>
           </div>
@@ -315,11 +339,27 @@ export default function NewEpisodePage() {
           {mode === "FILE" && (
             <div className="space-y-3">
               <h2 className="font-bold">Envoi du fichier</h2>
-              {!uploaded ? (
-                <MediaDropzone mediaType={fileType} episodeId={episodeId} onUploadSuccess={() => { setUploaded(true); refreshState(); }} />
+              {!uploaded || mediaFailed ? (
+                <>
+                  {mediaFailed && (
+                    <div className="text-sm rounded-xl p-3 border border-red-500/30 bg-red-500/10 text-red-300">
+                      Le traitement du fichier précédent a échoué. Veuillez sélectionner un fichier valide et réessayer.
+                    </div>
+                  )}
+                  <MediaDropzone mediaType={fileType} episodeId={episodeId} onUploadSuccess={() => { setUploaded(true); refreshState(); }} />
+                </>
               ) : (
-                <div className={`text-sm rounded-xl p-3 border ${mediaReady ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-[#FFBF00]/30 bg-[#FFBF00]/10 text-[#FFBF00]"}`}>
-                  {mediaReady ? "Fichier prêt." : "Fichier reçu — traitement en cours (analyse de la durée et du format). Cela peut prendre quelques minutes ; vous pouvez enregistrer en brouillon sans attendre."}
+                <div className="space-y-2">
+                  <div className={`text-sm rounded-xl p-3 border ${mediaReady ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-[#FFBF00]/30 bg-[#FFBF00]/10 text-[#FFBF00]"}`}>
+                    {mediaReady ? "Fichier prêt." : "Fichier reçu — traitement en cours (analyse de la durée et du format). Cela peut prendre quelques minutes ; vous pouvez enregistrer en brouillon sans attendre."}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setUploaded(false)}
+                    className="text-xs text-gray-400 hover:text-white underline"
+                  >
+                    Remplacer le fichier
+                  </button>
                 </div>
               )}
             </div>

@@ -19,10 +19,12 @@ import { ScrollingTitle } from "./ScrollingTitle";
 // ReactPlayer est chargÃ© cÃ´tÃ© client uniquement (pas de rendu serveur).
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as any;
 
-// Seuls ces hÃ´tes peuvent Ãªtre affichÃ©s dans un iframe (dÃ©fense en profondeur cÃ´tÃ© lecteur).
+// Seuls ces hôtes peuvent être affichés dans un iframe (défense en profondeur côté lecteur).
 const EMBED_HOSTS = [
   "www.youtube.com",
   "youtube.com",
+  "www.youtube-nocookie.com",
+  "youtube-nocookie.com",
   "open.spotify.com",
   "embed.podcasts.apple.com",
   "www.deezer.com",
@@ -95,6 +97,11 @@ export const PersistentPlayer = () => {
   const [scrubHoverPct, setScrubHoverPct] = useState<number>(0);
   const [copiedLink, setCopiedLink] = useState(false);
   const [artworkTapEffect, setArtworkTapEffect] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setVideoError(null);
+  }, [currentEpisode?.id, activeSource?.id, mode]);
 
   useEffect(() => {
     setMounted(true);
@@ -288,37 +295,92 @@ export const PersistentPlayer = () => {
   return (
     <>
       <div className="hidden">
-        {mounted && kind === "video" && !isExpanded && (
-          <ReactPlayer
-            src={safeHttp(activeSource?.externalUrl) ?? ""}
-            playing={isPlaying}
-            playbackRate={playbackRate}
-            volume={volume}
-            width="100%"
-            height="100%"
-            onLoadedMetadata={(e: any) => {
-              const v = e.currentTarget;
-              videoRef.current = v;
-              if (startAt > 0 && handledSeek.current === 0 && v) v.currentTime = startAt;
-            }}
-            onDurationChange={(e: any) => {
-              const d = e.currentTarget?.duration;
-              if (isFinite(d)) setProgress(usePlayerStore.getState().currentTime, d);
-            }}
-            onTimeUpdate={(e: any) => onMediaProgress(e.currentTarget?.currentTime ?? 0, usePlayerStore.getState().duration)}
-            onPlay={() => !usePlayerStore.getState().isPlaying && usePlayerStore.setState({ isPlaying: true })}
-            onPause={() => usePlayerStore.getState().isPlaying && pause()}
-            onEnded={onMediaEnded}
-            onError={() => pause()}
-          />
-        )}
-        {kind === "embed" && embedUrl && (
-          <iframe src={embedUrl} title={currentEpisode?.title ?? "Lecteur"} width="100%" height={152} allow="autoplay; encrypted-media" />
-        )}
         {kind === "audio" && (
           <audio ref={audioRef} src={safeHttp(activeSource?.externalUrl) ?? undefined} preload="metadata" onLoadedMetadata={(e: any) => { const a = e.currentTarget; if (startAt > 0 && handledSeek.current === 0 && a.currentTime === 0) a.currentTime = startAt; if (isFinite(a.duration)) setProgress(a.currentTime, a.duration); }} onTimeUpdate={(e: any) => onMediaProgress(e.currentTarget.currentTime, isFinite(e.currentTarget.duration) ? e.currentTarget.duration : total)} onEnded={onMediaEnded} onError={() => pause()} />
         )}
       </div>
+
+      {/* Lecteur vidéo / embed miniature visible (Picture-in-Picture ancré) lorsque le grand lecteur est réduit */}
+      {currentEpisode && !isExpanded && mounted && (kind === "video" || (kind === "embed" && embedUrl)) && (
+        <div className="fixed bottom-20 md:bottom-24 right-4 z-50 w-72 sm:w-80 bg-[#0B0B0B] border border-[#262626] rounded-2xl overflow-hidden shadow-2xl">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-[#141414] border-b border-[#242424] text-[11px] text-gray-300">
+            <span className="truncate font-bold">{currentEpisode.title}</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => setIsExpanded(true)}
+                className="p-1 hover:text-[#FFBF00] transition-colors"
+                title="Agrandir le lecteur vidéo"
+                aria-label="Agrandir"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={close}
+                className="p-1 hover:text-white transition-colors"
+                title="Fermer"
+                aria-label="Fermer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+          {videoError ? (
+            <div className="w-full aspect-video bg-[#121212] p-4 flex flex-col items-center justify-center text-center">
+              <p className="text-xs text-gray-300 font-bold mb-2">Lecture intégrée indisponible</p>
+              {activeSource?.externalUrl && (
+                <a
+                  href={activeSource.externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-lg bg-[#FFBF00] text-[11px] font-bold text-black flex items-center gap-1 hover:bg-[#E5AB00] transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span>Ouvrir sur {activeSource.provider === "YOUTUBE" ? "YouTube" : "la source"}</span>
+                </a>
+              )}
+            </div>
+          ) : kind === "video" ? (
+            <div className="w-full aspect-video bg-black">
+              <ReactPlayer
+                src={safeHttp(activeSource?.externalUrl) ?? ""}
+                playing={isPlaying}
+                playbackRate={playbackRate}
+                volume={volume}
+                controls={true}
+                width="100%"
+                height="100%"
+                onLoadedMetadata={(e: any) => {
+                  const v = e.currentTarget;
+                  videoRef.current = v;
+                  if (startAt > 0 && handledSeek.current === 0 && v) v.currentTime = startAt;
+                }}
+                onDurationChange={(e: any) => {
+                  const d = e.currentTarget?.duration;
+                  if (isFinite(d)) setProgress(usePlayerStore.getState().currentTime, d);
+                }}
+                onTimeUpdate={(e: any) => onMediaProgress(e.currentTarget?.currentTime ?? 0, usePlayerStore.getState().duration)}
+                onPlay={() => !usePlayerStore.getState().isPlaying && usePlayerStore.setState({ isPlaying: true })}
+                onPause={() => usePlayerStore.getState().isPlaying && pause()}
+                onEnded={onMediaEnded}
+                onError={() => {
+                  setVideoError("Intégration vidéo indisponible.");
+                  pause();
+                }}
+              />
+            </div>
+          ) : (
+            <div className="w-full aspect-video bg-black">
+              <iframe
+                src={embedUrl!}
+                title={currentEpisode.title ?? "Lecteur intégré"}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {currentEpisode && (
       <>
@@ -401,7 +463,34 @@ export const PersistentPlayer = () => {
                 </div>
               )}
 
-              {kind === "video" ? (
+              {videoError ? (
+                <div className="w-full aspect-video max-w-[480px] bg-[#121212] rounded-2xl border border-[#262626] p-6 flex flex-col items-center justify-center text-center shadow-2xl">
+                  <div className="w-12 h-12 rounded-full bg-[#1F1F1F] flex items-center justify-center mb-3 text-[#FFBF00]">
+                    <ExternalLink className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-white font-bold text-sm mb-1">Lecture vidéo indisponible</h3>
+                  <p className="text-gray-400 text-xs mb-4 max-w-xs">{videoError}</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setVideoError(null)}
+                      className="px-4 py-2 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] text-xs font-bold text-white transition-colors"
+                    >
+                      Réessayer
+                    </button>
+                    {activeSource?.externalUrl && (
+                      <a
+                        href={activeSource.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 rounded-xl bg-[#FFBF00] hover:bg-[#E5AB00] text-xs font-bold text-black flex items-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Ouvrir sur {activeSource.provider === "YOUTUBE" ? "YouTube" : "la source"}</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ) : kind === "video" ? (
                 <div className="w-full aspect-video max-w-[480px] bg-black rounded-2xl overflow-hidden border border-[#262626] shadow-2xl relative">
                   <ReactPlayer
                     src={safeHttp(activeSource?.externalUrl) ?? ""}
@@ -414,7 +503,20 @@ export const PersistentPlayer = () => {
                     onPlay={() => !usePlayerStore.getState().isPlaying && usePlayerStore.setState({ isPlaying: true })}
                     onPause={() => usePlayerStore.getState().isPlaying && pause()}
                     onEnded={onMediaEnded}
-                    onError={() => pause()}
+                    onError={() => {
+                      setVideoError("Cette vidéo ne permet pas l'intégration dans l'application ou est temporairement indisponible.");
+                      pause();
+                    }}
+                  />
+                </div>
+              ) : kind === "embed" && embedUrl ? (
+                <div className="w-full aspect-video max-w-[480px] bg-black rounded-2xl overflow-hidden border border-[#262626] shadow-2xl relative">
+                  <iframe
+                    src={embedUrl}
+                    title={currentEpisode.title ?? "Lecteur intégré"}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
                   />
                 </div>
               ) : (

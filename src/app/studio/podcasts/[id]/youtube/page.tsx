@@ -145,9 +145,44 @@ export default function PodcastYoutubePage() {
     }
   };
 
-  const loadMoreVideos=async()=>{
-    if(!previewData?.nextPageToken||loadingMore)return;setLoadingMore(true);setErrorMessage("");
-    try{const res=await fetch(API_BASE_URL+"/creator/youtube/preview",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+getAccessToken()},body:JSON.stringify({url:previewData.channel.channelId,podcastId,pageToken:previewData.nextPageToken})});const json=await res.json();if(!res.ok||!json.success)throw new Error(json.error?.message||"Chargement impossible");setPreviewData((prev:any)=>{const items=Array.from(new Map([...(prev.items||[]),...(json.data.items||[])].map((i:any)=>[i.videoId,i])).values());return {...json.data,items,videos:items};});}catch(e:any){setErrorMessage(e.message);}finally{setLoadingMore(false);}
+  const loadMoreVideos = async () => {
+    if (!previewData?.nextPageToken || loadingMore) return;
+    setLoadingMore(true);
+    setErrorMessage("");
+    try {
+      const res = await fetch(API_BASE_URL + "/creator/youtube/preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + getAccessToken(),
+        },
+        body: JSON.stringify({
+          url: previewData.channel.channelId,
+          podcastId,
+          pageToken: previewData.nextPageToken,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || "Chargement impossible");
+      }
+      setPreviewData((prev: any) => {
+        const merged = [
+          ...(prev.items || prev.videos || []),
+          ...(json.data.items || json.data.videos || []),
+        ];
+        const items = Array.from(
+          new Map(
+            merged.map((i: any) => [i.youtubeVideoId || i.videoId, i])
+          ).values()
+        );
+        return { ...json.data, items, videos: items };
+      });
+    } catch (e: any) {
+      setErrorMessage(e.message);
+    } finally {
+      setLoadingMore(false);
+    }
   };
   const importHistorical=async()=>{
     if(!historicalSelected.size)return;setImportingHistorical(true);setHistoricalError("");
@@ -173,11 +208,12 @@ export default function PodcastYoutubePage() {
   }, [previewData, includeKeywords, excludeKeywords, excludeShorts]);
 
   useEffect(()=>{
-    const allowed=new Set(filteredPreviewItems.filter((i:any)=>!i.isAlreadyImported && !i.alreadyImported && i.embeddable!==false).map((i:any)=>i.videoId||i.youtubeVideoId));
+    const allowed=new Set(filteredPreviewItems.filter((i:any)=>!i.isAlreadyImported && !i.alreadyImported && i.embeddable!==false).map((i:any)=>i.youtubeVideoId||i.videoId));
     setSelectedIds(previous=>{const next=new Set(Array.from(previous).filter(id=>allowed.has(id)));return next.size===previous.size?previous:next;});
   },[filteredPreviewItems]);
 
-  const toggleSelect = (videoId: string) => {
+  const toggleSelect = (videoId: string, disabled?: boolean) => {
+    if (!videoId || disabled) return;
     const next = new Set(selectedIds);
     if (next.has(videoId)) next.delete(videoId);
     else next.add(videoId);
@@ -484,7 +520,7 @@ export default function PodcastYoutubePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div className="bg-[#0A0D14] p-4 rounded-xl border border-[#1E2638] space-y-1">
               <span className="text-gray-500">Vidéos Importées</span>
-              <p className="text-xl font-black text-white">{channelStatus._count?.importedVideos || 0}</p>
+              <p className="text-xl font-black text-white">{channelStatus.counts?.importedVideos ?? channelStatus._count?.importedVideos ?? 0}</p>
             </div>
 
             <div className="bg-[#0A0D14] p-4 rounded-xl border border-[#1E2638] space-y-1">
@@ -707,10 +743,11 @@ export default function PodcastYoutubePage() {
                   const vid = video.youtubeVideoId || video.videoId;
                   const isChecked = selectedIds.has(vid);
                   const isAlready = video.isAlreadyImported ?? video.alreadyImported ?? false;
+                  const isNonEmbeddable = video.embeddable === false;
                   return (
                     <div
                       key={vid}
-                      onClick={() => toggleSelect(vid)}
+                      onClick={() => toggleSelect(vid, isAlready || isNonEmbeddable)}
                       className={`p-3.5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer transition ${
                         isChecked
                           ? "bg-[#1A2234] border-[#E5A93C]/40"
@@ -721,6 +758,7 @@ export default function PodcastYoutubePage() {
                         <input
                           type="checkbox"
                           checked={isChecked}
+                          disabled={isAlready || isNonEmbeddable}
                           onChange={() => {}} // géré par le clic conteneur
                           className="w-4 h-4 rounded text-[#E5A93C] focus:ring-0 shrink-0"
                         />
@@ -763,6 +801,10 @@ export default function PodcastYoutubePage() {
                         {isAlready ? (
                           <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded">
                             Déjà importé
+                          </span>
+                        ) : isNonEmbeddable ? (
+                          <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded">
+                            Intégration désactivée
                           </span>
                         ) : isChecked ? (
                           <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
@@ -830,20 +872,39 @@ export default function PodcastYoutubePage() {
               )}
 
               <div className="space-y-2">
-                {historicalVideos.map((item: any) => (
-                  <div key={item.videoId} className="bg-[#0A0D14] p-3 rounded-lg border border-[#1E2638] flex items-center gap-3 text-xs">
-                    <input type="checkbox" aria-label={"Importer "+item.title} disabled={item.alreadyImported || item.embeddable===false} checked={historicalSelected.has(item.videoId)} onChange={()=>setHistoricalSelected(prev=>{const next=new Set(prev);if(next.has(item.videoId))next.delete(item.videoId);else next.add(item.videoId);return next;})}/>
-                    {item.thumbnailUrl && (
-                      <img src={item.thumbnailUrl} alt={item.title} className="w-16 h-10 object-cover rounded bg-black" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h5 className="font-bold text-white truncate">{item.title}</h5>
-                      <span className="text-[11px] text-gray-500">
-                        {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("fr-FR") : ""}
-                      </span>
+                {historicalVideos.map((item: any) => {
+                  const vid = item.youtubeVideoId || item.videoId;
+                  const isAlready = item.isAlreadyImported ?? item.alreadyImported ?? false;
+                  const isDisabled = isAlready || item.embeddable === false || !vid;
+                  return (
+                    <div key={vid} className="bg-[#0A0D14] p-3 rounded-lg border border-[#1E2638] flex items-center gap-3 text-xs">
+                      <input
+                        type="checkbox"
+                        aria-label={"Importer " + item.title}
+                        disabled={isDisabled}
+                        checked={vid ? historicalSelected.has(vid) : false}
+                        onChange={() =>
+                          setHistoricalSelected((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(vid)) next.delete(vid);
+                            else next.add(vid);
+                            return next;
+                          })
+                        }
+                      />
+                      {item.thumbnailUrl && (
+                        <img src={item.thumbnailUrl} alt={item.title} className="w-16 h-10 object-cover rounded bg-black" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h5 className="font-bold text-white truncate">{item.title}</h5>
+                        <span className="text-[11px] text-gray-500">
+                          {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("fr-FR") : ""}
+                          {isAlready ? " • Déjà importé" : item.embeddable === false ? " • Intégration désactivée" : ""}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {loadingHistorical && (

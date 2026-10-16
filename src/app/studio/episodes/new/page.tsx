@@ -31,6 +31,9 @@ export default function NewEpisodePage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatusText, setUploadStatusText] = useState("");
   const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [createdEpisodeId, setCreatedEpisodeId] = useState<string | null>(null);
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
   
   // Form State
   const [podcastId, setPodcastId] = useState<string>("");
@@ -38,6 +41,7 @@ export default function NewEpisodePage() {
   const [description, setDescription] = useState("");
   const [seasonNumber, setSeasonNumber] = useState<string>("");
   const [episodeNumber, setEpisodeNumber] = useState<string>("");
+  const [mediaType, setMediaType] = useState<"AUDIO" | "VIDEO">("AUDIO");
   const [file, setFile] = useState<File | null>(null);
 
   // Fetch creator's podcasts
@@ -52,66 +56,128 @@ export default function NewEpisodePage() {
   }, [podcasts, podcastId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorMsg("");
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
-      if (selected.size > 250 * 1024 * 1024) {
-        alert("Le fichier audio dépasse la taille maximale autorisée de 250 Mo.");
+      const isVideo = selected.type.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(selected.name);
+      const detectedType = isVideo ? "VIDEO" : "AUDIO";
+      const maxSize = detectedType === "VIDEO" ? 2048 * 1024 * 1024 : 250 * 1024 * 1024;
+      if (selected.size <= 0) {
+        setErrorMsg("Le fichier sélectionné est vide (0 octet).");
         return;
       }
+      if (selected.size > maxSize) {
+        setErrorMsg(
+          detectedType === "VIDEO"
+            ? "Le fichier vidéo dépasse la taille maximale autorisée de 2 Go."
+            : "Le fichier audio dépasse la taille maximale autorisée de 250 Mo."
+        );
+        return;
+      }
+      setMediaType(detectedType);
       setFile(selected);
     }
   };
 
+  const handleCancelUpload = () => {
+    if (xhrRef.current) {
+      xhrRef.current.abort();
+      xhrRef.current = null;
+    }
+    setIsSubmitting(false);
+    setUploadProgress(0);
+    setUploadStatusText("");
+    setErrorMsg("Téléversement annulé. Le brouillon est conservé, vous pouvez réessayer.");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!podcastId || !title.trim() || !file) {
-      alert("Veuillez sélectionner un podcast, renseigner un titre et choisir un fichier audio.");
+    if (isSubmitting) return;
+    setErrorMsg("");
+
+    if (!podcastId || !title.trim() || !description.trim() || !file) {
+      setErrorMsg("Veuillez sélectionner une émission, renseigner un titre, une description et choisir un fichier média.");
       return;
     }
 
-    if (file.size > 250 * 1024 * 1024) {
-      alert("Le fichier audio dépasse la limite autorisée de 250 Mo.");
+    const maxSize = mediaType === "VIDEO" ? 2048 * 1024 * 1024 : 250 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setErrorMsg(
+        mediaType === "VIDEO"
+          ? "Le fichier vidéo dépasse la limite autorisée de 2 Go."
+          : "Le fichier audio dépasse la limite autorisée de 250 Mo."
+      );
       return;
     }
 
     setIsSubmitting(true);
     setUploadProgress(0);
-    setUploadStatusText("Création du brouillon de l'épisode...");
+    setUploadStatusText(
+      createdEpisodeId
+        ? "Mise à jour du brouillon existant..."
+        : "1/4 Création du brouillon de l'épisode..."
+    );
     try {
-      // 1. Create episode draft
-      const metaRes = await fetchApi(`/creator/podcasts/${podcastId}/episodes`, {
-        method: "POST",
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          seasonNumber: seasonNumber ? parseInt(seasonNumber) : undefined,
-          episodeNumber: episodeNumber ? parseInt(episodeNumber) : undefined,
-          status: "DRAFT"
-        })
-      });
-      
-      const newEpisode = metaRes.data;
+      let epId = createdEpisodeId;
+
+      if (!epId) {
+        const metaRes = await fetchApi(`/creator/podcasts/${podcastId}/episodes`, {
+          method: "POST",
+          body: JSON.stringify({
+            title: title.trim(),
+            description: description.trim(),
+            seasonNumber: seasonNumber ? parseInt(seasonNumber, 10) : undefined,
+            episodeNumber: episodeNumber ? parseInt(episodeNumber, 10) : undefined,
+            status: "DRAFT",
+          }),
+        });
+        if (!metaRes.success || !metaRes.data?.id) {
+          throw new Error(metaRes.message || "Impossible de créer le brouillon de l'épisode.");
+        }
+        epId = metaRes.data.id;
+        setCreatedEpisodeId(epId);
+      } else {
+        const patchRes = await fetchApi(`/creator/episodes/${epId}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            title: title.trim(),
+            description: description.trim(),
+            seasonNumber: seasonNumber ? parseInt(seasonNumber, 10) : null,
+            episodeNumber: episodeNumber ? parseInt(episodeNumber, 10) : null,
+          }),
+        });
+        if (!patchRes.success) {
+          throw new Error(patchRes.message || "Impossible de mettre à jour le brouillon.");
+        }
+      }
 
       // 2. Prepare native R2 presigned upload session
-      setUploadStatusText("Préparation du téléversement sécurisé...");
+      const resolvedMime =
+        file.type || (mediaType === "VIDEO" ? "video/mp4" : "audio/mpeg");
+      setUploadStatusText("2/4 Préparation du téléversement sécurisé...");
       const sessionRes = await fetchApi("/creator/uploads", {
         method: "POST",
         body: JSON.stringify({
           originalFilename: file.name,
-          mimeType: file.type || "audio/mpeg",
+          mimeType: resolvedMime,
           sizeBytes: file.size,
-          mediaType: "AUDIO",
-          episodeId: newEpisode.id
-        })
+          mediaType,
+          episodeId: epId,
+        }),
       });
+
+      if (!sessionRes.success || !sessionRes.data?.uploadUrl) {
+        throw new Error(sessionRes.message || "Échec d'initialisation de la session de téléversement.");
+      }
 
       const { uploadSessionId, uploadUrl } = sessionRes.data;
 
       // 3. Upload file directly to S3/R2 storage with progress
-      setUploadStatusText("Téléversement du fichier audio en cours...");
+      setUploadStatusText("3/4 Téléversement du fichier vers le stockage...");
       const xhr = new XMLHttpRequest();
+      xhrRef.current = xhr;
       xhr.open("PUT", uploadUrl, true);
-      xhr.setRequestHeader("Content-Type", file.type || "audio/mpeg");
+      xhr.setRequestHeader("Content-Type", resolvedMime);
       xhr.upload.onprogress = (evt) => {
         if (evt.lengthComputable) {
           setUploadProgress(Math.round((evt.loaded / evt.total) * 100));
@@ -120,28 +186,39 @@ export default function NewEpisodePage() {
 
       await new Promise((resolve, reject) => {
         xhr.onload = () => {
+          xhrRef.current = null;
           if (xhr.status >= 200 && xhr.status < 300) resolve(true);
-          else reject(new Error("Échec du téléversement vers le stockage"));
+          else reject(new Error(`Échec du téléversement vers le stockage (HTTP ${xhr.status}).`));
         };
-        xhr.onerror = () => reject(new Error("Erreur de connexion lors du téléversement"));
+        xhr.onabort = () => {
+          xhrRef.current = null;
+          reject(new Error("__ABORTED__"));
+        };
+        xhr.onerror = () => {
+          xhrRef.current = null;
+          reject(new Error("Erreur de connexion lors du téléversement."));
+        };
         xhr.send(file);
       });
 
       // 4. Complete upload session to register MediaAsset and start background processing
-      setUploadStatusText("Finalisation et indexation...");
-      await fetchApi(`/creator/uploads/${uploadSessionId}/complete`, {
+      setUploadStatusText("4/4 Finalisation et indexation du média...");
+      const completeRes = await fetchApi(`/creator/uploads/${uploadSessionId}/complete`, {
         method: "POST",
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       });
+      if (!completeRes.success) {
+        throw new Error(completeRes.message || "Échec de finalisation du téléversement.");
+      }
 
       setSuccess(true);
       setTimeout(() => {
-        router.push("/studio/episodes");
-      }, 2000);
-
+        router.push(`/studio/episodes/${epId}/edit?created=1`);
+      }, 1500);
     } catch (error: any) {
+      if (error?.message === "__ABORTED__") return;
       console.error(error);
-      alert(error.message || "Une erreur est survenue lors de la création.");
+      setErrorMsg(error.message || "Une erreur est survenue lors de l'enregistrement.");
       setIsSubmitting(false);
       setUploadProgress(0);
       setUploadStatusText("");
@@ -155,8 +232,8 @@ export default function NewEpisodePage() {
           <CheckCircle className="w-12 h-12 text-green-500" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold text-white">Épisode enregistré !</h1>
-          <p className="text-[#888]">Votre fichier audio a été téléversé avec succès. Redirection vers vos épisodes...</p>
+          <h1 className="text-3xl font-extrabold text-white">Brouillon et média enregistrés !</h1>
+          <p className="text-[#888]">Votre fichier a été téléversé et est en cours de traitement. Redirection vers la fiche de l&apos;épisode...</p>
         </div>
       </div>
     );
@@ -177,6 +254,17 @@ export default function NewEpisodePage() {
           </p>
         </div>
       </div>
+
+      {errorMsg && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-sm text-red-400">
+          {errorMsg}
+          {createdEpisodeId && (
+            <p className="text-xs text-amber-400 mt-1">
+              Le brouillon de l&apos;épisode a été conservé. Cliquez sur « Réessayer l&apos;envoi » pour relancer le transfert sans créer de doublon.
+            </p>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card className="bg-[#111] border-[#222] text-white shadow-xl">
@@ -200,6 +288,7 @@ export default function NewEpisodePage() {
                   className="flex h-10 w-full rounded-md border border-[#333] bg-[#0E0E0E] px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] disabled:cursor-not-allowed disabled:opacity-50"
                   value={podcastId}
                   onChange={(e) => setPodcastId(e.target.value)}
+                  disabled={!!createdEpisodeId || isSubmitting}
                   required
                 >
                   <option value="" disabled>Sélectionnez un podcast...</option>
@@ -222,12 +311,13 @@ export default function NewEpisodePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[#CCC]">Description (Notes de l'émission)</label>
+              <label className="text-sm font-medium text-[#CCC]">Description (Notes de l'émission) *</label>
               <textarea
                 placeholder="Décrivez le contenu de l'épisode, les invités, les liens pertinents..."
                 className="flex w-full rounded-md border border-[#333] bg-[#0E0E0E] px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFBF00] min-h-[120px] resize-y"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                required
               />
             </div>
 
@@ -263,21 +353,21 @@ export default function NewEpisodePage() {
           <CardHeader className="border-b border-[#222] pb-4">
             <CardTitle className="text-xl flex items-center gap-2">
               <Music className="w-5 h-5 text-blue-400" />
-              Fichier Audio
+              Fichier Média (Audio ou Vidéo)
             </CardTitle>
             <CardDescription className="text-[#888]">
-              Formats supportés: MP3, AAC, WAV (Max: 250 Mo)
+              Formats supportés: Audio MP3, AAC, M4A, WAV (Max: 250 Mo) • Vidéo MP4, MOV, WebM (Max: 2 Go)
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="relative group">
               <input 
                 type="file" 
-                accept="audio/*" 
+                accept=".mp3,.m4a,.aac,.wav,.ogg,.mp4,.mov,.webm,audio/*,video/*" 
                 onChange={handleFileChange}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 disabled={isSubmitting}
-                required
+                required={!file}
               />
               <div className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${file ? 'border-[#FFBF00] bg-[#FFBF00]/5' : 'border-[#333] bg-[#0E0E0E] group-hover:border-[#555] group-hover:bg-[#161616]'}`}>
                 {file ? (
@@ -287,12 +377,12 @@ export default function NewEpisodePage() {
                     </div>
                     <div>
                       <p className="text-lg font-bold text-white">{file.name}</p>
-                      <p className="text-sm text-[#888]">{(file.size / (1024 * 1024)).toFixed(2)} Mo</p>
+                      <p className="text-sm text-[#888]">{mediaType} • {(file.size / (1024 * 1024)).toFixed(2)} Mo</p>
                     </div>
                     <p className="text-xs text-[#666] mt-2">Cliquez ou glissez pour remplacer</p>
 
                     {isSubmitting && (
-                      <div className="w-full max-w-md mt-4 space-y-2">
+                      <div className="w-full max-w-md mt-4 space-y-2 z-20 relative">
                         <div className="flex justify-between text-xs text-[#AAA]">
                           <span>{uploadStatusText}</span>
                           <span>{uploadProgress}%</span>
@@ -309,7 +399,7 @@ export default function NewEpisodePage() {
                       <UploadCloud className="w-8 h-8 text-[#888]" />
                     </div>
                     <div>
-                      <p className="text-lg font-medium text-white">Glissez votre fichier ici</p>
+                      <p className="text-lg font-medium text-white">Glissez votre fichier audio ou vidéo ici</p>
                       <p className="text-sm text-[#888]">ou cliquez pour parcourir vos dossiers</p>
                     </div>
                   </div>
@@ -320,13 +410,19 @@ export default function NewEpisodePage() {
         </Card>
 
         <div className="flex justify-end gap-4 pt-4 border-t border-[#222]">
-          <Button type="button" variant="ghost" className="text-[#888] hover:text-white hover:bg-[#222]" onClick={() => router.back()} disabled={isSubmitting}>
-            Annuler
-          </Button>
+          {isSubmitting ? (
+            <Button type="button" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleCancelUpload}>
+              Interrompre le transfert
+            </Button>
+          ) : (
+            <Button type="button" variant="ghost" className="text-[#888] hover:text-white hover:bg-[#222]" onClick={() => router.back()}>
+              Annuler
+            </Button>
+          )}
           <Button 
             type="submit" 
             className="bg-[#FFBF00] hover:bg-[#E5A800] text-[#0B0B0B] font-bold px-8 h-12 text-lg"
-            disabled={isSubmitting || !podcastId || !file || !title}
+            disabled={isSubmitting || !podcastId || !file || !title.trim() || !description.trim()}
           >
             {isSubmitting ? (
               <>
@@ -336,7 +432,7 @@ export default function NewEpisodePage() {
             ) : (
               <>
                 <Save className="w-5 h-5 mr-2" />
-                Enregistrer l'épisode
+                {createdEpisodeId ? "Réessayer l'envoi" : "Enregistrer l'épisode"}
               </>
             )}
           </Button>
