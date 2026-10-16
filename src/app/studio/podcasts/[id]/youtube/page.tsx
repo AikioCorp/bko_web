@@ -43,6 +43,7 @@ export default function PodcastYoutubePage() {
   const [autoSync, setAutoSync] = useState(true);
   const [keepManualEdits, setKeepManualEdits] = useState(true);
   const [excludeShorts, setExcludeShorts] = useState(true);
+  const [discoveryMode,setDiscoveryMode]=useState("STANDARD");
   const [includeKeywords, setIncludeKeywords] = useState("");
   const [excludeKeywords, setExcludeKeywords] = useState("");
 
@@ -119,7 +120,7 @@ export default function PodcastYoutubePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ url: channelInput, podcastId }),
+        body: JSON.stringify({ url: channelInput, podcastId, mode:discoveryMode }),
       });
 
       const json = await res.json();
@@ -159,7 +160,7 @@ export default function PodcastYoutubePage() {
         body: JSON.stringify({
           url: previewData.channel.channelId,
           podcastId,
-          pageToken: previewData.nextPageToken,
+          pageToken: previewData.nextPageToken,mode:discoveryMode,
         }),
       });
       const json = await res.json();
@@ -194,6 +195,7 @@ export default function PodcastYoutubePage() {
     if (!rawList) return [];
     return rawList.filter((item: any) => {
       if (excludeShorts && item.isLikelyShort) return false;
+      if(discoveryMode==="SHORTS"&&!item.isLikelyShort)return false;
       const titleLower = (item.title || "").toLowerCase();
       if (includeKeywords) {
         const inc = includeKeywords.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
@@ -205,7 +207,7 @@ export default function PodcastYoutubePage() {
       }
       return true;
     });
-  }, [previewData, includeKeywords, excludeKeywords, excludeShorts]);
+  }, [previewData, includeKeywords, excludeKeywords, excludeShorts, discoveryMode]);
 
   useEffect(()=>{
     const allowed=new Set(filteredPreviewItems.filter((i:any)=>!i.isAlreadyImported && !i.alreadyImported && i.embeddable!==false).map((i:any)=>i.youtubeVideoId||i.videoId));
@@ -616,6 +618,9 @@ export default function PodcastYoutubePage() {
           </form>
 
           {/* Aperçu de la chaîne et sélection des vidéos */}
+          {previewData && (<>
+          <label className="block text-sm mb-4">Publications recherchées<select className="ml-3 rounded-lg bg-[#222] p-2" value={discoveryMode} onChange={e=>{setDiscoveryMode(e.target.value);setExcludeShorts(e.target.value==="STANDARD");}}><option value="STANDARD">Vidéos hors Shorts présumés</option><option value="SHORTS">Shorts présumés</option><option value="ALL">Toutes les publications</option></select></label>
+          </>)}
           {previewData && (
             <div className="bg-[#121722] border border-[#1E2638] rounded-2xl p-6 space-y-6">
               {/* Infos Chaîne */}
@@ -639,7 +644,7 @@ export default function PodcastYoutubePage() {
 
                 <div className="text-xs text-right text-gray-400 shrink-0">
                   <p>
-                    Vidéos détectées dans le flux : <strong className="text-white">{(previewData.items || previewData.videos || []).length}</strong>
+                    Publications parcourues : <strong className="text-white">{(previewData.items || previewData.videos || []).length}</strong> · {filteredPreviewItems.length} correspondantes · {(previewData.items || previewData.videos || []).length-filteredPreviewItems.length} hors filtre
                   </p>
                   <p>
                     Sélectionnées pour import : <strong className="text-[#FFBF00]">{selectedIds.size}</strong>
@@ -713,10 +718,10 @@ export default function PodcastYoutubePage() {
                     <input
                       type="checkbox"
                       checked={excludeShorts}
-                      onChange={(e) => setExcludeShorts(e.target.checked)}
+                      onChange={(e) => {setExcludeShorts(e.target.checked);setDiscoveryMode(e.target.checked?"STANDARD":"ALL");}}
                       className="w-4 h-4 rounded text-[#E5A93C] focus:ring-0"
                     />
-                    <span>Exclure les YouTube Shorts</span>
+                    <span>Exclure les Shorts présumés</span>
                   </label>
                 </div>
               </div>
@@ -780,7 +785,7 @@ export default function PodcastYoutubePage() {
                             </span>
                             {video.isLikelyShort && (
                               <span className="text-[10px] bg-red-950/70 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded font-bold">
-                                Short (≤ 60s)
+                                Short présumé
                               </span>
                             )}
                             <a

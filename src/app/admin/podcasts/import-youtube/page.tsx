@@ -53,6 +53,8 @@ export default function AdminYoutubeImportPage() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [autoPublish, setAutoPublish] = useState(false);
   const [excludeShorts, setExcludeShorts] = useState(true);
+  const [discoveryMode,setDiscoveryMode]=useState("STANDARD");
+  const matchesDiscovery=(item:any)=>discoveryMode==="ALL"||(discoveryMode==="SHORTS"?item.isLikelyShort:!item.isLikelyShort);
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -86,7 +88,7 @@ export default function AdminYoutubeImportPage() {
     try {
       const res = await adminApi("/admin/youtube/preview", {
         method: "POST",
-        body: JSON.stringify({ url: url.trim(),podcastId:targetMode==="existing"?existingPodcastId:undefined }),
+        body: JSON.stringify({ url: url.trim(),mode:discoveryMode,podcastId:targetMode==="existing"?existingPodcastId:undefined }),
       });
       if (!res.success) throw new Error(res.message || "Erreur de résolution.");
 
@@ -102,7 +104,7 @@ export default function AdminYoutubeImportPage() {
         const vid = item.videoId || item.youtubeVideoId;
         const isAlready = item.alreadyImported ?? item.isAlreadyImported ?? false;
         const isShort = item.isLikelyShort === true;
-        if (!isAlready && item.embeddable !== false && vid && (!excludeShorts || !isShort)) {
+        if (!isAlready && item.embeddable !== false && vid && (!excludeShorts || !isShort) && matchesDiscovery(item)) {
           unimported.add(vid);
         }
       });
@@ -116,13 +118,14 @@ export default function AdminYoutubeImportPage() {
 
   const loadMoreVideos=async()=>{
     if(!previewData?.nextPageToken||loadingMore)return;setLoadingMore(true);setError(null);
-    try{const r=await adminApi("/admin/youtube/preview",{method:"POST",body:JSON.stringify({url:previewData.channel.channelId,pageToken:previewData.nextPageToken,podcastId:targetMode==="existing"?existingPodcastId:undefined})});
+    try{const r=await adminApi("/admin/youtube/preview",{method:"POST",body:JSON.stringify({url:previewData.channel.channelId,pageToken:previewData.nextPageToken,mode:discoveryMode,podcastId:targetMode==="existing"?existingPodcastId:undefined})});
       setPreviewData((prev:any)=>{const merged=Array.from(new Map([...(prev.videos||prev.items||[]),...(r.data.videos||[])].map((v:any)=>[v.videoId,v])).values());return {...r.data,videos:merged,items:merged};});
     }catch(e:any){setError(e.message);}finally{setLoadingMore(false);}
   };
 
   const handleToggleExcludeShorts = (val: boolean) => {
     setExcludeShorts(val);
+    setDiscoveryMode(val?"STANDARD":"ALL");
     if (!previewData) return;
     const videoList = previewData.videos || previewData.items || [];
     const next = new Set(selectedVideoIds);
@@ -145,7 +148,7 @@ export default function AdminYoutubeImportPage() {
 
   const openArchives=async(c:any)=>{
     setError(null);setIsAnalyzing(true);
-    try{const r=await adminApi("/admin/youtube/preview",{method:"POST",body:JSON.stringify({url:c.channelId,podcastId:c.podcastId})});setTargetMode("existing");setExistingPodcastId(c.podcastId);setUrl(c.channelId);setPreviewData(r.data);setSelectedVideoIds(new Set());setArchivesMode(true);setAutoPublish(c.importSettings?.autoPublish===true);setAutoSyncFuture(c.syncEnabled===true);setExcludeShorts(c.importSettings?.excludeShorts!==false);setInitialImportMode("SELECT");setActiveTab("new");}catch(e:any){setError(e.message);}finally{setIsAnalyzing(false);}
+    try{const r=await adminApi("/admin/youtube/preview",{method:"POST",body:JSON.stringify({url:c.channelId,mode:discoveryMode,podcastId:c.podcastId})});setTargetMode("existing");setExistingPodcastId(c.podcastId);setUrl(c.channelId);setPreviewData(r.data);setSelectedVideoIds(new Set());setArchivesMode(true);setAutoPublish(c.importSettings?.autoPublish===true);setAutoSyncFuture(c.syncEnabled===true);setExcludeShorts(c.importSettings?.excludeShorts!==false);setInitialImportMode("SELECT");setActiveTab("new");}catch(e:any){setError(e.message);}finally{setIsAnalyzing(false);}
   };
   useEffect(()=>{
     const query=new URLSearchParams(window.location.search);
@@ -565,16 +568,16 @@ export default function AdminYoutubeImportPage() {
                       onChange={(e) => handleToggleExcludeShorts(e.target.checked)}
                       className="w-4 h-4 rounded text-[#FFBF00]"
                     />
-                    <span>Exclure les YouTube Shorts (≤ 60s)</span>
+                    <span>Exclure les Shorts présumés</span>
                   </label>
                 </div>
               </div>
 
               {/* Liste des vidéos sélectionnables */}
               <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-b border-[#222222] pb-2">
-                  <p className="text-sm text-[#A0A0A0]">{previewData.note}</p>{archivesMode&&<p className="text-sm text-[#FFBF00]">Cet import conserve les réglages actuels de la chaîne. Les vidéos déjà présentes seront ignorées.</p>}
-                  {previewData.nextPageToken&&<button type="button" disabled={loadingMore} onClick={()=>void loadMoreVideos()} className="text-sm text-[#FFBF00]">{loadingMore?"Chargement…":"Charger les vidéos suivantes / anciennes"}</button>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs border-b border-[#222222] pb-4">
+                  <div className="md:col-span-2 space-y-3"><label className="block text-sm">Publications recherchées<select value={discoveryMode} onChange={e=>{const mode=e.target.value;setDiscoveryMode(mode);setExcludeShorts(mode==="STANDARD");setSelectedVideoIds(previous=>new Set(Array.from(previous).filter(id=>{const item=(previewData.videos||previewData.items||[]).find((v:any)=>(v.videoId||v.youtubeVideoId)===id);return item&&(mode==="ALL"||(mode==="SHORTS"?item.isLikelyShort:!item.isLikelyShort));})));}} className="ml-3 rounded-lg bg-[#222] p-2"><option value="STANDARD">Vidéos hors Shorts présumés</option><option value="SHORTS">Shorts présumés</option><option value="ALL">Toutes les publications</option></select></label><p className="text-sm text-[#A0A0A0]">{previewData.note}</p><p className="text-gray-400">{(previewData.videos||previewData.items||[]).length} publications parcourues · {(previewData.videos||previewData.items||[]).filter(matchesDiscovery).length} correspondantes · {(previewData.videos||previewData.items||[]).filter((i:any)=>!matchesDiscovery(i)).length} hors filtre · {(previewData.videos||previewData.items||[]).filter((i:any)=>matchesDiscovery(i)&&i.embeddable!==false&&!i.alreadyImported&&!i.isAlreadyImported).length} admissibles · {selectedVideoIds.size} sélectionnées</p><p className="text-gray-500">Identification indicative des Shorts. Chaque chargement parcourt au maximum 5 pages pour trouver 20 vidéos correspondantes. Les nouvelles vidéos restent à sélectionner.</p></div>{archivesMode&&<p className="text-sm text-[#FFBF00]">Cet import conserve les réglages actuels de la chaîne. Les vidéos déjà présentes seront ignorées.</p>}
+                  {previewData.nextPageToken&&<button type="button" disabled={loadingMore} onClick={()=>void loadMoreVideos()} className="text-sm text-[#FFBF00]">{loadingMore?"Chargement…":"Charger davantage de publications correspondantes"}</button>}
                   <label className="block text-sm">Import initial<select disabled={archivesMode} value={initialImportMode} onChange={e=>setInitialImportMode(e.target.value as any)} className="ml-3 rounded-lg bg-[#222] p-2"><option value="SELECT">Importer les vidéos sélectionnées</option><option value="FUTURE_ONLY">Aucune ancienne vidéo, prochaines publications uniquement</option></select></label>
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={archivesMode} checked={autoSyncFuture} onChange={e=>setAutoSyncFuture(e.target.checked)}/>Importer automatiquement les prochaines publications</label>
                   {targetMode==="new"&&<AdminCountryPicker value={countryId} onChange={setCountryId}/>}
@@ -585,13 +588,13 @@ export default function AdminYoutubeImportPage() {
                         const std = new Set<string>();
                         (previewData.videos || previewData.items || []).forEach((i: any) => {
                           const vid = i.videoId || i.youtubeVideoId;
-                          if (vid && !i.isLikelyShort) std.add(vid);
+                          if (vid && matchesDiscovery(i) && !i.isLikelyShort && !i.isAlreadyImported && !i.alreadyImported && i.embeddable!==false) std.add(vid);
                         });
                         setSelectedVideoIds(std);
                       }}
                       className="text-emerald-400 font-bold hover:underline"
                     >
-                      Standards uniquement
+                      Sélectionner les vidéos hors Shorts
                     </button>
                     <span className="text-gray-600">•</span>
                     <button
@@ -599,7 +602,7 @@ export default function AdminYoutubeImportPage() {
                         const all = new Set<string>();
                         (previewData.videos || previewData.items || []).forEach((i: any) => {
                           const vid = i.videoId || i.youtubeVideoId;
-                          if (vid && !i.isAlreadyImported && !i.alreadyImported && i.embeddable!==false && (!excludeShorts || !i.isLikelyShort)) all.add(vid);
+                          if (vid && matchesDiscovery(i) && !i.isAlreadyImported && !i.alreadyImported && i.embeddable!==false && (!excludeShorts || !i.isLikelyShort)) all.add(vid);
                         });
                         setSelectedVideoIds(all);
                       }}
@@ -615,7 +618,7 @@ export default function AdminYoutubeImportPage() {
                 </div>
 
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {(previewData.videos || previewData.items || []).map((item: any) => {
+                  {(previewData.videos || previewData.items || []).filter(matchesDiscovery).map((item: any) => {
                     const vid = item.videoId || item.youtubeVideoId;
                     const isChecked = selectedVideoIds.has(vid);
                     const isAlready = item.alreadyImported ?? item.isAlreadyImported ?? false;
@@ -654,7 +657,7 @@ export default function AdminYoutubeImportPage() {
                               )}
                               {item.isLikelyShort ? (
                                 <span className="text-[10px] bg-red-950/70 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded font-bold">
-                                  Short (≤ 60s)
+                                  Short présumé
                                 </span>
                               ) : (
                                 <span className="text-[10px] bg-emerald-950/50 text-emerald-400 border border-emerald-800/40 px-1.5 py-0.5 rounded font-bold">
