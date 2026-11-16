@@ -21,6 +21,7 @@ export default function EpisodeTranscriptEditorPage() {
   const [message, setMessage] = useState("");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string>("");
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -41,6 +42,26 @@ export default function EpisodeTranscriptEditorPage() {
 
   useEffect(() => {
     fetchTranscript();
+    const token = getAccessToken();
+    if (token) {
+      fetch(`${API_BASE_URL}/creator/episodes/${episodeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          const ep = json?.data;
+          if (ep?.mediaSources) {
+            const audioSource =
+              ep.mediaSources.find((s: any) => s.type === "AUDIO" && s.isPrimaryAudio) ||
+              ep.mediaSources.find((s: any) => s.type === "AUDIO") ||
+              ep.mediaSources[0];
+            if (audioSource?.externalUrl) {
+              setAudioUrl(audioSource.externalUrl);
+            }
+          }
+        })
+        .catch(() => {});
+    }
   }, [episodeId]);
 
   // Synchronisation temporelle du lecteur audio avec la transcription
@@ -189,7 +210,7 @@ export default function EpisodeTranscriptEditorPage() {
             <h3 className="font-extrabold text-white text-sm">Aperçu & Synchronisation</h3>
             <audio
               ref={audioRef}
-              src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+              src={audioUrl || undefined}
               onTimeUpdate={handleTimeUpdate}
               controls
               className="w-full"

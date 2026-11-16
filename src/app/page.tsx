@@ -82,7 +82,7 @@ function ContinueListeningShelf({
   isPlaying,
 }: {
   sec: any;
-  handlePlay: (ep: any, attribution?: any) => void;
+  handlePlay: (ep: any, attribution?: any, startAt?: number) => void;
   currentEpisode: any;
   isPlaying: boolean;
 }) {
@@ -156,7 +156,7 @@ function ContinueListeningShelf({
           return (
             <div
               key={ep.id}
-              onClick={() => handlePlay(ep, item.attribution)}
+              onClick={() => handlePlay(ep, item.attribution, pos)}
               className="snap-start shrink-0 w-[280px] sm:w-[320px] bg-[#141414] hover:bg-[#1E1E1E] rounded-xl p-3 border border-[#242424] hover:border-[#333333] cursor-pointer transition-colors group relative"
             >
               <div className="flex items-center gap-3 mb-2.5">
@@ -377,12 +377,12 @@ function HomeContent() {
     showToast("Épisode ajouté à la file d'attente");
   };
 
-  const handlePlay = (ep: any, attribution?: any) => {
+  const handlePlay = (ep: any, attribution?: any, startAt?: number) => {
     if (currentEpisode?.id === ep.id) {
       togglePlay();
     } else {
       const episodeWithAttribution = attribution ? { ...ep, attribution } : ep;
-      playEpisode(episodeWithAttribution);
+      playEpisode(episodeWithAttribution, undefined, startAt || 0);
       if (attribution?.batchId) {
         recordRecommendationInteraction(
           attribution.batchId,

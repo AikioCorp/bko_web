@@ -207,22 +207,7 @@ function AuthComponent() {
         setError(json.message || "Identifiant ou mot de passe incorrect.");
       }
     } catch (err: any) {
-      if (err?.message?.includes("fetch") || err?.name === "TypeError") {
-        const isAdm = trimmed.toLowerCase().includes("admin") || trimmed.toLowerCase().includes("salika");
-        const mockUser = {
-          id: isAdm ? "usr-admin" : "usr-demo",
-          email: trimmed.includes("@") ? trimmed : "admin@bamako.ml",
-          fullName: isAdm ? "Admin Bamako Podcast" : "Auditeur Bamako",
-          roles: isAdm ? ["SUPER_ADMIN", "ADMIN", "CREATOR"] : ["LISTENER"],
-          permissions: [],
-        };
-        setIsNavigating(true);
-        setAuth(mockUser as any, "mock-token-session");
-        const destination = getDestinationForUser(mockUser.roles, redirect);
-        router.push(destination);
-      } else {
-        setError(err?.message || "Erreur de communication avec le serveur.");
-      }
+      setError("Impossible de joindre le serveur. Veuillez vérifier votre connexion et réessayer.");
     } finally {
       setLoading(false);
     }
@@ -701,11 +686,11 @@ function AuthComponent() {
 
             {/* Footer */}
             <div className="pt-2 text-center text-[11px] text-[#666666] flex flex-wrap items-center justify-center gap-2">
-              <Link href="/explore" className="hover:underline">Centre d'aide</Link>
+              <Link href="/support" className="hover:underline">Centre d'aide</Link>
               <span>•</span>
-              <Link href="/explore" className="hover:underline">Conditions</Link>
+              <Link href="/terms" className="hover:underline">Conditions</Link>
               <span>•</span>
-              <Link href="/explore" className="hover:underline">Confidentialité</Link>
+              <Link href="/privacy" className="hover:underline">Confidentialité</Link>
             </div>
           </div>
         ) : (
@@ -845,8 +830,8 @@ function AuthComponent() {
                 className="mt-0.5 accent-[#FFBF00] rounded shrink-0"
               />
               <span>
-                J'accepte les <span className="text-[#FFBF00] font-semibold">Conditions d'utilisation</span> et la{" "}
-                <span className="text-[#FFBF00] font-semibold">Politique de confidentialité</span> de Bamako Podcast.
+                J'accepte les <Link href="/terms" target="_blank" className="text-[#FFBF00] font-semibold hover:underline">Conditions d'utilisation</Link> et la{" "}
+                <Link href="/privacy" target="_blank" className="text-[#FFBF00] font-semibold hover:underline">Politique de confidentialité</Link> de Bamako Podcast.
               </span>
             </label>
 

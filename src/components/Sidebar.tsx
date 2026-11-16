@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Home,
   Compass,
@@ -24,6 +24,7 @@ import { useAuthStore } from "@/store/authStore";
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { hasConsole, landing } = useConsoleAccess();
   const { user, isAuthenticated } = useAuthStore();
 
@@ -63,7 +64,7 @@ export const Sidebar: React.FC = () => {
       icon: Bookmark,
       exact: false,
     },
-    ...(isAuthenticated
+    ...(isMounted && isAuthenticated
       ? [
           {
             label: "Historique",
@@ -113,9 +114,15 @@ export const Sidebar: React.FC = () => {
         {/* Primary Navigation Pills */}
         <nav className="flex flex-col gap-1.5">
           {navItems.map((item) => {
-            const isActive = item.exact
-              ? pathname === item.href
-              : pathname.startsWith(item.href);
+            const currentTab = searchParams?.get("tab");
+            const isActive =
+              item.href === "/library?tab=history"
+                ? pathname === "/library" && currentTab === "history"
+                : item.href === "/library"
+                ? pathname === "/library" && currentTab !== "history"
+                : item.exact
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
             const Icon = item.icon;
 
             return (

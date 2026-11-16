@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ShieldCheck, ArrowRight, RotateCw, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { resolvePostAuthDecision } from "@/lib/auth-navigation";
+import { resolvePostAuthDecision, sanitizeRedirect } from "@/lib/auth-navigation";
 
 function VerifyOtpInner() {
   const router = useRouter();
@@ -46,7 +46,7 @@ function VerifyOtpInner() {
     }
 
     setLoading(true);
-    const destination = searchParams.get("redirect") || "/";
+    const destination = sanitizeRedirect(searchParams.get("redirect")) || "/";
 
     try {
       const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
@@ -73,21 +73,10 @@ function VerifyOtpInner() {
           router.push(decision.path);
         }, 1000);
       } else {
-        // En mode test / dev local, fallback si code dev
-        if (devCode && codeToVerify === devCode) {
-          setSuccess(true);
-          setTimeout(() => router.push(destination || "/"), 1200);
-        } else {
-          setError(json.error?.message || json.message || "Code de vérification incorrect ou expiré.");
-        }
+        setError(json.error?.message || json.message || "Code de vérification incorrect ou expiré.");
       }
     } catch (err: any) {
-      if (devCode && codeToVerify === devCode) {
-        setSuccess(true);
-        setTimeout(() => router.push(destination || "/"), 1200);
-      } else {
-        setError(err?.message || "Impossible de joindre le serveur. Veuillez réessayer.");
-      }
+      setError(err?.message || "Impossible de joindre le serveur. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
@@ -156,7 +145,7 @@ function VerifyOtpInner() {
         </div>
 
         {/* Code de test en mode dev si disponible */}
-        {devCode && (
+        {process.env.NODE_ENV !== "production" && devCode && (
           <button
             type="button"
             onClick={() => {

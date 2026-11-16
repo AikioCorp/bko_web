@@ -180,6 +180,12 @@ export default function PodcastPage() {
 
   const play = (ep: Episode) => {
     if (!podcast) return;
+    const isPremiumEp = Boolean(ep.isPremium || podcast.isPremium);
+    const hasAccess = !isPremiumEp || Boolean(podcast.viewer?.hasActiveSubscription || podcast.viewer?.purchasedEpisodeIds?.includes(ep.id));
+    if (!hasAccess) {
+      router.push(`/podcasts/${podcast.slug}/episodes/${ep.slug}`);
+      return;
+    }
     if (currentEpisode?.id === ep.id) return togglePlay();
     const prog = podcast.viewer?.progress[ep.id];
     const startAt = prog && !prog.completed ? prog.positionSeconds : 0;

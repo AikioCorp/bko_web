@@ -352,7 +352,8 @@ export const PersistentPlayer = () => {
                 onLoadedMetadata={(e: any) => {
                   const v = e.currentTarget;
                   videoRef.current = v;
-                  if (startAt > 0 && handledSeek.current === 0 && v) v.currentTime = startAt;
+                  const resumeTime = usePlayerStore.getState().currentTime || startAt;
+                  if (resumeTime > 0 && v && v.currentTime === 0) v.currentTime = resumeTime;
                 }}
                 onDurationChange={(e: any) => {
                   const d = e.currentTarget?.duration;
@@ -500,6 +501,17 @@ export const PersistentPlayer = () => {
                     controls={true}
                     width="100%"
                     height="100%"
+                    onLoadedMetadata={(e: any) => {
+                      const v = e.currentTarget;
+                      videoRef.current = v;
+                      const resumeTime = usePlayerStore.getState().currentTime || startAt;
+                      if (resumeTime > 0 && v) v.currentTime = resumeTime;
+                    }}
+                    onDurationChange={(e: any) => {
+                      const d = e.currentTarget?.duration;
+                      if (isFinite(d)) setProgress(usePlayerStore.getState().currentTime, d);
+                    }}
+                    onTimeUpdate={(e: any) => onMediaProgress(e.currentTarget?.currentTime ?? 0, usePlayerStore.getState().duration)}
                     onPlay={() => !usePlayerStore.getState().isPlaying && usePlayerStore.setState({ isPlaying: true })}
                     onPause={() => usePlayerStore.getState().isPlaying && pause()}
                     onEnded={onMediaEnded}

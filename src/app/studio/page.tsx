@@ -201,7 +201,7 @@ export default function StudioDashboardPage() {
               {data.rejected.map((item) => (
                 <div key={item.id} className="flex items-center justify-between text-xs bg-[#1F1717] px-3 py-1.5 rounded border border-amber-900/30">
                   <span className="font-medium text-amber-200">{item.title}</span>
-                  <Link href={`/studio/episodes/${item.id}`} className="text-[#FFBF00] hover:underline text-[11px] font-medium">
+                  <Link href={`/studio/episodes/${item.id}/edit`} className="text-[#FFBF00] hover:underline text-[11px] font-medium">
                     Consulter les remarques →
                   </Link>
                 </div>
@@ -333,7 +333,7 @@ export default function StudioDashboardPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Button asChild size="sm" variant="ghost" className="h-8 px-2.5 text-xs text-[#AAAAAA] hover:text-white hover:bg-[#202020]">
-                      <Link href={`/studio/episodes/${ep.id}`}>
+                      <Link href={`/studio/episodes/${ep.id}/edit`}>
                         <FileEdit className="w-3.5 h-3.5 mr-1" />
                         Éditer
                       </Link>

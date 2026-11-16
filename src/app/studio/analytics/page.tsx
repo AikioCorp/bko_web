@@ -61,7 +61,7 @@ export default function StudioAnalyticsPage() {
 
   // 1. Fetch Creator Podcasts
   const { data: podcastsData, isLoading: isLoadingPodcasts } = useSWR("/creator/podcasts", fetcher);
-  const podcasts = podcastsData?.items || [];
+  const podcasts = Array.isArray(podcastsData) ? podcastsData : podcastsData?.items || [];
 
   // Automatically select first podcast if none selected
   const activePodcastId = selectedPodcastId || (podcasts.length > 0 ? podcasts[0].id : null);
@@ -414,7 +414,7 @@ export default function StudioAnalyticsPage() {
                         <tr key={ep.episodeId} className="hover:bg-[#141414] transition-colors">
                           <td className="py-3 px-3 font-mono text-[#888888]">{idx + 1}</td>
                           <td className="py-3 px-3 font-medium text-white max-w-xs truncate">
-                            <Link href={`/studio/episodes/${ep.episodeId}`} className="hover:text-[#FFBF00] transition-colors">
+                            <Link href={`/studio/episodes/${ep.episodeId}/edit`} className="hover:text-[#FFBF00] transition-colors">
                               {ep.title}
                             </Link>
                           </td>

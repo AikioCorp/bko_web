@@ -1,93 +1,41 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Mic, Search, SlidersHorizontal, ChevronDown } from "lucide-react";
+import useSWR from "swr";
+import { Mic, Search, Loader2 } from "lucide-react";
+import { fetchApi } from "@/lib/api";
+
+const fetcher = (url: string) => fetchApi(url).then((r) => r.data);
 
 export default function PodcastsCatalogPage() {
   const [searchFilter, setSearchFilter] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("ALL");
-  const [selectedTopic, setSelectedTopic] = useState("ALL");
 
-  const catalogPodcasts = [
-    {
-      id: "p1",
-      name: "Les voix de Bamako",
-      slug: "les-voix-de-bamako",
-      author: "Aminata Touré",
-      cover: "/images/cover-musique.jpg",
-      badge: "Société",
-      episodesCount: 34,
-      language: "FR / BM",
-      description: "Interviews intimes et exploration sonore au cœur de la capitale malienne.",
-    },
-    {
-      id: "p2",
-      name: "Entreprendre au Mali",
-      slug: "entreprendre-au-mali",
-      author: "Oumar Diarra",
-      cover: "/images/cover-entreprendre.jpg",
-      badge: "Économie",
-      episodesCount: 22,
-      language: "Français",
-      description: "Stratégies, financements locaux et réussites entrepreneuriales à Bamako et dans les régions.",
-    },
-    {
-      id: "p3",
-      name: "Culture vivante",
-      slug: "culture-vivante",
-      author: "Kadiatou Sangaré",
-      cover: "/images/cover-kora.jpg",
-      badge: "Arts",
-      episodesCount: 18,
-      language: "Français",
-      description: "Un voyage sonore à travers la musique, la littérature orale et le patrimoine vivant du Mali.",
-    },
-    {
-      id: "p4",
-      name: "Bamanankan kuma",
-      slug: "bamanankan-kuma",
-      author: "Bakary Coulibaly",
-      cover: "/images/cover-griot.jpg",
-      badge: "Bamanankan",
-      episodesCount: 40,
-      language: "Bamanankan",
-      description: "Sɛbɛnnikɛla, maana ani tarikuw bamanankan kɔnɔ.",
-    },
-    {
-      id: "p5",
-      name: "Afrique Demain",
-      slug: "afrique-demain",
-      author: "Dr. Moussa Koné",
-      cover: "/images/cover-culture.jpg",
-      badge: "Prospective",
-      episodesCount: 15,
-      language: "Français",
-      description: "Transitions énergétiques, innovations technologiques et défis du continent.",
-    },
-    {
-      id: "p6",
-      name: "Kora & Balafon Moderne",
-      slug: "kora-balafon-moderne",
-      author: "Studio Badalabougou",
-      cover: "/images/cover-studio.jpg",
-      badge: "Musique",
-      episodesCount: 28,
-      language: "Bamanankan",
-      description: "L'exploration des ponts entre les mélodies traditionnelles mandingues et la production moderne.",
-    },
-  ];
+  const { data, isLoading, error } = useSWR("/podcasts?limit=60", fetcher);
 
-  const filtered = catalogPodcasts.filter((p) => {
+  const catalogPodcasts = useMemo(() => {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.items)) return data.items;
+    if (Array.isArray(data?.data)) return data.data;
+    return [];
+  }, [data]);
+
+  const filtered = catalogPodcasts.filter((p: any) => {
+    const q = searchFilter.trim().toLowerCase();
+    const authorName = p.organization?.name || p.country?.name || "";
     const matchesSearch =
-      !searchFilter.trim() ||
-      p.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      p.author.toLowerCase().includes(searchFilter.toLowerCase());
+      !q ||
+      (p.name || "").toLowerCase().includes(q) ||
+      (p.description || "").toLowerCase().includes(q) ||
+      authorName.toLowerCase().includes(q);
+    const langCode = (p.primaryLanguageCode || p.primaryLanguage?.code || "").toLowerCase();
+    const hasSecondaryLang = Array.isArray(p.secondaryLanguages) && p.secondaryLanguages.some((sl: any) => (sl.languageCode || "").toLowerCase() === selectedLanguage);
     const matchesLang =
       selectedLanguage === "ALL" ||
-      (selectedLanguage === "bm" && (p.language.includes("Bamanankan") || p.language.includes("BM"))) ||
-      (selectedLanguage === "fr" && (p.language.includes("Français") || p.language.includes("FR")));
+      langCode === selectedLanguage ||
+      hasSecondaryLang;
     return matchesSearch && matchesLang;
   });
 
@@ -151,38 +99,61 @@ export default function PodcastsCatalogPage() {
       </div>
 
       {/* Grid of Podcasts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {filtered.map((podcast) => (
-          <Link
-            key={podcast.id}
-            href={`/podcasts/${podcast.slug}`}
-            className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#383838] rounded-2xl p-4 flex flex-col gap-3 transition-all group shadow"
-          >
-            <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-[#282828] bg-[#0E0E0E]">
-              <Image src={podcast.cover} alt={podcast.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
-              <span className="absolute top-2 left-2 bg-[#0B0B0B]/90 text-[10px] text-white font-semibold px-2 py-0.5 rounded border border-[#333333]">
-                {podcast.badge}
-              </span>
-              <span className="absolute bottom-2 right-2 bg-[#0B0B0B]/90 text-[10px] text-[#FFBF00] font-bold px-2 py-0.5 rounded border border-[#333333]">
-                {podcast.language}
-              </span>
-            </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20 text-[#888888] gap-3">
+          <Loader2 className="w-5 h-5 animate-spin text-[#FFBF00]" />
+          <span className="text-sm">Chargement du catalogue...</span>
+        </div>
+      ) : error ? (
+        <div className="bg-[#141414] border border-red-900/40 rounded-2xl p-8 text-center text-sm text-red-400">
+          Impossible de charger les podcasts pour le moment.
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-[#141414] border border-[#242424] rounded-2xl p-10 text-center text-sm text-[#888888]">
+          Aucun podcast ne correspond à vos critères.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {filtered.map((podcast: any) => {
+            const badgeLabel = podcast.categories?.[0]?.category?.name || "Podcast";
+            const languageLabel = podcast.primaryLanguage?.nativeName || podcast.primaryLanguage?.name || podcast.primaryLanguageCode || "FR";
+            const authorLabel = podcast.organization?.name || podcast.country?.name || "Bamako Podcast";
+            const episodesCount = podcast._count?.episodes ?? 0;
+            const coverSrc = podcast.cover || "/images/default-cover.jpg";
 
-            <div className="space-y-1">
-              <h2 className="text-sm font-bold text-white truncate group-hover:text-[#FFBF00] transition-colors">
-                {podcast.name}
-              </h2>
-              <p className="text-xs text-[#757575]">{podcast.author}</p>
-              <p className="text-xs text-[#B8B8B8] line-clamp-2 mt-1 leading-relaxed">
-                {podcast.description}
-              </p>
-              <p className="text-[11px] text-[#FFBF00] pt-2 font-medium">
-                {podcast.episodesCount} épisodes disponibles
-              </p>
-            </div>
-          </Link>
-        ))}
-      </div>
+            return (
+              <Link
+                key={podcast.id}
+                href={`/podcasts/${podcast.slug}`}
+                className="bg-[#141414] hover:bg-[#1A1A1A] border border-[#242424] hover:border-[#383838] rounded-2xl p-4 flex flex-col gap-3 transition-all group shadow"
+              >
+                <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-[#282828] bg-[#0E0E0E]">
+                  <Image unoptimized src={coverSrc} alt={podcast.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <span className="absolute top-2 left-2 bg-[#0B0B0B]/90 text-[10px] text-white font-semibold px-2 py-0.5 rounded border border-[#333333]">
+                    {badgeLabel}
+                  </span>
+                  <span className="absolute bottom-2 right-2 bg-[#0B0B0B]/90 text-[10px] text-[#FFBF00] font-bold px-2 py-0.5 rounded border border-[#333333]">
+                    {languageLabel}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <h2 className="text-sm font-bold text-white truncate group-hover:text-[#FFBF00] transition-colors">
+                    {podcast.name}
+                  </h2>
+                  <p className="text-xs text-[#757575]">{authorLabel}</p>
+                  <p className="text-xs text-[#B8B8B8] line-clamp-2 mt-1 leading-relaxed">
+                    {podcast.shortDescription || podcast.description}
+                  </p>
+                  <p className="text-[11px] text-[#FFBF00] pt-2 font-medium">
+                    {episodesCount} épisode{episodesCount > 1 ? "s" : ""} disponible{episodesCount > 1 ? "s" : ""}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

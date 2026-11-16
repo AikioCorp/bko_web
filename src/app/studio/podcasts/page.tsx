@@ -14,7 +14,7 @@ const fetcher = (url: string) => fetchApi(url).then(res => res.data);
 
 export default function StudioPodcastsPage() {
   const { data, error, isLoading } = useSWR("/creator/podcasts", fetcher);
-  const podcasts = data?.items || [];
+  const podcasts = Array.isArray(data) ? data : data?.items || [];
 
   return (
     <div className="space-y-6 w-full">
@@ -77,8 +77,8 @@ export default function StudioPodcastsPage() {
             <Card key={podcast.id} className="bg-[#111] border-[#222] text-white hover:border-[#444] transition-all group overflow-hidden flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">
                 <div className="p-5 flex gap-4">
-                  {podcast.coverImageUrl ? (
-                    <img src={podcast.coverImageUrl} alt={podcast.name} className="w-24 h-24 rounded-lg object-cover bg-[#222] border border-[#333] shrink-0" />
+                  {(podcast.cover || podcast.coverImageUrl) ? (
+                    <img src={podcast.cover || podcast.coverImageUrl} alt={podcast.name} className="w-24 h-24 rounded-lg object-cover bg-[#222] border border-[#333] shrink-0" />
                   ) : (
                     <div className="w-24 h-24 rounded-lg bg-[#222] flex items-center justify-center border border-[#333] shrink-0">
                       <ImageIcon className="w-8 h-8 text-[#555]" />
@@ -104,7 +104,7 @@ export default function StudioPodcastsPage() {
                 
                 <div className="border-t border-[#222] bg-[#161616] p-3 flex items-center justify-between mt-auto">
                   <Button variant="ghost" size="sm" className="text-[#888] hover:text-white hover:bg-[#2A2A2A]" asChild>
-                    <a href={`/podcasts/${podcast.id}`} target="_blank" rel="noreferrer">
+                    <a href={`/podcasts/${podcast.slug || podcast.id}`} target="_blank" rel="noreferrer">
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Aperçu
                     </a>

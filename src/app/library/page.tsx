@@ -37,8 +37,14 @@ function LibraryContent() {
   const { data: history, mutate: mutateHistory } = useSWR(isAuthenticated ? '/me/continue-listening' : null, fetcher);
   const { data: playlists, mutate: mutatePlaylists } = useSWR(isAuthenticated ? '/me/playlists' : null, fetcher);
 
-  const handlePlay = (ep: any) => {
+  const handlePlay = (ep: any, startAt = 0) => {
     if (!ep) return;
+    if (!Array.isArray(ep.mediaSources) || ep.mediaSources.length === 0) {
+      if (ep.podcast?.slug && ep.slug) {
+        router.push(`/podcasts/${ep.podcast.slug}/episodes/${ep.slug}`);
+      }
+      return;
+    }
     const playerEp: PlayerEpisode = {
       id: ep.id,
       slug: ep.slug || ep.id,
@@ -50,19 +56,9 @@ function LibraryContent() {
         name: ep.podcast?.name || ep.showName || '',
         cover: ep.podcast?.cover || ep.cover,
       },
-      mediaSources: ep.mediaSources && ep.mediaSources.length > 0 ? ep.mediaSources : [
-        {
-          id: `src-${ep.id}`,
-          type: 'AUDIO',
-          sourceType: 'UPLOAD',
-          playbackMode: 'NATIVE',
-          externalUrl: '',
-          durationSeconds: ep.durationSeconds || 1800,
-          isPrimaryAudio: true,
-        },
-      ],
+      mediaSources: ep.mediaSources,
     };
-    playEpisode(playerEp);
+    playEpisode(playerEp, undefined, startAt);
   };
 
   const unsaveEpisode = async (id: string) => {
@@ -94,14 +90,17 @@ function LibraryContent() {
     }
   };
 
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      router.replace("/login?redirect=/library");
+    }
+  }, [isAuthLoading, isAuthenticated, router]);
+
   if (isAuthLoading) {
     return <div className="p-8 text-white">Chargement de votre bibliothèque...</div>;
   }
 
   if (!isAuthenticated) {
-    if (typeof window !== "undefined") {
-      router.replace("/login?redirect=/library");
-    }
     return <div className="p-8 text-[#757575]">Redirection vers la connexion...</div>;
   }
 
@@ -282,7 +281,7 @@ function LibraryContent() {
                 const ep = h.episode;
                 const progress = ep?.durationSeconds ? (h.positionSeconds / ep.durationSeconds) * 100 : 0;
                 return (
-                  <div key={h.id} className="group flex flex-col bg-[#141414] border border-[#262626] rounded-2xl p-3 hover:border-[#FFBF00]/40 transition-colors cursor-pointer" onClick={() => handlePlay(ep)}>
+                  <div key={h.id} className="group flex flex-col bg-[#141414] border border-[#262626] rounded-2xl p-3 hover:border-[#FFBF00]/40 transition-colors cursor-pointer" onClick={() => handlePlay(ep, h.positionSeconds || 0)}>
                     <div className="flex items-center gap-3 mb-3">
                       <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-[#282828] shrink-0">
                         <Image unoptimized src={ep?.cover || ep?.podcast?.cover || '/images/default-cover.jpg'} alt={ep?.title || ''} fill className="object-cover" />
