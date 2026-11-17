@@ -19,7 +19,7 @@ import { LegalPageLayout } from "@/components/legal/LegalPageLayout";
 export const metadata: Metadata = {
   title: "Suppression de Compte & Données | Bamako Podcast",
   description:
-    "Instructions officielles et formulaire pour supprimer définitivement votre compte Bamako Podcast et toutes vos données personnelles conformément aux exigences Google Play et RGPD.",
+    "Instructions officielles et formulaire pour supprimer définitivement votre compte Bamako Podcast et toutes vos données personnelles conformément aux exigences App Store, Google Play et APDP Mali.",
   openGraph: {
     title: "Suppression de Compte & Données Personnelles — Bamako Podcast",
     description: "Procédure complète de suppression de compte pour l'application mobile et le site web.",
@@ -30,8 +30,8 @@ export default function DataDeletionPage() {
   return (
     <LegalPageLayout
       title="Suppression de Compte & Données Personnelles"
-      subtitle="Conformément aux exigences de transparence de Google Play, de l'App Store d'Apple et de l'APDP Mali, vous pouvez demander à tout moment la suppression totale et irréversible de votre compte et de toutes vos données personnelles."
-      badgeText="Conforme Exigences Google Play & APDP"
+      subtitle="Conformément aux exigences de transparence des stores d'applications et de l'APDP Mali, vous pouvez demander à tout moment la suppression totale et irréversible de votre compte et de toutes vos données personnelles."
+      badgeText="Conforme APDP Mali & Protection des données"
       lastUpdated="26 Octobre 2026"
     >
       <div className="space-y-12 text-[#D0D0D0] leading-relaxed text-sm sm:text-base">

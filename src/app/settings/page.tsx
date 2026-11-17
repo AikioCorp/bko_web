@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { fetchApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -14,6 +14,13 @@ export default function SettingsPersonalizationPage() {
   const { data: profileData, mutate } = useSWR("/me", (url) =>
     fetchApi(url).then((res) => res.data)
   );
+  const [personalizationActive, setPersonalizationActive] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (profileData?.recommendationProfile?.personalizationActive !== undefined) {
+      setPersonalizationActive(Boolean(profileData.recommendationProfile.personalizationActive));
+    }
+  }, [profileData?.recommendationProfile?.personalizationActive]);
 
   const handleResetProfile = async () => {
     if (!confirm("Voulez-vous réinitialiser vos recommandations et effacer l'historique d'affinité ?")) {
@@ -32,6 +39,8 @@ export default function SettingsPersonalizationPage() {
   };
 
   const handleTogglePersonalization = async (active: boolean) => {
+    const prev = personalizationActive;
+    setPersonalizationActive(active);
     try {
       await fetchApi("/recommendations/settings", {
         method: "PATCH",
@@ -40,6 +49,7 @@ export default function SettingsPersonalizationPage() {
       setMessage(active ? "Recommandations personnalisées activées." : "Recommandations personnalisées désactivées.");
       await mutate();
     } catch (err: any) {
+      setPersonalizationActive(prev);
       setMessage("Erreur: " + err.message);
     }
   };
@@ -73,10 +83,15 @@ export default function SettingsPersonalizationPage() {
             </p>
           </div>
           <button
-            onClick={() => handleTogglePersonalization(true)}
-            className="px-4 py-2 bg-[#FFBF00] text-black font-semibold text-xs rounded-xl hover:bg-[#E5AB00] transition-colors"
+            onClick={() => handleTogglePersonalization(!personalizationActive)}
+            aria-pressed={personalizationActive}
+            className={`px-4 py-2 font-semibold text-xs rounded-xl transition-colors ${
+              personalizationActive
+                ? "bg-[#FFBF00] text-black hover:bg-[#E5AB00]"
+                : "bg-[#262626] text-[#B8B8B8] border border-[#333333] hover:text-white"
+            }`}
           >
-            Activé
+            {personalizationActive ? "Activé" : "Désactivé"}
           </button>
         </div>
 

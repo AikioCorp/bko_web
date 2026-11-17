@@ -33,6 +33,7 @@ import { useAuthStore } from "../../../store/authStore";
 import { ReportButton } from "@/components/public/ReportButton";
 import { AddToPlaylistModal } from "@/components/modals/AddToPlaylistModal";
 import { ClaimPodcastModal } from "@/components/modals/ClaimPodcastModal";
+import { PodcastRating } from "@/components/PodcastRating";
 import { ShieldCheck } from "lucide-react";
 
 type Episode = {
@@ -332,6 +333,11 @@ export default function PodcastPage() {
               <span>•</span>
               <span className="ml-1.5">{followers.toLocaleString("fr-FR")} abonné{followers > 1 ? "s" : ""}</span>
             </p>
+
+            {/* Notation communautaire */}
+            <div className="pt-1 flex justify-center md:justify-start">
+              <PodcastRating podcastId={podcast.id} />
+            </div>
 
             {/* Description avec déploiement doux */}
             <div className="text-xs sm:text-sm text-[#B8B8B8] leading-relaxed max-w-2xl">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, LogIn, UserPlus, ShieldCheck, Radio, Bookmark, LogOut, Crown } from "lucide-react";
@@ -15,15 +15,15 @@ export function UserDropdown() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  let hoverTimeout: NodeJS.Timeout;
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnter = () => {
-    clearTimeout(hoverTimeout);
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     setIsOpen(true);
   };
 
   const handleMouseLeave = () => {
-    hoverTimeout = setTimeout(() => setIsOpen(false), 200);
+    hoverTimeoutRef.current = setTimeout(() => setIsOpen(false), 200);
   };
 
   const isSuperAdmin = user?.roles?.some((r) => r.toUpperCase() === "SUPER_ADMIN");

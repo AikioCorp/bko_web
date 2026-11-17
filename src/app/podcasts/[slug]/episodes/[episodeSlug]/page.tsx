@@ -9,6 +9,7 @@ import { fetchApi } from "@/lib/api";
 import { formatClock, formatDate, formatDuration, shareOrCopy, toPlayerEpisode } from "@/lib/playback";
 import { usePlayerStore } from "../../../../../store/playerStore";
 import { useAuthStore } from "../../../../../store/authStore";
+import { useLikesStore } from "../../../../../store/likesStore";
 import { ReportButton } from "@/components/public/ReportButton";
 import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 import { EpisodePaywallCard } from "@/components/player/EpisodePaywallCard";
@@ -51,11 +52,12 @@ export default function EpisodePage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authLoading = useAuthStore((s) => s.isLoading);
   const { currentEpisode, isPlaying, playEpisode, togglePlay, seek, addToQueue } = usePlayerStore();
+  const { isLiked: isGloballyLiked, isLoaded: likesLoaded, loadLikes, toggleLike: toggleGlobalLike } = useLikesStore();
 
   const [ep, setEp] = useState<Episode | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "notfound" | "error">("loading");
   const [saved, setSaved] = useState(false);
-  const [liked, setLiked] = useState(false);
+  const [localLiked, setLocalLiked] = useState(false);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [tab, setTab] = useState<"about" | "chapters" | "transcript">("about");
@@ -70,7 +72,10 @@ export default function EpisodePage() {
       const e = await studioApi<Episode>(`/podcasts/${slug}/episodes/${episodeSlug}`);
       setEp(e);
       setSaved(!!e.viewer?.isSaved);
-      setLiked(!!e.viewer?.isLiked);
+      setLocalLiked(!!e.viewer?.isLiked);
+      if (isAuthenticated && !likesLoaded) {
+        void loadLikes();
+      }
       setStatus("ready");
       studioApi<Chapter[]>(`/episodes/${e.id}/chapters`).then(setChapters).catch(() => {});
       studioApi<{ segments: Segment[] } | null>(`/episodes/${e.id}/transcript`)
@@ -137,21 +142,16 @@ export default function EpisodePage() {
     }
   };
 
+  const liked = ep ? (likesLoaded ? isGloballyLiked(ep.id) : localLiked) : false;
+
   const toggleLike = async () => {
     if (!isAuthenticated) return login();
-    const next = !liked;
-    setLiked(next);
     try {
-      if (next) {
-        await studioApi(`/episodes/${ep.id}/likes`, { method: "POST" });
-        flash("Épisode ajouté à vos favoris");
-      } else {
-        await studioApi(`/episodes/${ep.id}/likes`, { method: "DELETE" });
-        flash("Épisode retiré de vos favoris");
-      }
+      const next = await toggleGlobalLike(ep.id);
+      setLocalLiked(next);
+      flash(next ? "Épisode ajouté à vos favoris" : "Épisode retiré de vos favoris");
     } catch (e: any) {
-      setLiked(!next);
-      flash(e.message);
+      flash(e?.message || "Impossible de mettre à jour le favori");
     }
   };
 

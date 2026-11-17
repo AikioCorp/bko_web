@@ -161,18 +161,26 @@ export default function AdminSystemPage() {
           <Loader2 className="w-8 h-8 text-[#FFBF00] animate-spin" />
           <span className="text-sm text-[#888888]">Interrogation de l&apos;état des composants système...</span>
         </div>
-      ) : data ? (
+      ) : data ? (() => {
+        const isHealthy = data.status === "OK" && data.database?.status === "CONNECTED";
+        return (
         <>
           {/* Bannière de Santé Globale */}
           <div className="bg-[#141414] border border-[#262626] rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-950/70 border border-emerald-800/60 flex items-center justify-center text-emerald-400 shrink-0">
-                <ShieldCheck className="w-7 h-7" />
+              <div className={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${
+                isHealthy
+                  ? "bg-emerald-950/70 border-emerald-800/60 text-emerald-400"
+                  : "bg-amber-950/70 border-amber-800/60 text-amber-400"
+              }`}>
+                {isHealthy ? <ShieldCheck className="w-7 h-7" /> : <AlertTriangle className="w-7 h-7" />}
               </div>
               <div>
                 <div className="flex items-center gap-2.5">
-                  <h2 className="text-xl font-bold text-white">Tous les services sont opérationnels</h2>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <h2 className="text-xl font-bold text-white">
+                    {isHealthy ? "Tous les services sont opérationnels" : "Fonctionnement dégradé détecté"}
+                  </h2>
+                  <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${isHealthy ? "bg-emerald-400" : "bg-amber-400"}`} />
                 </div>
                 <p className="text-xs text-[#888888] mt-0.5">
                   Dernier contrôle télémétrique : {new Date(data.timestamp).toLocaleTimeString("fr-FR")} • Environnement :{" "}
@@ -310,7 +318,8 @@ export default function AdminSystemPage() {
             </div>
           </div>
         </>
-      ) : null}
+        );
+      })() : null}
     </div>
   );
 }

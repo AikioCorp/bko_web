@@ -58,7 +58,7 @@ export function PodcastRating({ podcastId }: Props) {
       mutate(); // Revalidate with real data
     } catch (e) {
       mutate(prev, false);
-      setActionError("Impossible d'enregistrer votre note. RÃ©essayez.");
+      setActionError("Impossible d'enregistrer votre note. Réessayez.");
     } finally {
       setSubmitting(false);
     }
@@ -79,7 +79,7 @@ export function PodcastRating({ podcastId }: Props) {
                 onClick={() => handleRate(star)}
                 disabled={submitting}
                 className="focus:outline-none focus:ring-2 focus:ring-[#FFBF00] rounded-sm p-0.5"
-                aria-label={`Noter ${star} Ã©toile${star > 1 ? 's' : ''}`}
+                aria-label={`Noter ${star} étoile${star > 1 ? 's' : ''}`}
                 aria-pressed={currentRating === star}
                 title={currentRating === star ? "Retirer ma note" : `Noter ${star}`}
               >
@@ -100,7 +100,7 @@ export function PodcastRating({ podcastId }: Props) {
       </div>
       {currentRating > 0 && (
         <p className="text-xs text-[#FFBF00]">
-          Vous avez notÃ© ce podcast {currentRating}/5. Cliquez sur votre note pour la retirer.
+          Vous avez noté ce podcast {currentRating}/5. Cliquez sur votre note pour la retirer.
         </p>
       )}
     </div>

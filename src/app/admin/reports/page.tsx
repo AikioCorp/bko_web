@@ -141,9 +141,19 @@ export default function AdminReportsPage() {
                           <AlertTriangle className="w-4 h-4" /> Ouvert
                         </span>
                       )}
+                      {report.status === "IN_REVIEW" && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-semibold bg-amber-500/10 text-amber-400 mb-4">
+                          <AlertTriangle className="w-4 h-4" /> En cours d&apos;examen
+                        </span>
+                      )}
                       {report.status === "RESOLVED" && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-semibold bg-green-500/10 text-green-500 mb-4">
                           <CheckCircle className="w-4 h-4" /> Résolu
+                        </span>
+                      )}
+                      {report.status === "REJECTED" && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-sm font-semibold bg-[#222] text-[#888] mb-4">
+                          <Ban className="w-4 h-4" /> Rejeté
                         </span>
                       )}
                       {report.status === "DISMISSED" && (
@@ -154,7 +164,7 @@ export default function AdminReportsPage() {
                     </div>
 
                     <div className="flex flex-col gap-2 mt-4">
-                      {report.status === "OPEN" && (
+                      {(report.status === "OPEN" || report.status === "IN_REVIEW") && (
                         <>
                           <AdminAction permission="moderation.edit"><Button
                             size="sm"

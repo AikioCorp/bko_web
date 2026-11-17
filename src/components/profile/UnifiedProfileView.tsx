@@ -388,12 +388,12 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
       id: ep.id,
       slug: ep.slug || ep.id,
       title: ep.title,
-      cover: ep.coverImageUrl || ep.podcast?.coverImageUrl || null,
+      cover: ep.cover || ep.coverImageUrl || ep.podcast?.cover || ep.podcast?.coverImageUrl || null,
       durationSeconds: ep.durationSeconds || 0,
       podcast: {
         slug: ep.podcast?.slug || "",
         name: ep.podcast?.name || "Podcast",
-        cover: ep.podcast?.coverImageUrl || "",
+        cover: ep.podcast?.cover || ep.podcast?.coverImageUrl || "",
       },
       mediaSources: ep.mediaSources || [],
     };

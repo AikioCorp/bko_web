@@ -184,11 +184,17 @@ export default function PremiumPage() {
           </div>
 
           {/* Formule 2 : PASS ILLIMITÉ (FORMULE PHARE RECOMMANDÉE) */}
-          <div className="bg-[#16140D] border-2 border-[#FFBF00] rounded-2xl p-6 sm:p-7 flex flex-col justify-between relative shadow-2xl scale-100 md:scale-105 z-10">
+          <div className={`rounded-2xl p-6 sm:p-7 flex flex-col justify-between relative shadow-2xl transition-all ${
+            billingCycle === "MONTHLY"
+              ? "bg-[#16140D] border-2 border-[#FFBF00] scale-100 md:scale-105 z-10"
+              : "bg-[#111111] border border-[#242424] hover:border-[#383838]"
+          }`}>
             {/* Ruban Recommandé */}
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-[#FFBF00] text-black text-[11px] font-black uppercase tracking-wider shadow-md flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> Recommandé
-            </div>
+            {billingCycle === "MONTHLY" && (
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-[#FFBF00] text-black text-[11px] font-black uppercase tracking-wider shadow-md flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Recommandé
+              </div>
+            )}
 
             <div>
               <div className="text-xs uppercase font-bold text-[#FFBF00] tracking-wider mb-2">Formule Complète</div>
@@ -236,7 +242,16 @@ export default function PremiumPage() {
           </div>
 
           {/* Formule 3 : Pass Annuel Privilège */}
-          <div className="bg-[#111111] border border-[#242424] rounded-2xl p-6 flex flex-col justify-between hover:border-[#383838] transition-colors shadow-xl">
+          <div className={`rounded-2xl p-6 flex flex-col justify-between relative shadow-xl transition-all ${
+            billingCycle === "YEARLY"
+              ? "bg-[#16140D] border-2 border-[#FFBF00] scale-100 md:scale-105 z-10"
+              : "bg-[#111111] border border-[#242424] hover:border-[#383838]"
+          }`}>
+            {billingCycle === "YEARLY" && (
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-[#FFBF00] text-black text-[11px] font-black uppercase tracking-wider shadow-md flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Meilleure offre (-17%)
+              </div>
+            )}
             <div>
               <div className="text-xs uppercase font-bold text-[#AAAAAA] tracking-wider mb-2">Formule Annuelle</div>
               <h3 className="text-xl font-bold text-white mb-2">Pass Annuel Privilège</h3>
@@ -270,7 +285,11 @@ export default function PremiumPage() {
 
             <Button
               onClick={() => handleSelectPlan(plansData?.find((p: any) => p.slug === "pass-annuel-privilege") || { id: "p3", name: "Pass Annuel Privilège", price: 20000, interval: "YEARLY" })}
-              className="w-full bg-[#1C1C1C] hover:bg-[#282828] text-white border border-[#333333] font-semibold text-xs h-10 rounded-xl"
+              className={`w-full font-extrabold text-xs h-10 rounded-xl ${
+                billingCycle === "YEARLY"
+                  ? "bg-[#FFBF00] hover:bg-[#E6AC00] text-black"
+                  : "bg-[#1C1C1C] hover:bg-[#282828] text-white border border-[#333333] font-semibold"
+              }`}
             >
               Choisir le Pass Annuel
             </Button>

@@ -112,7 +112,7 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Google Play */}
             <a
-              href="https://play.google.com"
+              href="https://play.google.com/store/apps/details?id=studio.bamakopodcast.app"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] border border-[#333333] hover:border-[#FFBF00]/50 text-white transition-all text-xs font-bold group"

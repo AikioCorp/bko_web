@@ -28,11 +28,11 @@ interface LegalTab {
 }
 
 const LEGAL_TABS: LegalTab[] = [
-  { name: "Confidentialité", href: "/privacy", icon: Shield, badge: "YouTube & APDP" },
+  { name: "Confidentialité", href: "/privacy", icon: Shield, badge: "APDP" },
   { name: "Conditions d'utilisation", href: "/terms", icon: FileText },
   { name: "Mentions légales", href: "/legal", icon: Building },
   { name: "Cookies", href: "/cookies", icon: Cookie },
-  { name: "Suppression des données", href: "/data-deletion", icon: UserX, badge: "Google Play" },
+  { name: "Suppression des données", href: "/data-deletion", icon: UserX },
   { name: "Règles & Copyright", href: "/community-guidelines", icon: Scale },
   { name: "À propos", href: "/about", icon: Info },
 ];
