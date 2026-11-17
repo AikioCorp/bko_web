@@ -426,7 +426,12 @@ export default function AdminSubscriptionsPage() {
 
       {/* Modal Formulaire de Création / Édition */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setIsModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        >
           <div className="relative w-full max-w-xl bg-[#121212] border border-[#262626] rounded-3xl shadow-2xl overflow-hidden animate-fade-in max-h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="p-6 border-b border-[#222222] flex items-center justify-between shrink-0">

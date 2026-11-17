@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SubscriptionCheckoutModal } from "@/components/modals/SubscriptionCheckoutModal";
+import { GiftPassSection } from "@/components/premium/GiftPassSection";
 
 const fetcher = (url: string) => fetchApi(url).then((res) => res.data);
 
@@ -374,6 +375,11 @@ export default function PremiumPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* PASS CADEAUX & ACTIVATION */}
+      <section className="px-4 max-w-5xl mx-auto my-14">
+        <GiftPassSection onRedeemed={() => mutateUserSub()} plansData={plansData} />
       </section>
 
       {/* FAQ SECTION */}

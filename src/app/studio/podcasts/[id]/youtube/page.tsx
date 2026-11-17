@@ -848,7 +848,12 @@ export default function PodcastYoutubePage() {
 
       {/* Modal Historique des Anciennes Vidéos (YouTube Data API v3) */}
       {showHistoricalModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setShowHistoricalModal(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+        >
           <div className="bg-[#121722] border border-[#1E2638] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
             <div className="p-5 border-b border-[#1E2638] flex items-center justify-between">
               <div className="flex items-center gap-2 text-white font-bold text-sm">

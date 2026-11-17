@@ -422,10 +422,25 @@ export default function StudioSettingsPage() {
                 <Phone className="w-4 h-4 text-[#666666] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="tel"
+                  inputMode="tel"
                   value={payoutPhone}
-                  onChange={(e) => setPayoutPhone(e.target.value)}
-                  placeholder="+223 70 00 00 00"
-                  className="w-full bg-[#161616] border border-[#262626] rounded-xl py-2.5 pl-10 pr-3.5 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors"
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw.startsWith("+221")) {
+                      const rest = raw.slice(4).replace(/\D/g, "").slice(0, 9);
+                      setPayoutPhone(rest ? `+221 ${rest.replace(/(\d{2})(\d{3})(\d{2})(\d{2})/, "$1 $2 $3 $4").trim()}` : "+221");
+                    } else if (raw.startsWith("+223")) {
+                      const rest = raw.slice(4).replace(/\D/g, "").slice(0, 8);
+                      setPayoutPhone(rest ? `+223 ${rest.replace(/(\d{2})(?=\d)/g, "$1 ").trim()}` : "+223");
+                    } else if (raw.startsWith("+")) {
+                      setPayoutPhone(raw.slice(0, 18));
+                    } else {
+                      const digits = raw.replace(/\D/g, "").slice(0, 8);
+                      setPayoutPhone(digits.replace(/(\d{2})(?=\d)/g, "$1 ").trim());
+                    }
+                  }}
+                  placeholder="+223 66 00 00 00"
+                  className="w-full bg-[#161616] border border-[#262626] rounded-xl py-2.5 pl-10 pr-3.5 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors font-mono"
                 />
               </div>
             </div>

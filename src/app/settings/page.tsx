@@ -116,19 +116,59 @@ export default function SettingsPersonalizationPage() {
         </div>
 
         {/* Onboarding Thématique */}
-        <div className="bg-[#141414] border border-[#262626] rounded-2xl p-6 flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold text-white text-base">Thèmes & Langues préférés</h3>
-            <p className="text-xs text-[#888888] mt-1 max-w-lg">
-              Mettez à jour vos choix d'onboarding pour explorer de nouveaux sujets.
-            </p>
+        <div className="bg-[#141414] border border-[#262626] rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-white text-base">Thèmes & Langues préférés</h3>
+              <p className="text-xs text-[#888888] mt-1 max-w-lg">
+                Vos choix d'onboarding enregistrés pour personnaliser vos recommandations.
+              </p>
+            </div>
+            <a
+              href="/onboarding?redirect=/settings"
+              className="px-4 py-2 bg-[#202020] text-white font-semibold text-xs rounded-xl hover:bg-[#2A2A2A] transition-colors shrink-0"
+            >
+              Modifier
+            </a>
           </div>
-          <a
-            href="/onboarding"
-            className="px-4 py-2 bg-[#202020] text-white font-semibold text-xs rounded-xl hover:bg-[#2A2A2A] transition-colors"
-          >
-            Modifier
-          </a>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#222222]">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#777] mb-2">Langues d'écoute</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.isArray(profileData?.languagePreferences) && profileData.languagePreferences.length > 0 ? (
+                  profileData.languagePreferences.map((lp: any) => (
+                    <span
+                      key={lp.languageCode}
+                      className="px-2.5 py-1 rounded-lg bg-[#1C1810] border border-[#FFBF00]/30 text-[#FFBF00] text-xs font-semibold"
+                    >
+                      {lp.language?.name || lp.languageCode}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-[#666]">Aucune langue sélectionnée</span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#777] mb-2">Centres d'intérêt</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.isArray(profileData?.topicPreferences) && profileData.topicPreferences.length > 0 ? (
+                  profileData.topicPreferences.map((tp: any) => (
+                    <span
+                      key={tp.topicId}
+                      className="px-2.5 py-1 rounded-lg bg-[#1C1C1C] border border-[#2E2E2E] text-white text-xs font-medium"
+                    >
+                      {tp.topic?.name || tp.topicId}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-[#666]">Aucun thème sélectionné</span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

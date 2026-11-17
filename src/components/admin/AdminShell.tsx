@@ -9,7 +9,7 @@ import {
   Library, Tags, ShieldAlert, BadgeCheck, FileDown, 
   BarChart3, Settings, Database, Activity, Shield, 
   ChevronLeft, ChevronRight, LogOut, ArrowLeft, CreditCard,
-  Loader2, Megaphone, Crown, Video
+  Loader2, Megaphone, Crown, Video, Radio
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import useSWR from "swr";
@@ -82,6 +82,7 @@ function AdminShellContent({ children }: { children: React.ReactNode }) {
         { name: "Contenus à valider", href: "/admin/reviews", icon: BadgeCheck },
         { name: "Signalements", href: "/admin/reports", icon: ShieldAlert },
         { name: "Revendications", href: "/admin/claims", icon: BadgeCheck },
+        { name: "Suggestions", href: "/admin/suggestions", icon: Radio },
       ]
     },
     {

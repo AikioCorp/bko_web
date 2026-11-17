@@ -6,6 +6,7 @@ import Image from "next/image";
 import useSWR from "swr";
 import { Mic, Search, Loader2 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
+import SuggestBanner from "@/components/ui/SuggestBanner";
 
 const fetcher = (url: string) => fetchApi(url).then((r) => r.data);
 
@@ -154,6 +155,10 @@ export default function PodcastsCatalogPage() {
           })}
         </div>
       )}
+
+      <div className="mt-12">
+        <SuggestBanner />
+      </div>
     </div>
   );
 }

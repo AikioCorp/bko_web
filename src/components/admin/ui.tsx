@@ -109,7 +109,14 @@ export function ReasonDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget && !busy) onCancel();
+      }}
+      className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       <Card className="w-full max-w-md p-6 space-y-4">
         <h2 className="text-lg font-bold text-white">{title}</h2>
         {description && <p className="text-sm text-gray-400">{description}</p>}

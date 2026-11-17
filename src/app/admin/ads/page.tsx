@@ -484,7 +484,12 @@ export default function AdminAdsPage() {
 
       {/* CREATE MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setIsModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+        >
           <div className="w-full max-w-2xl bg-[#141414] border border-[#2A2A2A] rounded-2xl shadow-2xl p-6 overflow-y-auto max-h-[90vh] space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#222222]">
               <div className="flex items-center gap-2">

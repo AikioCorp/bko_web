@@ -28,6 +28,18 @@ import {
 import { fetchApi } from "@/lib/api";
 import { ClientPortal } from "@/components/ui/ClientPortal";
 import { useAuthStore } from "@/store/authStore";
+import { backdropPointerDown, useEscapeDismiss } from "@/hooks/useModalDismiss";
+import { StudioDatePicker, formatDateFr } from "@/components/ui/StudioDatePicker";
+import {
+  PHONE_COUNTRIES,
+  formatPhoneForCountry,
+  getCountryRule,
+  isPhoneValidForCountry,
+  extractDigits,
+} from "@/lib/phone";
+
+const STUDIO_WHATSAPP_NUMBER = "22370000000";
+const STUDIO_CONTACT_EMAIL = "studio@bamakopodcast.studio";
 
 export type StudioNeedType =
   | "AUDIO_PODCAST"
@@ -89,37 +101,51 @@ const NEED_OPTIONS: NeedOption[] = [
   },
 ];
 
-const COUNTRY_CODES = [
-  { code: "+223", label: "🇲🇱 Mali (+223)" },
-  { code: "+225", label: "🇨🇮 Côte d'Ivoire (+225)" },
-  { code: "+221", label: "🇸🇳 Sénégal (+221)" },
-  { code: "+224", label: "🇬🇳 Guinée (+224)" },
-  { code: "+226", label: "🇧🇫 Burkina Faso (+226)" },
-  { code: "+227", label: "🇳🇪 Niger (+227)" },
-  { code: "+228", label: "🇹🇬 Togo (+228)" },
-  { code: "+229", label: "🇧🇯 Bénin (+229)" },
-  { code: "+237", label: "🇨🇲 Cameroun (+237)" },
-  { code: "+33", label: "🇫🇷 France (+33)" },
-  { code: "+1", label: "🇺🇸/🇨🇦 USA / Canada (+1)" },
-  { code: "+32", label: "🇧🇪 Belgique (+32)" },
-  { code: "+41", label: "🇨🇭 Suisse (+41)" },
-  { code: "+44", label: "🇬🇧 Royaume-Uni (+44)" },
-];
+function matchSpaceIdFromLabel(label: string): string {
+  const lower = label.toLowerCase();
+  if (lower.includes("vip")) return "SALLE_VIP";
+  if (lower.includes("conférence") || lower.includes("conference")) return "SALLE_CONFERENCE";
+  if (lower.includes("extérieur") || lower.includes("exterieur")) return "EXTERIEUR";
+  if (lower.includes("distanciel") || lower.includes("distance")) return "DISTANCIEL";
+  return "STUDIO_PRINCIPAL";
+}
+
+function parseFcfaAmount(priceText?: string | null): number {
+  if (!priceText) return 0;
+  const match = priceText.replace(/\s/g, "").match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+}
+
+function extractSpaceRatesFromOffer(offer: any): Record<string, { hourly: number; label: string }> {
+  const rates: Record<string, { hourly: number; label: string }> = {};
+  if (!offer || !Array.isArray(offer.features)) return rates;
+  for (const feat of offer.features) {
+    if (typeof feat === "string" && feat.includes(" : ")) {
+      const [rawLabel, rawPrice] = feat.split(" : ");
+      const spaceId = matchSpaceIdFromLabel(rawLabel);
+      const hourly = parseFcfaAmount(rawPrice);
+      if (hourly > 0) {
+        rates[spaceId] = { hourly, label: rawPrice.trim() };
+      }
+    }
+  }
+  return rates;
+}
 
 const TIME_SLOTS = [
-  { id: "MATIN", label: "Matin (09h00 — 12h00)" },
-  { id: "APRES_MIDI", label: "Après-midi (14h00 — 17h00)" },
-  { id: "SOIREE", label: "Soirée (18h00 — 21h00)" },
-  { id: "JOURNEE", label: "Journée complète (09h00 — 18h00)" },
-  { id: "FLEXIBLE", label: "Créneau flexible (à convenir)" },
+  { id: "MATIN", label: "Matin (09h00 — 12h00)", short: "09h00 — 12h00" },
+  { id: "APRES_MIDI", label: "Après-midi (14h00 — 17h00)", short: "14h00 — 17h00" },
+  { id: "SOIREE", label: "Soirée (18h00 — 21h00)", short: "18h00 — 21h00" },
+  { id: "JOURNEE", label: "Journée complète (09h00 — 18h00)", short: "09h00 — 18h00" },
+  { id: "FLEXIBLE", label: "Créneau flexible (à convenir)", short: "À convenir" },
 ];
 
 const STUDIO_LOCATIONS = [
-  { id: "STUDIO_PRINCIPAL", label: "Studio Principal (1 à 4 micros, acoustique broadcast)" },
-  { id: "SALLE_CONFERENCE", label: "Salle de Conférence (Table ronde jusqu'à 8 intervenants)" },
-  { id: "SALLE_VIP", label: "Espace Salon VIP (Ambiance feutrée, fauteuils club)" },
-  { id: "EXTERIEUR", label: "Déplacement / Tournage extérieur à Bamako" },
-  { id: "DISTANCIEL", label: "À distance / 100% en ligne (pour montage & coaching)" },
+  { id: "STUDIO_PRINCIPAL", title: "Studio Principal / Annexe", label: "Studio Principal (1 à 4 micros, acoustique broadcast)" },
+  { id: "SALLE_CONFERENCE", title: "Salle de Conférence", label: "Salle de Conférence (Table ronde jusqu'à 8 intervenants)" },
+  { id: "SALLE_VIP", title: "Salle VIP", label: "Espace Salon VIP (Ambiance feutrée, fauteuils club)" },
+  { id: "EXTERIEUR", title: "Extérieur (Bamako)", label: "Déplacement / Tournage extérieur à Bamako" },
+  { id: "DISTANCIEL", title: "À distance", label: "À distance / 100% en ligne (pour montage & coaching)" },
 ];
 
 interface StudioBookingModalProps {
@@ -181,6 +207,8 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [createdBooking, setCreatedBooking] = useState<any>(null);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   // Charger les offres actives depuis le serveur
   useEffect(() => {
@@ -219,35 +247,97 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
             const parts = cleanPhone.split(" ");
             if (parts.length > 1) {
               setCountryCode(parts[0]);
-              setPhone(parts.slice(1).join(" "));
+              setPhone(formatPhoneForCountry(parts.slice(1).join(""), parts[0]));
             } else {
-              setPhone(cleanPhone);
+              setPhone(formatPhoneForCountry(cleanPhone, "+223"));
             }
           } else {
-            setPhone(cleanPhone);
+            setPhone(formatPhoneForCountry(cleanPhone, "+223"));
           }
         }
       }
 
-      // Pré-sélection basée sur preselectedService
+      // Pré-sélection basée sur preselectedService (Besoin + Offre + Espace)
       if (preselectedService) {
         const s = preselectedService.toLowerCase();
         if (s.includes("express") || s.includes("vidéo") || s.includes("video")) {
           setSelectedNeed("VIDEO_PODCAST");
+          const expressOffer = serverOffers.find((o) =>
+            o.name.toLowerCase().includes("express")
+          );
+          if (expressOffer) setSelectedOfferId(expressOffer.id);
         } else if (s.includes("montage") || s.includes("post-production")) {
           setSelectedNeed("EDITING");
+          setSelectedOfferId("");
         } else if (s.includes("short") || s.includes("reel") || s.includes("extrait")) {
           setSelectedNeed("SNIPPETS");
+          setSelectedOfferId("");
         } else if (s.includes("coach") || s.includes("accompagnement")) {
           setSelectedNeed("COACHING");
+          setSelectedOfferId("");
         } else if (s.includes("sur mesure")) {
           setSelectedNeed("CUSTOM");
+          setSelectedOfferId("");
         } else {
           setSelectedNeed("AUDIO_PODCAST");
+          const brutOffer = serverOffers.find((o) =>
+            o.name.toLowerCase().includes("brut")
+          );
+          if (brutOffer) setSelectedOfferId(brutOffer.id);
+        }
+
+        if (s.includes("vip")) {
+          setStudioLocation("SALLE_VIP");
+        } else if (s.includes("conférence") || s.includes("conference")) {
+          setStudioLocation("SALLE_CONFERENCE");
+        } else if (s.includes("extérieur") || s.includes("exterieur")) {
+          setStudioLocation("EXTERIEUR");
+        } else if (s.includes("distanciel") || s.includes("distance")) {
+          setStudioLocation("DISTANCIEL");
+        } else if (s.includes("principal") || s.includes("annexe")) {
+          setStudioLocation("STUDIO_PRINCIPAL");
         }
       }
     }
-  }, [isOpen, preselectedService, isAuthenticated, user]);
+  }, [isOpen, preselectedService, isAuthenticated, user, serverOffers]);
+
+  // Vérifier les créneaux déjà réservés quand la date ou l'espace change
+  useEffect(() => {
+    if (!isOpen || !preferredDate) {
+      setBookedSlots([]);
+      return;
+    }
+    let active = true;
+    setLoadingAvailability(true);
+    fetchApi(
+      `/studio/bookings/availability?date=${encodeURIComponent(
+        preferredDate
+      )}&studioLocation=${encodeURIComponent(studioLocation)}`
+    )
+      .then((res) => {
+        if (!active) return;
+        const booked: string[] = Array.isArray(res?.data?.bookedSlots)
+          ? res.data.bookedSlots
+          : [];
+        setBookedSlots(booked);
+        if (booked.includes(timeSlot)) {
+          const firstAvailable = TIME_SLOTS.find((slot) => !booked.includes(slot.id));
+          if (firstAvailable) {
+            setTimeSlot(firstAvailable.id);
+          }
+        }
+      })
+      .catch(() => {
+        if (active) setBookedSlots([]);
+      })
+      .finally(() => {
+        if (active) setLoadingAvailability(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, preferredDate, studioLocation]);
 
   // Associer automatiquement l'offre serveur correspondante au besoin choisi
   const currentMatchingOffer = useMemo(() => {
@@ -264,29 +354,38 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
     );
   }, [selectedNeed, selectedOfferId, serverOffers]);
 
-  // Estimation tarifaire indicative
+  // Tarifs horaires par espace extraits dynamiquement de l'offre sélectionnée
+  const spaceRatesMap = useMemo(() => {
+    return extractSpaceRatesFromOffer(currentMatchingOffer);
+  }, [currentMatchingOffer]);
+
+  // Estimation tarifaire indicative dynamique (tient compte de la formule ET de l'espace choisi)
   const estimatedPricing = useMemo(() => {
     if (selectedNeed === "CUSTOM") {
       return "Sur devis personnalisé";
     }
     if (currentMatchingOffer) {
-      if (selectedNeed === "AUDIO_PODCAST") {
-        const base = parseInt(currentMatchingOffer.price.replace(/\s/g, ""), 10) || 20000;
-        return `${(base * durationHours).toLocaleString("fr-FR")} FCFA (${durationHours}h)`;
-      }
-      if (selectedNeed === "VIDEO_PODCAST") {
-        const base = parseInt(currentMatchingOffer.price.replace(/\s/g, ""), 10) || 35000;
-        return `${(base * durationHours).toLocaleString("fr-FR")} FCFA (${durationHours}h)`;
+      if (selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST") {
+        const spaceRate = spaceRatesMap[studioLocation]?.hourly;
+        const base =
+          spaceRate ||
+          parseFcfaAmount(currentMatchingOffer.price) ||
+          (selectedNeed === "VIDEO_PODCAST" ? 35000 : 20000);
+        return `${(base * durationHours).toLocaleString("fr-FR")} FCFA (${durationHours}h • ${
+          base.toLocaleString("fr-FR")
+        } FCFA/h)`;
       }
       if (selectedNeed === "SNIPPETS") {
-        const base = parseInt(currentMatchingOffer.price.replace(/\s/g, ""), 10) || 15000;
+        const base = parseFcfaAmount(currentMatchingOffer.price) || 15000;
         const packs = Math.ceil(snippetsCount / 3);
         return `${(base * packs).toLocaleString("fr-FR")} FCFA (${snippetsCount} extraits)`;
       }
       return `${currentMatchingOffer.price} ${currentMatchingOffer.unit || "FCFA"}`;
     }
     return "Estimation fournie par l'équipe";
-  }, [selectedNeed, currentMatchingOffer, durationHours, snippetsCount]);
+  }, [selectedNeed, currentMatchingOffer, spaceRatesMap, studioLocation, durationHours, snippetsCount]);
+
+  useEscapeDismiss(isOpen, onClose, !isSubmitting);
 
   if (!isOpen) return null;
 
@@ -294,7 +393,7 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
   const canGoToStep2 = () => Boolean(selectedNeed);
   const canGoToStep3 = () => {
     if (selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST") {
-      return Boolean(preferredDate && timeSlot && durationHours > 0);
+      return Boolean(preferredDate && timeSlot && !bookedSlots.includes(timeSlot) && durationHours > 0);
     }
     if (selectedNeed === "EDITING") {
       return Boolean(mediaFilesUrl.trim() || notes.trim());
@@ -302,28 +401,49 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
     return true;
   };
   const canSubmit = () => {
-    return Boolean(contactName.trim() && email.trim() && phone.trim());
+    return Boolean(
+      contactName.trim() &&
+        email.trim() &&
+        isPhoneValidForCountry(phone, countryCode)
+    );
   };
 
-  const handleNext = () => {
-    setSubmitError("");
-    if (currentStep === 1 && canGoToStep2()) {
-      setCurrentStep(2);
-    } else if (currentStep === 2 && canGoToStep3()) {
-      setCurrentStep(3);
-    }
+  const buildExternalSummaryText = (reference?: string) => {
+    const needTitle = NEED_OPTIONS.find((n) => n.type === selectedNeed)?.title || selectedNeed;
+    const offerName = currentMatchingOffer?.name || "Sur mesure";
+    const spaceTitle =
+      STUDIO_LOCATIONS.find((l) => l.id === studioLocation)?.title || studioLocation;
+    const slotLabel = TIME_SLOTS.find((s) => s.id === timeSlot)?.label || timeSlot;
+    const lines = [
+      `Bonjour Bamako Podcast, voici ma demande de réservation studio :`,
+      reference ? `• Référence : ${reference}` : null,
+      `• Prestation : ${needTitle} (${offerName})`,
+      preferredDate ? `• Date : ${formatDateFr(preferredDate)}` : null,
+      (selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST")
+        ? `• Créneau : ${slotLabel}`
+        : null,
+      (selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST")
+        ? `• Durée : ${durationHours}h | Participants : ${participantsCount}`
+        : null,
+      (selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST")
+        ? `• Espace : ${spaceTitle}`
+        : null,
+      `• Estimation : ${estimatedPricing}`,
+      `• Nom : ${contactName.trim()}`,
+      podcastName.trim() ? `• Émission : ${podcastName.trim()}` : null,
+      `• Téléphone : ${countryCode} ${phone.trim()}`,
+      `• Email : ${email.trim()}`,
+      notes.trim() ? `• Notes : ${notes.trim()}` : null,
+    ].filter(Boolean);
+    return lines.join("\n");
   };
 
-  const handleBack = () => {
-    setSubmitError("");
-    if (currentStep === 3) setCurrentStep(2);
-    else if (currentStep === 2) setCurrentStep(1);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitBookingWithChannel = async (channel: "EMAIL" | "WHATSAPP") => {
     if (!canSubmit()) {
-      setSubmitError("Veuillez renseigner votre nom, adresse email et numéro de téléphone.");
+      const rule = getCountryRule(countryCode);
+      setSubmitError(
+        `Veuillez renseigner votre nom, email valide et un numéro ${rule.name} valide (${rule.minDigits} chiffres, ex: ${rule.placeholder}).`
+      );
       return;
     }
 
@@ -338,7 +458,7 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
         podcastName: podcastName.trim() || undefined,
         company: company.trim() || undefined,
         email: email.trim(),
-        phone: phone.trim(),
+        phone: extractDigits(phone),
         countryCode,
         preferredDate: preferredDate || undefined,
         timeSlot: timeSlot || undefined,
@@ -369,11 +489,40 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
 
       setCreatedBooking(res.data);
       setCurrentStep(4);
+
+      if (channel === "WHATSAPP") {
+        const msg = buildExternalSummaryText(res.data.reference);
+        window.open(
+          `https://wa.me/${STUDIO_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      }
     } catch (err: any) {
       setSubmitError(err.message || "Une erreur est survenue lors de l'enregistrement de votre demande.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleNext = () => {
+    setSubmitError("");
+    if (currentStep === 1 && canGoToStep2()) {
+      setCurrentStep(2);
+    } else if (currentStep === 2 && canGoToStep3()) {
+      setCurrentStep(3);
+    }
+  };
+
+  const handleBack = () => {
+    setSubmitError("");
+    if (currentStep === 3) setCurrentStep(2);
+    else if (currentStep === 2) setCurrentStep(1);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitBookingWithChannel("EMAIL");
   };
 
   const handleCloseAndReset = () => {
@@ -385,7 +534,10 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
 
   return (
     <ClientPortal>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in select-none overflow-y-auto">
+      <div
+        onPointerDown={backdropPointerDown(handleCloseAndReset, !isSubmitting)}
+        className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in select-none overflow-y-auto"
+      >
         <div className="relative w-full max-w-2xl bg-[#121212] border border-[#262626] rounded-3xl p-6 sm:p-8 text-white shadow-2xl my-auto space-y-6">
           {/* Header & Fil d'ariane */}
           <div className="flex items-start justify-between border-b border-[#202020] pb-5">
@@ -551,96 +703,199 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
               {/* CAS 1 : ENREGISTREMENT AUDIO OU VIDÉO */}
               {(selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST") && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Sélecteur de formule dynamique (Brut vs Express) */}
+                  {serverOffers.filter((o) => o.type === "PACKAGE").length > 0 && (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-[#CCC] flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-[#FFBF00]" />
-                        <span>Date souhaitée *</span>
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        min={new Date().toISOString().split("T")[0]}
-                        value={preferredDate}
-                        onChange={(e) => setPreferredDate(e.target.value)}
-                        className="w-full bg-[#181818] border border-[#2E2E2E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors"
-                      />
+                      <label className="text-xs font-semibold text-[#CCC]">Formule de captation</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {serverOffers
+                          .filter((o) => o.type === "PACKAGE")
+                          .map((pkg) => {
+                            const active = currentMatchingOffer?.id === pkg.id;
+                            return (
+                              <button
+                                key={pkg.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedOfferId(pkg.id);
+                                  if (pkg.name.toLowerCase().includes("express")) {
+                                    setSelectedNeed("VIDEO_PODCAST");
+                                  } else {
+                                    setSelectedNeed("AUDIO_PODCAST");
+                                  }
+                                }}
+                                className={`p-3 rounded-xl border text-left transition-colors flex items-center justify-between gap-2 ${
+                                  active
+                                    ? "bg-[#1C1810] border-[#FFBF00] text-white"
+                                    : "bg-[#181818] border-[#2E2E2E] text-[#AAA] hover:border-[#444]"
+                                }`}
+                              >
+                                <span className="text-xs font-bold truncate">{pkg.name}</span>
+                                <span className="text-[11px] font-mono font-bold text-[#FFBF00] shrink-0">
+                                  Dès {pkg.price} {pkg.unit || "FCFA"}
+                                </span>
+                              </button>
+                            );
+                          })}
+                      </div>
                     </div>
+                  )}
 
-                    <div className="space-y-1.5">
+                  {/* Date souhaitée (Calendrier custom) */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#CCC] flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#FFBF00]" />
+                      <span>Date souhaitée *</span>
+                    </label>
+                    <StudioDatePicker
+                      value={preferredDate}
+                      onChange={(iso) => setPreferredDate(iso)}
+                    />
+                  </div>
+
+                  {/* Créneau horaire avec disponibilité temps réel */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-[#CCC] flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-[#FFBF00]" />
                         <span>Créneau horaire préféré *</span>
                       </label>
-                      <select
-                        value={timeSlot}
-                        onChange={(e) => setTimeSlot(e.target.value)}
-                        className="w-full bg-[#181818] border border-[#2E2E2E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors"
-                      >
-                        {TIME_SLOTS.map((slot) => (
-                          <option key={slot.id} value={slot.id}>
-                            {slot.label}
-                          </option>
-                        ))}
-                      </select>
+                      {loadingAvailability && (
+                        <span className="text-[10px] text-[#FFBF00]">Vérification des disponibilités...</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {TIME_SLOTS.map((slot) => {
+                        const isBooked = bookedSlots.includes(slot.id);
+                        const isSelected = timeSlot === slot.id && !isBooked;
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            disabled={isBooked}
+                            onClick={() => setTimeSlot(slot.id)}
+                            className={`px-3 py-2.5 rounded-xl border text-left text-xs transition-colors flex items-center justify-between gap-2 ${
+                              isBooked
+                                ? "bg-[#141414] border-[#222222] text-[#555555] cursor-not-allowed line-through"
+                                : isSelected
+                                ? "bg-[#1C1810] border-[#FFBF00] text-white font-bold"
+                                : "bg-[#181818] border-[#2E2E2E] text-[#CCCCCC] hover:border-[#444]"
+                            }`}
+                          >
+                            <span className="truncate">{slot.label}</span>
+                            {isBooked && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-950/60 text-red-400 border border-red-900/50 no-underline shrink-0">
+                                Réservé
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
+                  {/* Durée & Participants */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-[#CCC] flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-[#FFBF00]" />
-                        <span>Durée prévue de la session</span>
+                        <span>Durée de la session</span>
                       </label>
-                      <select
-                        value={durationHours}
-                        onChange={(e) => setDurationHours(Number(e.target.value))}
-                        className="w-full bg-[#181818] border border-[#2E2E2E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors"
-                      >
-                        <option value={1}>1 heure</option>
-                        <option value={2}>2 heures (recommandé)</option>
-                        <option value={3}>3 heures</option>
-                        <option value={4}>Demi-journée (4 heures)</option>
-                        <option value={8}>Journée complète (8 heures)</option>
-                      </select>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { v: 1, l: "1h" },
+                          { v: 2, l: "2h (Reco)" },
+                          { v: 3, l: "3h" },
+                          { v: 4, l: "4h" },
+                          { v: 8, l: "8h" },
+                        ].map((d) => (
+                          <button
+                            key={d.v}
+                            type="button"
+                            onClick={() => setDurationHours(d.v)}
+                            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                              durationHours === d.v
+                                ? "bg-[#FFBF00] text-black border-[#FFBF00]"
+                                : "bg-[#181818] text-[#CCC] border-[#2E2E2E] hover:border-[#444]"
+                            }`}
+                          >
+                            {d.l}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-[#CCC] flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-[#FFBF00]" />
-                        <span>Nombre de participants autour du micro</span>
+                        <span>Participants autour du micro</span>
                       </label>
-                      <select
-                        value={participantsCount}
-                        onChange={(e) => setParticipantsCount(Number(e.target.value))}
-                        className="w-full bg-[#181818] border border-[#2E2E2E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors"
-                      >
-                        <option value={1}>1 personne (solo / monologue)</option>
-                        <option value={2}>2 personnes (hôte + 1 invité)</option>
-                        <option value={3}>3 personnes</option>
-                        <option value={4}>4 personnes (table ronde standard)</option>
-                        <option value={6}>5 à 6 personnes</option>
-                        <option value={8}>Plus de 6 personnes (Salle de conférence)</option>
-                      </select>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { v: 1, l: "1 (Solo)" },
+                          { v: 2, l: "2" },
+                          { v: 3, l: "3" },
+                          { v: 4, l: "4" },
+                          { v: 6, l: "5-6" },
+                          { v: 8, l: "6+" },
+                        ].map((p) => (
+                          <button
+                            key={p.v}
+                            type="button"
+                            onClick={() => setParticipantsCount(p.v)}
+                            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                              participantsCount === p.v
+                                ? "bg-[#FFBF00] text-black border-[#FFBF00]"
+                                : "bg-[#181818] text-[#CCC] border-[#2E2E2E] hover:border-[#444]"
+                            }`}
+                          >
+                            {p.l}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
+                  {/* Espace de tournage avec tarif horaire exact */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-[#CCC] flex items-center gap-1.5">
                       <Building2 className="w-3.5 h-3.5 text-[#FFBF00]" />
                       <span>Espace de tournage souhaité</span>
                     </label>
-                    <select
-                      value={studioLocation}
-                      onChange={(e) => setStudioLocation(e.target.value)}
-                      className="w-full bg-[#181818] border border-[#2E2E2E] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors"
-                    >
-                      {STUDIO_LOCATIONS.map((loc) => (
-                        <option key={loc.id} value={loc.id}>
-                          {loc.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {STUDIO_LOCATIONS.filter((l) => l.id !== "DISTANCIEL").map((loc) => {
+                        const rateInfo = spaceRatesMap[loc.id];
+                        const isSelected = studioLocation === loc.id;
+                        return (
+                          <button
+                            key={loc.id}
+                            type="button"
+                            onClick={() => setStudioLocation(loc.id)}
+                            className={`p-3 rounded-xl border text-left transition-colors flex items-center justify-between gap-2 ${
+                              isSelected
+                                ? "bg-[#1C1810] border-[#FFBF00] text-white"
+                                : "bg-[#181818] border-[#2E2E2E] text-[#CCC] hover:border-[#444]"
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold truncate">{loc.title}</p>
+                              <p className="text-[10px] text-[#888] truncate">{loc.label}</p>
+                            </div>
+                            {rateInfo && (
+                              <span className="text-[11px] font-mono font-bold text-[#FFBF00] shrink-0">
+                                {rateInfo.hourly.toLocaleString("fr-FR")} F/h
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Estimation live visible dès l'étape 2 */}
+                  <div className="p-3 rounded-xl bg-[#161616] border border-[#2A2A2A] flex items-center justify-between text-xs">
+                    <span className="text-[#AAA]">Estimation en direct :</span>
+                    <strong className="text-[#FFBF00] font-bold">{estimatedPricing}</strong>
                   </div>
 
                   {selectedNeed === "VIDEO_PODCAST" && (
@@ -1013,19 +1268,28 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
                   </div>
                 </div>
 
-                {/* Téléphone avec sélecteur d'indicatif international */}
+                {/* Téléphone avec sélecteur d'indicatif international & formatage strict par pays */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[#CCC]">
-                    Numéro Téléphone / WhatsApp <span className="text-[#FFBF00]">*</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[#CCC]">
+                      Numéro Téléphone / WhatsApp <span className="text-[#FFBF00]">*</span>
+                    </label>
+                    <span className="text-[10px] text-[#888]">
+                      Format {getCountryRule(countryCode).name} : {getCountryRule(countryCode).maxDigits} chiffres max
+                    </span>
+                  </div>
                   <div className="flex gap-2">
                     <select
                       value={countryCode}
-                      onChange={(e) => setCountryCode(e.target.value)}
-                      className="w-40 bg-[#181818] border border-[#2E2E2E] rounded-xl px-2.5 py-2 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors shrink-0"
+                      onChange={(e) => {
+                        const nextDial = e.target.value;
+                        setCountryCode(nextDial);
+                        setPhone((prev) => formatPhoneForCountry(prev, nextDial));
+                      }}
+                      className="w-44 bg-[#181818] border border-[#2E2E2E] rounded-xl px-2.5 py-2 text-xs text-white outline-none focus:border-[#FFBF00] transition-colors shrink-0"
                     >
-                      {COUNTRY_CODES.map((c) => (
-                        <option key={c.code} value={c.code}>
+                      {PHONE_COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.dial}>
                           {c.label}
                         </option>
                       ))}
@@ -1033,40 +1297,58 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
 
                     <input
                       type="tel"
+                      inputMode="numeric"
                       required
-                      placeholder="66 00 00 00"
+                      placeholder={getCountryRule(countryCode).placeholder}
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="flex-1 bg-[#181818] border border-[#2E2E2E] rounded-xl px-3 py-2 text-xs text-white placeholder-[#606060] outline-none focus:border-[#FFBF00] transition-colors"
+                      onChange={(e) => setPhone(formatPhoneForCountry(e.target.value, countryCode))}
+                      className="flex-1 bg-[#181818] border border-[#2E2E2E] rounded-xl px-3 py-2 text-xs text-white placeholder-[#606060] outline-none focus:border-[#FFBF00] transition-colors font-mono"
                     />
                   </div>
+                  {phone && !isPhoneValidForCountry(phone, countryCode) && (
+                    <p className="text-[11px] text-amber-400">
+                      Veuillez saisir {getCountryRule(countryCode).minDigits} chiffres pour {getCountryRule(countryCode).name} (ex: {getCountryRule(countryCode).placeholder}).
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Mention transparente de non-facturation immédiate */}
               <div className="p-3 bg-[#181818] border border-[#262626] rounded-xl text-[11px] text-[#888] leading-relaxed">
-                ℹ️ <strong>Processus de validation :</strong> L'envoi de cette demande ne constitue pas un paiement immédiat. Notre équipe technique vérifie la disponibilité effective du studio physique et vous confirme le créneau par WhatsApp ou appel dans un délai de 24 heures.
+                ℹ️ <strong>Processus de validation :</strong> L'envoi de cette demande ne constitue pas un paiement immédiat. Notre équipe technique vérifie la disponibilité effective du studio physique et vous confirme le créneau par WhatsApp ou Email dans un délai de 24 heures.
               </div>
 
-              {/* Actions de validation */}
-              <div className="pt-2 flex items-center justify-between">
+              {/* Actions de validation : Email / Plateforme ou WhatsApp */}
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="px-4 py-2.5 rounded-xl bg-[#1E1E1E] hover:bg-[#282828] text-white text-xs font-semibold transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl bg-[#1E1E1E] hover:bg-[#282828] text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Retour</span>
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={!canSubmit() || isSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-[#FFBF00] hover:bg-[#E6AC00] text-black font-black text-xs transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{isSubmitting ? "Envoi de votre demande..." : "Envoyer ma demande de session"}</span>
-                </button>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!canSubmit() || isSubmitting}
+                    onClick={() => submitBookingWithChannel("WHATSAPP")}
+                    className="px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-black font-black text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Réserver via WhatsApp</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={!canSubmit() || isSubmitting}
+                    className="px-5 py-2.5 rounded-xl bg-[#FFBF00] hover:bg-[#E6AC00] text-black font-black text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>{isSubmitting ? "Envoi..." : "Réserver par Email / Plateforme"}</span>
+                  </button>
+                </div>
               </div>
             </form>
           )}
@@ -1082,11 +1364,11 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
 
               <div className="space-y-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                  Demande reçue — En attente de confirmation
+                  Demande reçue — Créneau pré-réservé
                 </span>
                 <h3 className="text-xl font-bold text-white">Merci pour votre confiance !</h3>
                 <p className="text-xs text-[#8E8E8E] max-w-md mx-auto leading-relaxed">
-                  Votre demande pour <strong className="text-white font-medium">{contactName}</strong> a été enregistrée avec succès. Notre régisseur étudie votre dossier pour réserver votre session physique.
+                  Votre demande pour <strong className="text-white font-medium">{contactName}</strong> a été enregistrée avec succès. Notre régisseur vous contactera très rapidement.
                 </p>
               </div>
 
@@ -1108,19 +1390,51 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
                     {NEED_OPTIONS.find((n) => n.type === createdBooking.needType)?.title}
                   </span>
                 </div>
+                {createdBooking.studioLocation && (
+                  <div className="flex items-center justify-between text-[#8E8E8E]">
+                    <span>Espace :</span>
+                    <span className="text-white font-medium">
+                      {STUDIO_LOCATIONS.find((l) => l.id === createdBooking.studioLocation)?.title || createdBooking.studioLocation}
+                    </span>
+                  </div>
+                )}
                 {createdBooking.preferredDate && (
                   <div className="flex items-center justify-between text-[#8E8E8E]">
                     <span>Date souhaitée :</span>
-                    <span className="text-white font-medium">{createdBooking.preferredDate}</span>
+                    <span className="text-white font-medium capitalize">{formatDateFr(createdBooking.preferredDate) || createdBooking.preferredDate}</span>
+                  </div>
+                )}
+                {createdBooking.estimatedPrice && (
+                  <div className="flex items-center justify-between text-[#8E8E8E]">
+                    <span>Tarif estimé :</span>
+                    <span className="text-[#FFBF00] font-bold">{createdBooking.estimatedPrice}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-[#8E8E8E]">
                   <span>Contact WhatsApp :</span>
-                  <span className="text-white font-medium">{createdBooking.countryCode} {createdBooking.phone}</span>
+                  <span className="text-white font-medium">
+                    {createdBooking.countryCode} {formatPhoneForCountry(createdBooking.phone, createdBooking.countryCode || "+223")}
+                  </span>
                 </div>
               </div>
 
-              <div className="pt-3 flex justify-center gap-3">
+              <div className="pt-3 flex flex-wrap justify-center gap-2.5">
+                <a
+                  href={`https://wa.me/${STUDIO_WHATSAPP_NUMBER}?text=${encodeURIComponent(buildExternalSummaryText(createdBooking.reference))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-black font-bold text-xs transition-colors flex items-center gap-1.5"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Envoyer sur WhatsApp</span>
+                </a>
+                <a
+                  href={`mailto:${STUDIO_CONTACT_EMAIL}?subject=${encodeURIComponent(`Réservation Studio ${createdBooking.reference}`)}&body=${encodeURIComponent(buildExternalSummaryText(createdBooking.reference))}`}
+                  className="px-4 py-2.5 rounded-xl bg-[#1E1E1E] hover:bg-[#2A2A2A] border border-[#333] text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5 text-[#FFBF00]" />
+                  <span>Envoyer par Email</span>
+                </a>
                 <button
                   type="button"
                   onClick={handleCloseAndReset}

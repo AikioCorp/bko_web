@@ -93,6 +93,9 @@ export function DiscoveryPromotionModal({
       <div
         role="dialog"
         aria-modal="true"
+        onPointerDown={(e) => {
+          if (e.target === e.currentTarget) handleDismiss();
+        }}
         className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
       >
       <div

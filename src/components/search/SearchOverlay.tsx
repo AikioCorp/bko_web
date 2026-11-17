@@ -61,7 +61,12 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0B0F17]/80 backdrop-blur-md flex items-start justify-center pt-16 px-4 animate-fade-in">
+    <div
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-[#0B0F17]/80 backdrop-blur-md flex items-start justify-center pt-16 px-4 animate-fade-in"
+    >
       <div className="w-full max-w-2xl bg-[#161B22] border border-[#30363D] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Search Input Bar */}
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-3 px-4 py-3.5 border-b border-[#21262D]">

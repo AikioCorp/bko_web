@@ -114,9 +114,9 @@ function OnboardingContent() {
 
       try {
         const [langRes, topRes, podRes] = await Promise.all([
-          fetchApi("/languages?hasContent=true").catch(() => fetchApi("/languages")),
-          fetchApi("/topics?hasContent=true").catch(() => fetchApi("/topics")),
-          fetchApi("/podcasts?limit=24&hasContent=true").catch(() => fetchApi("/podcasts?limit=24")),
+          fetchApi("/languages?hasContent=true"),
+          fetchApi("/topics?hasContent=true"),
+          fetchApi("/podcasts?limit=48"),
         ]);
 
         if (isCancelled) return;
@@ -175,8 +175,25 @@ function OnboardingContent() {
           .filter(Boolean);
         setSelectedTopics((prev) => (prev.length === 0 ? existingTopics : prev));
       }
+      if (user.followedPodcastIds && user.followedPodcastIds.length > 0) {
+        setSelectedPodcasts((prev) =>
+          prev.length === 0 ? user.followedPodcastIds || [] : prev
+        );
+      }
     }
   }, [user]);
+
+  // Filtrage dynamique des podcasts en fonction des langues sélectionnées
+  const coherentPodcasts = useMemo(() => {
+    if (!podcasts || podcasts.length === 0) return [];
+    if (selectedLanguages.length === 0) return podcasts;
+    const langSet = new Set(selectedLanguages.map((l) => l.toLowerCase()));
+    const matching = podcasts.filter((p: any) => {
+      const primary = (p.primaryLanguageCode || p.primaryLanguage?.code || "").toLowerCase();
+      return primary && langSet.has(primary);
+    });
+    return matching.length > 0 ? matching : podcasts;
+  }, [podcasts, selectedLanguages]);
 
   // Filtrage des thèmes par recherche
   const filteredTopics = useMemo(() => {
@@ -257,6 +274,22 @@ function OnboardingContent() {
         if (!res.ok || !data.success) {
           throw new Error(data.error?.message || data.message || "Échec de l'enregistrement de vos préférences.");
         }
+
+        // Mise à jour optimiste immédiate du store utilisateur avant checkAuth()
+        updateUser({
+          onboardingCompleted: true,
+          onboardingState: "COMPLETED",
+          hasPreferences: selectedLanguages.length > 0 && selectedTopics.length > 0,
+          languagePreferences: selectedLanguages.map((code) => ({
+            languageCode: code,
+            language: languages.find((l) => l.code === code),
+          })),
+          topicPreferences: selectedTopics.map((id) => ({
+            topicId: id,
+            topic: topics.find((t) => t.id === id),
+          })),
+          followedPodcastIds: selectedPodcasts,
+        });
       }
 
       // Recharger le profil canonique /me pour synchroniser l'état global
@@ -511,13 +544,13 @@ function OnboardingContent() {
                 <RefreshCw className="w-5 h-5 animate-spin text-[#FFBF00]" />
                 <span>Chargement des émissions...</span>
               </div>
-            ) : podcasts.length === 0 ? (
+            ) : coherentPodcasts.length === 0 ? (
               <div className="py-8 text-center text-[#71717A] text-xs bg-[#0E0E0E] rounded-2xl border border-[#242424] p-6">
                 Aucune émission disponible pour le moment. Vous pourrez en découvrir sur la page d'accueil !
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[44vh] overflow-y-auto pr-1">
-                {podcasts.map((podcast) => {
+                {coherentPodcasts.map((podcast) => {
                   const isFollowed = selectedPodcasts.includes(podcast.id);
                   const title = podcast.name || podcast.title || "Émission";
                   const author =

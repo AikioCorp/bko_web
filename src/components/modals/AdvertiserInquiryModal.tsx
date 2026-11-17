@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { X, Building2, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { ClientPortal } from "@/components/ui/ClientPortal";
+import { PHONE_COUNTRIES, formatPhoneForCountry } from "@/lib/phone";
 
 interface AdvertiserInquiryModalProps {
   isOpen: boolean;
@@ -71,7 +72,12 @@ export function AdvertiserInquiryModal({ isOpen, onClose }: AdvertiserInquiryMod
 
   return (
     <ClientPortal>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+      <div
+        onPointerDown={(e) => {
+          if (e.target === e.currentTarget) handleResetAndClose();
+        }}
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+      >
       <div className="relative w-full max-w-lg bg-[#141414] border border-[#242424] rounded-2xl p-6 shadow-2xl text-white space-y-5 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between pb-3 border-b border-[#222222]">
           <div className="flex items-center gap-2.5">
@@ -161,10 +167,23 @@ export function AdvertiserInquiryModal({ isOpen, onClose }: AdvertiserInquiryMod
                 <label className="font-semibold text-[#A0A0A0]">Téléphone (facultatif)</label>
                 <input
                   type="tel"
+                  inputMode="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+223 ..."
-                  className="w-full px-3 py-2 rounded-xl bg-[#1A1A1A] border border-[#2E2E2E] text-white focus:border-[#FFBF00] outline-none"
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const matched = PHONE_COUNTRIES.find((c) => raw.startsWith(c.dial));
+                    if (matched) {
+                      const rest = raw.slice(matched.dial.length);
+                      const formatted = formatPhoneForCountry(rest, matched.dial);
+                      setPhone(formatted ? `${matched.dial} ${formatted}` : matched.dial);
+                    } else if (raw.startsWith("+")) {
+                      setPhone(raw.slice(0, 18));
+                    } else {
+                      setPhone(formatPhoneForCountry(raw, "+223"));
+                    }
+                  }}
+                  placeholder="+223 66 00 00 00"
+                  className="w-full px-3 py-2 rounded-xl bg-[#1A1A1A] border border-[#2E2E2E] text-white focus:border-[#FFBF00] outline-none font-mono"
                 />
               </div>
             </div>

@@ -8,6 +8,7 @@ import { usePlayerStore } from "@/store/playerStore";
 import { shouldShowCatchUpInvitation } from "@/lib/auth-navigation";
 import { API_BASE_URL } from "@/lib/api";
 import { getAccessToken } from "@/lib/token";
+import { backdropPointerDown, useEscapeDismiss } from "@/hooks/useModalDismiss";
 
 export function PreferencesCatchUpModal() {
   const router = useRouter();
@@ -115,6 +116,8 @@ export function PreferencesCatchUpModal() {
     router.push("/onboarding");
   };
 
+  useEscapeDismiss(isOpen, handleDismiss);
+
   if (!isOpen) return null;
 
   return (
@@ -122,6 +125,7 @@ export function PreferencesCatchUpModal() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="catchup-modal-title"
+      onPointerDown={backdropPointerDown(handleDismiss)}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
     >
       <div className="w-full max-w-md bg-[#141414] border border-[#262626] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">

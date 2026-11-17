@@ -27,6 +27,7 @@ import {
   Lock
 } from "lucide-react";
 import { studioApi } from "@/lib/studioApi";
+import { CreatorTipModal } from "@/components/modals/CreatorTipModal";
 import { formatDate, formatDuration, shareOrCopy, toPlayerEpisode, resolveEpisodeCover } from "@/lib/playback";
 import { usePlayerStore } from "../../../store/playerStore";
 import { useAuthStore } from "../../../store/authStore";
@@ -110,6 +111,7 @@ export default function PodcastPage() {
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [isTipOpen, setIsTipOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const [playlistEpisodeId, setPlaylistEpisodeId] = useState<string | null>(null);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -387,6 +389,15 @@ export default function PodcastPage() {
               </button>
 
               <button
+                onClick={() => setIsTipOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1C1810] hover:bg-[#262014] border border-[#FFBF00]/40 text-xs font-bold text-[#FFBF00] transition-colors cursor-pointer"
+                title="Soutenir le créateur"
+              >
+                <Heart className="w-3.5 h-3.5" />
+                <span>Soutenir</span>
+              </button>
+
+              <button
                 onClick={async () => {
                   const r = await shareOrCopy(podcast.name, `/podcasts/${podcast.slug}`);
                   if (r === "copied") flash("Lien de l'émission copié !");
@@ -397,6 +408,14 @@ export default function PodcastPage() {
                 <Share2 className="w-3.5 h-3.5" />
                 <span>Partager</span>
               </button>
+
+              <CreatorTipModal
+                isOpen={isTipOpen}
+                onClose={() => setIsTipOpen(false)}
+                podcastId={podcast.id}
+                podcastName={podcast.name}
+                onSuccess={() => flash("Merci pour votre soutien au créateur !")}
+              />
 
               {podcast.website && (
                 <a

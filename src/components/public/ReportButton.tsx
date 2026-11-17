@@ -53,7 +53,17 @@ export function ReportButton({ targetType, targetId }: { targetType: "PODCAST" |
 
       {open && (
         <ClientPortal>
-          <div className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Signaler un contenu">
+          <div
+            onPointerDown={(e) => {
+              if (e.target === e.currentTarget && state !== "busy") {
+                setOpen(false);
+              }
+            }}
+            className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Signaler un contenu"
+          >
             <div className="w-full max-w-md bg-[#161616] border border-[#262626] rounded-2xl p-6 space-y-4">
               <h2 className="text-lg font-bold text-white">Signaler ce contenu</h2>
               {state === "done" ? (

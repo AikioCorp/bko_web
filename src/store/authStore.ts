@@ -34,6 +34,7 @@ export interface UserProfile {
   languagePreferences?: Array<{ languageCode: string; language?: any }>;
   topicPreferences?: Array<{ topicId: string; topic?: any }>;
   countryPreferences?: Array<{ countryId: string; country?: any }>;
+  followedPodcastIds?: string[];
 }
 
 interface AuthState {
@@ -133,7 +134,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
               return;
             }
 
-            const res = await fetch(`${API_BASE_URL}/me`, { credentials: "include" });
+            const res = await fetch(`${API_BASE_URL}/me`, {
+              credentials: "include",
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            });
             const json = await res.json();
             if (json?.error?.code === "ACCOUNT_SUSPENDED") {
               clearStoredTokens();
@@ -160,7 +164,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
               // Si le token a expiré, on tente un refresh
               const refreshed = await refreshAccessToken();
               if (refreshed) {
-                const retryRes = await fetch(`${API_BASE_URL}/me`, { credentials: "include" });
+                const retryRes = await fetch(`${API_BASE_URL}/me`, {
+                  credentials: "include",
+                  headers: { Authorization: `Bearer ${refreshed}` },
+                });
                 const retryJson = await retryRes.json();
                 if (retryJson.success && retryJson.data) {
                   if (typeof window !== "undefined") {

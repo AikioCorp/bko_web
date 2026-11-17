@@ -25,6 +25,9 @@ import {
   Loader2
 } from "lucide-react";
 import { StudioBookingModal } from "@/components/modals/StudioBookingModal";
+import { useAuthStore } from "@/store/authStore";
+import { API_BASE_URL } from "@/lib/api";
+import { getAccessToken } from "@/lib/token";
 
 // Données de secours fiables si l'API est en cours de chargement ou hors ligne
 const FALLBACK_OFFERS = [
@@ -147,8 +150,13 @@ function getServiceIcon(iconName?: string) {
 }
 
 export default function TarifsPage() {
+  const { isAuthenticated } = useAuthStore();
   const fetcher = (url: string) => fetchApi(url).then((res) => res.data);
   const { data: apiOffers, isLoading } = useSWR("/studio-offers", fetcher);
+  const { data: myBookings, mutate: mutateMyBookings } = useSWR(
+    isAuthenticated ? "/studio/bookings/my" : null,
+    fetcher
+  );
 
   const offers = useMemo(() => {
     if (apiOffers && Array.isArray(apiOffers) && apiOffers.length > 0) {
@@ -463,6 +471,148 @@ export default function TarifsPage() {
         </div>
       </section>
 
+      {/* 3.5 MES RÉSERVATIONS STUDIO (SI CONNECTÉ & EXISTANTES) */}
+      {isAuthenticated && Array.isArray(myBookings) && myBookings.length > 0 && (
+        <section className="px-4 sm:px-6 md:px-10 pb-16 max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-headline font-black text-white tracking-tight">
+                Mes réservations studio
+              </h2>
+              <p className="text-xs text-[#888888]">
+                Suivez en direct le statut de vos demandes de session.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {myBookings.slice(0, 6).map((b: any) => {
+              const statusMap: Record<string, { label: string; cls: string }> = {
+                PENDING: { label: "En attente", cls: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
+                REVIEWING: { label: "En examen", cls: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
+                CONFIRMED: { label: "Confirmée", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
+                CANCELLED: { label: "Annulée", cls: "bg-red-500/10 text-red-400 border-red-500/30" },
+                COMPLETED: { label: "Terminée", cls: "bg-zinc-500/10 text-zinc-300 border-zinc-500/30" },
+              };
+              const st = statusMap[b.status] || statusMap.PENDING;
+              return (
+                <div
+                  key={b.id}
+                  className="p-4 rounded-2xl bg-[#141414] border border-[#242424] flex flex-col justify-between gap-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs font-bold text-[#FFBF00]">
+                      {b.reference}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${st.cls}`}>
+                      {st.label}
+                    </span>
+                  </div>
+                  <div className="text-xs text-[#D0D0D0] space-y-1">
+                    {b.offer?.name && <p className="font-bold text-white">{b.offer.name}</p>}
+                    <p className="text-[#999]">
+                      {b.preferredDate ? `Date : ${b.preferredDate}` : "Date à convenir"}
+                      {b.timeSlot ? ` • ${b.timeSlot}` : ""}
+                      {b.studioLocation ? ` • ${b.studioLocation}` : ""}
+                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1F1F1F]">
+                      {b.estimatedPrice ? (
+                        <p className="text-[#FFBF00] font-semibold">{b.estimatedPrice}</p>
+                      ) : <span />}
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {b.depositStatus !== "PAID" && b.status !== "CANCELLED" && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const rawMatch = (b.estimatedPrice || "").replace(/\s/g, "").match(/\d+/);
+                              const est = rawMatch ? parseInt(rawMatch[0], 10) : 20000;
+                              const depositAmount = Math.max(5000, Math.round(est * 0.3));
+                              if (
+                                !confirm(
+                                  `Régler un acompte de 30% (${depositAmount.toLocaleString("fr-FR")} FCFA) via Orange Money pour confirmer immédiatement votre créneau ?`
+                                )
+                              ) {
+                                return;
+                              }
+                              try {
+                                await fetchApi(`/studio/bookings/${b.id}/deposit`, {
+                                  method: "POST",
+                                  body: JSON.stringify({ depositAmount, paymentMethod: "ORANGE_MONEY" }),
+                                });
+                                await mutateMyBookings();
+                              } catch (e) {}
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-[#FFBF00] hover:bg-[#E6AC00] text-black text-[11px] font-black cursor-pointer"
+                          >
+                            Acompte 30%
+                          </button>
+                        )}
+
+                        {b.depositStatus === "PAID" && (
+                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+                            Acompte réglé
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const token = getAccessToken();
+                            const res = await fetch(`${API_BASE_URL}/studio/bookings/${b.id}/invoice`, {
+                              credentials: "include",
+                              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                            });
+                            if (!res.ok) return;
+                            const blob = await res.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `facture-${b.reference}.pdf`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-[#1F1F1F] hover:bg-[#2A2A2A] border border-[#333] text-white text-[11px] font-semibold cursor-pointer"
+                        >
+                          Facture PDF
+                        </button>
+
+                        {b.deliverablesUrl && (
+                          <a
+                            href={b.deliverablesUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold"
+                          >
+                            Télécharger fichiers
+                          </a>
+                        )}
+
+                        {(b.status === "PENDING" || b.status === "REVIEWING") && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!confirm("Voulez-vous annuler cette demande de réservation ?")) return;
+                              try {
+                                await fetchApi(`/studio/bookings/${b.id}/cancel`, { method: "PATCH" });
+                                await mutateMyBookings();
+                              } catch (e) {}
+                            }}
+                            className="text-[11px] font-semibold text-red-400 hover:text-red-300 underline cursor-pointer"
+                          >
+                            Annuler
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* 4. FOIRE AUX QUESTIONS (FAQ) */}
       <section className="px-4 sm:px-6 md:px-10 py-16 bg-[#111111] border-t border-[#222222]">
         <div className="max-w-3xl mx-auto space-y-8">
@@ -511,7 +661,10 @@ export default function TarifsPage() {
       {/* MODAL DE RÉSERVATION */}
       <StudioBookingModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          if (isAuthenticated) mutateMyBookings();
+        }}
         preselectedService={selectedService}
       />
     </div>

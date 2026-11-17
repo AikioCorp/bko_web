@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClientPortal } from "@/components/ui/ClientPortal";
+import { backdropPointerDown, useEscapeDismiss } from "@/hooks/useModalDismiss";
+import { PHONE_COUNTRIES, formatPhoneForCountry, getCountryRule } from "@/lib/phone";
 
 interface Plan {
   id: string;
@@ -92,6 +94,15 @@ export const SubscriptionCheckoutModal: React.FC<SubscriptionCheckoutModalProps>
   const [countryCode, setCountryCode] = useState<string>("+223");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [autoRenew, setAutoRenew] = useState<boolean>(true);
+  const [promoInput, setPromoInput] = useState<string>("");
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    discountType: string;
+    discountValue: number;
+    description?: string;
+  } | null>(null);
+  const [promoError, setPromoError] = useState<string>("");
+  const [checkingPromo, setCheckingPromo] = useState<boolean>(false);
 
   // Étape du parcours : "FORM" -> "PROCESSING" -> "SUCCESS"
   const [step, setStep] = useState<"FORM" | "PROCESSING" | "SUCCESS">("FORM");
@@ -101,9 +112,17 @@ export const SubscriptionCheckoutModal: React.FC<SubscriptionCheckoutModalProps>
 
   if (!isOpen) return null;
 
-  // Calcul du montant
+  // Calcul du montant (avec remise code promo si appliqué)
   const isEpisodePurchase = Boolean(episode && !plan);
-  const amount = isEpisodePurchase ? (episode?.price || 500) : (plan?.price || 2000);
+  const baseAmount = isEpisodePurchase ? (episode?.price || 500) : (plan?.price || 2000);
+  const amount = appliedPromo
+    ? Math.max(
+        100,
+        appliedPromo.discountType === "PERCENT"
+          ? Math.round(baseAmount * (1 - appliedPromo.discountValue / 100))
+          : baseAmount - appliedPromo.discountValue
+      )
+    : baseAmount;
   const currency = "XOF";
   const title = isEpisodePurchase ? `Achat : ${episode?.title}` : (plan?.name || "Pass Premium Bamako Podcast");
 
@@ -168,9 +187,14 @@ export const SubscriptionCheckoutModal: React.FC<SubscriptionCheckoutModalProps>
     }
   };
 
+  useEscapeDismiss(isOpen, onClose, step !== "PROCESSING");
+
   return (
     <ClientPortal>
-      <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4 overflow-y-auto">
+      <div
+        onPointerDown={backdropPointerDown(onClose, step !== "PROCESSING")}
+        className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4 overflow-y-auto"
+      >
       <div className="bg-[#111111] border border-[#242424] rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
         {/* Bouton Fermer */}
         {step !== "PROCESSING" && (
@@ -263,22 +287,29 @@ export const SubscriptionCheckoutModal: React.FC<SubscriptionCheckoutModalProps>
                   <div className="flex items-center gap-2">
                     <select
                       value={countryCode}
-                      onChange={(e) => setCountryCode(e.target.value)}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setCountryCode(next);
+                        setPhoneNumber((prev) => formatPhoneForCountry(prev, next));
+                      }}
                       className="bg-[#181818] border border-[#2A2A2A] rounded-xl px-2.5 py-2.5 text-xs text-white outline-none shrink-0"
                     >
-                      <option value="+223">🇲🇱 +223 (Mali)</option>
-                      <option value="+225">🇨🇮 +225 (RCI)</option>
-                      <option value="+221">🇸🇳 +221 (SN)</option>
-                      <option value="+226">🇧🇫 +226 (BF)</option>
-                      <option value="+224">🇬🇳 +224 (GN)</option>
+                      {PHONE_COUNTRIES.slice(0, 8).map((c) => (
+                        <option key={c.code} value={c.dial}>
+                          {c.flag} {c.dial} ({c.code})
+                        </option>
+                      ))}
                     </select>
                     <div className="relative flex-1">
                       <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#666666]" />
                       <input
                         type="tel"
+                        inputMode="numeric"
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="Ex: 70 00 00 90"
+                        onChange={(e) =>
+                          setPhoneNumber(formatPhoneForCountry(e.target.value, countryCode))
+                        }
+                        placeholder={getCountryRule(countryCode).placeholder}
                         className="w-full bg-[#181818] border border-[#2A2A2A] rounded-xl pl-9 pr-3 py-2.5 text-sm text-white outline-none focus:border-[#FFBF00] font-mono transition-colors"
                         required
                       />
@@ -314,6 +345,60 @@ export const SubscriptionCheckoutModal: React.FC<SubscriptionCheckoutModalProps>
                   />
                   <span>Renouvellement automatique (résiliable en 1 clic à tout moment)</span>
                 </label>
+              )}
+
+              {/* Code promo (abonnements) */}
+              {!isEpisodePurchase && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">
+                    Code promo (optionnel)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoInput}
+                      onChange={(e) => {
+                        setPromoInput(e.target.value.toUpperCase());
+                        setPromoError("");
+                      }}
+                      placeholder="EX: BAMAKO20"
+                      className="flex-1 bg-[#181818] border border-[#2A2A2A] rounded-xl px-3 py-2 text-xs text-white font-mono uppercase outline-none focus:border-[#FFBF00]"
+                    />
+                    <button
+                      type="button"
+                      disabled={checkingPromo || !promoInput.trim()}
+                      onClick={async () => {
+                        setCheckingPromo(true);
+                        setPromoError("");
+                        try {
+                          const r = await fetchApi("/subscriptions/promo/validate", {
+                            method: "POST",
+                            body: JSON.stringify({ code: promoInput.trim() }),
+                          });
+                          if (!r.success || !r.data) throw new Error(r.error?.message || "Code invalide");
+                          setAppliedPromo(r.data);
+                        } catch (err: any) {
+                          setAppliedPromo(null);
+                          setPromoError(err.message || "Code promo invalide");
+                        } finally {
+                          setCheckingPromo(false);
+                        }
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-[#222222] hover:bg-[#2C2C2C] text-xs font-bold text-[#FFBF00] border border-[#333] disabled:opacity-50"
+                    >
+                      {checkingPromo ? "..." : "Appliquer"}
+                    </button>
+                  </div>
+                  {promoError && <p className="text-[11px] text-red-400">{promoError}</p>}
+                  {appliedPromo && (
+                    <p className="text-[11px] text-emerald-400 font-semibold">
+                      Code {appliedPromo.code} appliqué : -
+                      {appliedPromo.discountType === "PERCENT"
+                        ? `${appliedPromo.discountValue}%`
+                        : `${appliedPromo.discountValue.toLocaleString("fr-FR")} FCFA`}
+                    </p>
+                  )}
+                </div>
               )}
 
               {/* Bouton de confirmation */}

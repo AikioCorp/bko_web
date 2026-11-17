@@ -174,7 +174,12 @@ export function AdminEditUserModal({
 
   return (
     <ClientPortal>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div
+        onPointerDown={(e) => {
+          if (e.target === e.currentTarget && !isLoading) onClose();
+        }}
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      >
       <div className="relative w-full max-w-lg bg-[#141414] border border-[#262626] rounded-2xl shadow-2xl text-white overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header Modal */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#222222] bg-[#111111] shrink-0">

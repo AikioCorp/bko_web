@@ -395,7 +395,12 @@ export default function AdminEpisodesPage() {
 
       {/* Modal confirmation suppression */}
       {toDelete && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setToDelete(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+        >
           <div className="bg-[#141414] border border-[#262626] rounded-2xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-center gap-3 text-red-400">
               <AlertTriangle className="w-5 h-5" />

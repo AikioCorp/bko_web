@@ -29,46 +29,15 @@ import { resolvePostAuthDecision } from "@/lib/auth-navigation";
 
 export const dynamic = "force-dynamic";
 
-const COUNTRIES = [
-  { code: "ML", name: "Mali", dial: "+223", flag: "🇲🇱", hint: "70 00 00 90", maxDigits: 8 },
-  { code: "GH", name: "Ghana", dial: "+233", flag: "🇬🇭", hint: "050 706 6762", maxDigits: 10 },
-  { code: "CI", name: "Côte d'Ivoire", dial: "+225", flag: "🇨🇮", hint: "07 00 00 00 00", maxDigits: 10 },
-  { code: "SN", name: "Sénégal", dial: "+221", flag: "🇸🇳", hint: "77 123 45 67", maxDigits: 9 },
-  { code: "BF", name: "Burkina Faso", dial: "+226", flag: "🇧🇫", hint: "70 00 00 00", maxDigits: 8 },
-  { code: "GN", name: "Guinée", dial: "+224", flag: "🇬🇳", hint: "620 00 00 00", maxDigits: 9 },
-  { code: "FR", name: "France", dial: "+33", flag: "🇫🇷", hint: "06 12 34 56 78", maxDigits: 10 },
-];
+import { PHONE_COUNTRIES, formatPhoneForCountry } from "@/lib/phone";
+
+const COUNTRIES = PHONE_COUNTRIES.map((c) => ({
+  ...c,
+  hint: c.placeholder,
+}));
 
 function formatPhoneNumber(val: string, countryCode: string): string {
-  const digits = val.replace(/\D/g, "");
-  if (!digits) return "";
-  if (countryCode === "ML" || countryCode === "BF") {
-    return digits.slice(0, 8).replace(/(\d{2})(?=\d)/g, "$1 ").trim();
-  }
-  if (countryCode === "GH") {
-    if (digits.startsWith("0")) {
-      const p1 = digits.slice(0, 3);
-      const p2 = digits.slice(3, 6);
-      const p3 = digits.slice(6, 10);
-      return [p1, p2, p3].filter(Boolean).join(" ");
-    } else {
-      const p1 = digits.slice(0, 2);
-      const p2 = digits.slice(2, 5);
-      const p3 = digits.slice(5, 9);
-      return [p1, p2, p3].filter(Boolean).join(" ");
-    }
-  }
-  if (countryCode === "CI" || countryCode === "FR") {
-    return digits.slice(0, 10).replace(/(\d{2})(?=\d)/g, "$1 ").trim();
-  }
-  if (countryCode === "SN") {
-    const p1 = digits.slice(0, 2);
-    const p2 = digits.slice(2, 5);
-    const p3 = digits.slice(5, 7);
-    const p4 = digits.slice(7, 9);
-    return [p1, p2, p3, p4].filter(Boolean).join(" ");
-  }
-  return digits.slice(0, 12).replace(/(\d{3})(?=\d)/g, "$1 ").trim();
+  return formatPhoneForCountry(val, countryCode);
 }
 
 function AuthComponent() {

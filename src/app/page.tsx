@@ -10,6 +10,7 @@ import { usePlayerStore } from "@/store/playerStore";
 import { HeroBanner } from "@/components/home/HeroBanner";
 import { AppDownloadModal } from "@/components/modals/AppDownloadModal";
 import { DiscoveryPromotionModal } from "@/components/discovery/DiscoveryPromotionModal";
+import SuggestBanner from "@/components/ui/SuggestBanner";
 import { TrackedCard } from "@/components/home/TrackedCard";
 import { recordRecommendationInteraction } from "@/lib/playTracking";
 import { formatPodcastSubtitle, decodeHtmlEntities } from "@/lib/utils";
@@ -1204,8 +1205,12 @@ function HomeContent() {
           </div>
         </section>
 
-        {/* 7. Footer CTA */}
-        <div className="mt-20 mb-10">
+        {/* 7. Suggest Banner & Footer CTA */}
+        <div className="mt-16 mb-8">
+          <SuggestBanner />
+        </div>
+
+        <div className="mt-10 mb-10">
           <div className="bg-[#141414] border border-[#242424] rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl">
             <div className="flex items-start md:items-center gap-6">
               <div className="w-16 h-16 shrink-0 rounded-2xl bg-[#FFBF00] text-[#0B0B0B] flex items-center justify-center shadow-lg">

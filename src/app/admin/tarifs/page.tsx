@@ -767,12 +767,45 @@ export default function StudioOffersAdminPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-[#CCC]">Notes internes de production</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={updatingNotes}
                   onChange={(e) => setUpdatingNotes(e.target.value)}
                   placeholder="Créneau validé avec le régisseur, instructions d'accès..."
                   className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-2.5 text-xs text-white outline-none focus:border-[#FFBF00] resize-none"
                 />
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-[#242424]">
+                <label className="text-xs font-bold text-[#FFBF00] block">
+                  Livraison des fichiers post-session (WAV/MP4/Montage)
+                </label>
+                <input
+                  type="url"
+                  defaultValue={selectedBookingForStatus.deliverablesUrl || ""}
+                  id="booking-deliverables-url"
+                  placeholder="https://drive.google.com/... ou lien de téléchargement"
+                  className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-2.5 text-xs text-white outline-none focus:border-[#FFBF00]"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const el = document.getElementById("booking-deliverables-url") as HTMLInputElement | null;
+                    const url = el?.value?.trim();
+                    if (!url) return;
+                    await adminApi(`/admin/studio/bookings/${selectedBookingForStatus.id}/deliverables`, {
+                      method: "PATCH",
+                      body: JSON.stringify({
+                        deliverablesUrl: url,
+                        deliverablesNote: updatingNotes || undefined,
+                      }),
+                    });
+                    setSelectedBookingForStatus(null);
+                    mutateBookings();
+                  }}
+                  className="w-full py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-bold text-xs"
+                >
+                  Livrer les fichiers & notifier le client
+                </button>
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-[#242424]">

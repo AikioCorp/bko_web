@@ -7,6 +7,7 @@ import useSWR from "swr";
 import { useAuthStore } from "@/store/authStore";
 import { usePlayerStore, PlayerEpisode } from "@/store/playerStore";
 import { fetchApi } from "@/lib/api";
+import { PHONE_COUNTRIES, formatPhoneForCountry } from "@/lib/phone";
 import {
   User, Mail, Phone, Shield, ShieldCheck, ShieldAlert,
   Crown, Mic2, Headphones, Laptop, Smartphone, Trash2,
@@ -1096,10 +1097,23 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
                   <Phone className="w-4 h-4 text-[#666666] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="tel"
+                    inputMode="tel"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="+223 70 00 00 00"
-                    className="w-full bg-[#181818] border border-[#262626] rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-white outline-none focus:border-[#FFBF00] transition-colors"
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const matched = PHONE_COUNTRIES.find((c) => raw.startsWith(c.dial));
+                      if (matched) {
+                        const rest = raw.slice(matched.dial.length);
+                        const formatted = formatPhoneForCountry(rest, matched.dial);
+                        setPhoneNumber(formatted ? `${matched.dial} ${formatted}` : matched.dial);
+                      } else if (raw.startsWith("+")) {
+                        setPhoneNumber(raw.slice(0, 18));
+                      } else {
+                        setPhoneNumber(formatPhoneForCountry(raw, "+223"));
+                      }
+                    }}
+                    placeholder="+223 66 00 00 00"
+                    className="w-full bg-[#181818] border border-[#262626] rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-white outline-none focus:border-[#FFBF00] transition-colors font-mono"
                   />
                 </div>
                 <p className="text-[11px] text-[#666666] mt-1">
@@ -1613,7 +1627,12 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
       {/* NATIVE MODAL 1: SUPPRESSION DE LA PHOTO DE PROFIL */}
       {/* ===================================================================== */}
       {showDeleteAvatarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setShowDeleteAvatarModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+        >
           <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative">
             <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
@@ -1652,7 +1671,12 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
       {/* NATIVE MODAL 2: DÉCONNEXION */}
       {/* ===================================================================== */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setShowLogoutModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+        >
           <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative">
             <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
               <LogOut className="w-6 h-6" />
@@ -1695,7 +1719,12 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
       {/* NATIVE MODAL 3: RÉVOQUER TOUTES LES SESSIONS */}
       {/* ===================================================================== */}
       {showLogoutAllModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setShowLogoutAllModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+        >
           <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
               <ShieldAlert className="w-6 h-6" />
@@ -1734,7 +1763,12 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
       {/* NATIVE MODAL 4: SUPPRESSION DÉFINITIVE DU COMPTE */}
       {/* ===================================================================== */}
       {showDeleteAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+        <div
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setShowDeleteAccountModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+        >
           <div className="bg-[#141414] border border-red-900/50 rounded-2xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative">
             
             <button
