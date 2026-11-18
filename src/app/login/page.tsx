@@ -25,6 +25,7 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { API_BASE_URL } from "@/lib/api";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
+import { AppleLoginButton } from "@/components/AppleLoginButton";
 import { resolvePostAuthDecision } from "@/lib/auth-navigation";
 
 export const dynamic = "force-dynamic";
@@ -630,7 +631,8 @@ function AuthComponent() {
               <div className="flex-grow border-t border-[#242424]" />
             </div>
 
-            {/* Google Sign In */}
+            {/* Apple & Google Sign In */}
+            <AppleLoginButton mode="login" onNavigating={() => setIsNavigating(true)} />
             <GoogleLoginButton mode="login" onNavigating={() => setIsNavigating(true)} />
 
             {/* Free Listening Card */}
@@ -817,7 +819,17 @@ function AuthComponent() {
               <span>{loading ? "Création en cours..." : "Créer mon compte gratuit"}</span>
             </button>
 
-            {/* Google Sign Up */}
+            {/* Séparateur pour options tierces */}
+            <div className="relative flex py-1 items-center mt-2">
+              <div className="flex-grow border-t border-[#242424]" />
+              <span className="flex-shrink mx-3 text-[10px] text-[#666666] uppercase font-bold tracking-wider">
+                ou s&apos;inscrire avec
+              </span>
+              <div className="flex-grow border-t border-[#242424]" />
+            </div>
+
+            {/* Apple & Google Sign Up */}
+            <AppleLoginButton mode="register" onNavigating={() => setIsNavigating(true)} />
             <GoogleLoginButton mode="register" onNavigating={() => setIsNavigating(true)} />
 
             {/* Assurance note */}
