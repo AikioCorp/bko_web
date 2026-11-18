@@ -84,6 +84,10 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
   const { data: playlistsData, isLoading: isLoadingPlaylists } = useSWR(isAuthenticated ? "/me/playlists" : null, fetcher, { revalidateOnFocus: false });
   const { data: historyData, isLoading: isLoadingHistory } = useSWR(isAuthenticated ? "/me/history" : null, fetcher, { revalidateOnFocus: false });
   const { data: continueListeningData } = useSWR(isAuthenticated ? "/me/continue-listening" : null, fetcher, { revalidateOnFocus: false });
+  const { data: activityData } = useSWR(isAuthenticated ? "/me/activity" : null, fetcher, {
+    revalidateOnFocus: false,
+    refreshInterval: 60000,
+  });
 
   const savedList = Array.isArray(savedData) ? savedData : [];
   const followingList = Array.isArray(followingData) ? followingData : [];
@@ -93,6 +97,10 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
 
   // Listening statistics calculations
   const totalListeningSeconds = historyList.reduce((acc: number, item: any) => acc + (item.positionSeconds || 0), 0);
+  const totalPlatformSeconds = Math.max(Number(activityData?.totalPlatformSeconds || 0), totalListeningSeconds);
+  const lastLoginAt = activityData?.lastLoginAt ? String(activityData.lastLoginAt) : null;
+  const isOnline = Boolean(activityData?.isOnline);
+  const loginHistory: any[] = Array.isArray(activityData?.loginHistory) ? activityData.loginHistory : [];
   const completedEpisodesCount = historyList.filter((item: any) => item.completed).length;
 
   const formatListeningTime = (seconds: number) => {
@@ -513,6 +521,27 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
                   </span>
                 )}
               </div>
+
+              {(isOnline || lastLoginAt || totalPlatformSeconds > 0) && (
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1.5 text-[11px] text-[#9A9A9A] mt-2">
+                  {isOnline && (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#238636]/15 border border-[#238636]/30 text-[#3fb950] font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#3fb950]" />
+                      En ligne
+                    </span>
+                  )}
+                  {lastLoginAt && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-[#FFBF00]" />
+                      Dernière connexion : {new Date(lastLoginAt).toLocaleString("fr-FR")}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <Radio className="w-3 h-3 text-[#38BDF8]" />
+                    Temps sur la plateforme : {formatListeningTime(totalPlatformSeconds)}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Role Badges with specific solid colors */}
@@ -688,8 +717,8 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
       {activeTab === "dashboard" && (
         <div className="space-y-6">
           
-          {/* 4 Raccourcis Rapides avec compteurs réels (Exactement comme le mobile !) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          {/* 5 Raccourcis Rapides avec compteurs réels */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
             {/* Raccourci 1: Enregistrés */}
             <Link
               href="/library?tab=saved"
@@ -765,6 +794,26 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
                 </div>
               </div>
             </Link>
+
+            {/* Raccourci 5: Temps passé sur la plateforme */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("devices")}
+              className="bg-[#121212] hover:bg-[#161616] border border-[#222222] hover:border-[#333333] p-4 rounded-2xl flex flex-col justify-between transition-all group text-left"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#1C1C1C] border border-[#2A2A2A] flex items-center justify-center text-[#FFBF00] group-hover:scale-105 transition-transform">
+                <Radio className="w-5 h-5" />
+              </div>
+              <div className="mt-4 w-full">
+                <div className="text-2xl font-black text-white tracking-tight truncate">
+                  {formatListeningTime(totalPlatformSeconds)}
+                </div>
+                <div className="text-xs text-[#888888] font-medium mt-0.5 flex items-center justify-between">
+                  <span>Temps sur la plateforme</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#555555] group-hover:text-white transition-colors" />
+                </div>
+              </div>
+            </button>
           </div>
 
           {/* Section: Reprendre l'écoute (In-progress episodes) */}
@@ -1426,6 +1475,77 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
                           )}
                         </button>
                       )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-[#121212] border border-[#262626] rounded-2xl p-6 sm:p-8 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#262626] pb-4">
+              <div>
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#FFBF00]" />
+                  Historique de vos connexions
+                </h2>
+                <p className="text-xs text-[#888888] mt-1">
+                  Journal conservé de vos connexions récentes (Mot de passe, Code OTP, Google, Apple) et temps total passé :{" "}
+                  <strong className="text-white">{formatListeningTime(totalPlatformSeconds)}</strong>.
+                </p>
+              </div>
+              {lastLoginAt && (
+                <span className="text-[11px] text-[#AAAAAA] bg-[#181818] border border-[#262626] px-3 py-1 rounded-lg shrink-0">
+                  Dernière connexion : {new Date(lastLoginAt).toLocaleString("fr-FR")}
+                </span>
+              )}
+            </div>
+
+            {loginHistory.length === 0 ? (
+              <div className="py-6 text-center text-xs text-[#777777] bg-[#181818] border border-[#262626] rounded-xl">
+                Aucune connexion enregistrée dans l&apos;historique pour le moment.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {loginHistory.slice(0, 10).map((entry: any) => {
+                  const methodLabel =
+                    entry.method === "PASSWORD"
+                      ? "Mot de passe"
+                      : entry.method === "OTP"
+                        ? "Code OTP"
+                        : entry.method === "GOOGLE"
+                          ? "Google"
+                          : entry.method === "APPLE"
+                            ? "Apple"
+                            : "Session";
+                  return (
+                    <div
+                      key={entry.id}
+                      className="bg-[#181818] border border-[#262626] rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="px-2.5 py-1 rounded-lg bg-[#222222] border border-[#303030] text-[10px] font-bold text-[#FFBF00] shrink-0">
+                          {methodLabel}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-white truncate">
+                            {entry.deviceName || "Navigateur Web"}
+                          </div>
+                          <div className="text-[11px] text-[#777777] flex flex-wrap items-center gap-x-2">
+                            <span>{new Date(entry.createdAt).toLocaleString("fr-FR")}</span>
+                            {entry.ipAddress && <span className="font-mono">• {entry.ipAddress}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full self-start sm:self-auto shrink-0 ${
+                          entry.isActive
+                            ? "bg-[#238636]/15 border border-[#238636]/30 text-[#3fb950]"
+                            : "bg-[#141414] border border-[#262626] text-[#888888]"
+                        }`}
+                      >
+                        {entry.isActive ? "Active" : "Passée"}
+                      </span>
                     </div>
                   );
                 })}

@@ -10,11 +10,40 @@ import { StudioShell } from "./studio/StudioShell";
 import { AdminShell } from "./admin/AdminShell";
 import { AliChatBubble } from "./chat/AliChatBubble";
 import { PreferencesCatchUpModal } from "./modals/PreferencesCatchUpModal";
+import { useAuthStore } from "@/store/authStore";
+import { fetchApi } from "@/lib/api";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
   const scrollRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const sendPing = (activeSeconds: number) => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+      fetchApi("/me/activity-ping", {
+        method: "POST",
+        body: JSON.stringify({
+          activeSeconds,
+          deviceType: "WEB",
+          deviceName: "Navigateur Web",
+        }),
+      }).catch(() => {});
+    };
+
+    const initialTimer = setTimeout(() => sendPing(15), 4000);
+    const interval = setInterval(() => sendPing(60), 60000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     setMobileMenuOpen(false);

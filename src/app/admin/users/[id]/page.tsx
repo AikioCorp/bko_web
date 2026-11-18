@@ -436,6 +436,24 @@ export default function UserDetailPage() {
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Inscrit le {new Date(profile.createdAt).toLocaleDateString("fr-FR")}</span>
                 </div>
+                {profile.lastLoginAt && (
+                  <div className="flex items-center gap-1.5 text-[#888888]">
+                    <Clock className="w-3.5 h-3.5 text-[#FFBF00]" />
+                    <span>Dernière connexion : {new Date(profile.lastLoginAt).toLocaleString("fr-FR")}</span>
+                  </div>
+                )}
+                {profile.lastActiveAt && (
+                  <div className="flex items-center gap-1.5 text-[#888888]">
+                    {profile.isOnline ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#102A1A] border border-emerald-900/50 text-[#1DB954] text-[11px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954]" />
+                        En ligne
+                      </span>
+                    ) : (
+                      <span>Dernière activité : {new Date(profile.lastActiveAt).toLocaleString("fr-FR")}</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Rôles RBAC */}
@@ -556,7 +574,23 @@ export default function UserDetailPage() {
       </div>
 
       {/* Cartes KPI 360° */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3.5 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-6">
+        {/* Temps total sur la plateforme */}
+        <div className="bg-[#111111] border border-[#222222] rounded-xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#888888] mb-2">
+            <span className="text-xs font-medium">Temps plateforme</span>
+            <Activity className="w-4 h-4 text-[#FFBF00]" />
+          </div>
+          <div>
+            <div className="text-xl md:text-2xl font-bold text-white tracking-tight">
+              {analytics.totalPlatformHours ?? 0}h
+            </div>
+            <div className="text-[11px] text-[#777777] mt-0.5">
+              {Math.floor((analytics.totalPlatformSeconds || 0) / 60)} min de présence
+            </div>
+          </div>
+        </div>
+
         {/* Temps d'écoute cumulé */}
         <div className="bg-[#111111] border border-[#222222] rounded-xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-[#888888] mb-2">
@@ -1605,6 +1639,83 @@ export default function UserDetailPage() {
                   ))
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Historique permanent des connexions */}
+          <div className="bg-[#111111] border border-[#222222] rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-[#222222] flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-white">Historique Complet des Connexions</h4>
+                <p className="text-xs text-[#777777]">
+                  Toutes les connexions récentes conservées même après déconnexion (Mot de passe, OTP, Google, Apple)
+                </p>
+              </div>
+              <span className="text-xs text-[#888888]">
+                {technical.loginHistory?.length || 0} connexion(s)
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-[#222222] bg-[#0A0A0A] text-[#777777]">
+                    <th className="px-6 py-3 font-semibold uppercase">Date &amp; Heure</th>
+                    <th className="px-6 py-3 font-semibold uppercase">Méthode</th>
+                    <th className="px-6 py-3 font-semibold uppercase">Appareil / Plateforme</th>
+                    <th className="px-6 py-3 font-semibold uppercase">Adresse IP</th>
+                    <th className="px-6 py-3 font-semibold uppercase text-right">État</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1C1C1C]">
+                  {!technical.loginHistory || technical.loginHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-[#666666]">
+                        Aucune connexion historique enregistrée pour le moment.
+                      </td>
+                    </tr>
+                  ) : (
+                    technical.loginHistory.map((entry: any) => (
+                      <tr key={entry.id} className="hover:bg-[#161616] transition-colors">
+                        <td className="px-6 py-3 text-gray-200 whitespace-nowrap">
+                          {new Date(entry.createdAt).toLocaleString("fr-FR")}
+                        </td>
+                        <td className="px-6 py-3">
+                          <span className="px-2 py-0.5 rounded bg-[#1D1D1D] border border-[#2E2E2E] text-[10px] font-bold text-[#FFBF00]">
+                            {entry.method === "PASSWORD"
+                              ? "Mot de passe"
+                              : entry.method === "OTP"
+                                ? "Code OTP"
+                                : entry.method === "GOOGLE"
+                                  ? "Google"
+                                  : entry.method === "APPLE"
+                                    ? "Apple"
+                                    : entry.method || "Session"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-gray-300">
+                          <div>{entry.deviceName || "Navigateur Web"}</div>
+                          <div className="text-[10px] text-[#666666] uppercase">{entry.deviceType || "WEB"}</div>
+                        </td>
+                        <td className="px-6 py-3 font-mono text-[#888888]">
+                          {entry.ipAddress || "Masquée"}
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          {entry.isActive ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#102A1A] text-[#1DB954] border border-emerald-900/40">
+                              Session active
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#1A1A1A] text-[#777777] border border-[#2A2A2A]">
+                              Terminée
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 

@@ -37,6 +37,7 @@ import {
   Filter,
   X,
   Activity,
+  Clock,
   Edit3,
   User,
   UserPlus,
@@ -48,6 +49,17 @@ import { AdminPasswordModal } from "@/components/admin/AdminPasswordModal";
 
 function classNames(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(" ");
+}
+
+function formatPlatformDuration(seconds?: number | null): string {
+  const s = Number(seconds || 0);
+  if (s <= 0) return "0 min";
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  if (hours > 0) {
+    return `${hours}h ${minutes > 0 ? `${minutes}m` : ""}`.trim();
+  }
+  return `${Math.max(1, minutes)} min`;
 }
 
 const SUSPEND_REASON_PRESETS = [
@@ -489,6 +501,7 @@ export default function UsersPage() {
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Membre</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Contact</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Rôles RBAC</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Activité &amp; Temps passé</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider">Statut & Badge</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[#888888] uppercase tracking-wider text-right">Actions</th>
               </tr>
@@ -496,14 +509,14 @@ export default function UsersPage() {
             <tbody className="divide-y divide-[#1C1C1C]">
               {isLoading && !usersData ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-[#888888]">
+                  <td colSpan={6} className="px-6 py-20 text-center text-[#888888]">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3 text-[#FFBF00]" />
                     Chargement des comptes utilisateurs...
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-[#888888]">
+                  <td colSpan={6} className="px-6 py-20 text-center text-[#888888]">
                     Aucun utilisateur correspondant à ce filtre.
                   </td>
                 </tr>
@@ -594,6 +607,34 @@ export default function UsersPage() {
                           ) : (
                             <span className="text-xs text-[#555555]">Auditeur</span>
                           )}
+                        </div>
+                      </td>
+
+                      {/* Activité & Temps passé */}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1 items-start">
+                          {user.isOnline ? (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1DB954]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954]" />
+                              En ligne
+                            </span>
+                          ) : user.lastActiveAt || user.lastLoginAt ? (
+                            <span className="text-xs text-gray-300">
+                              {new Date(user.lastActiveAt || user.lastLoginAt).toLocaleString("fr-FR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-[#666666]">Aucune connexion</span>
+                          )}
+                          <span className="text-[11px] text-[#888888] flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-[#FFBF00]" />
+                            {formatPlatformDuration(user.totalPlatformSeconds)} sur la plateforme
+                          </span>
                         </div>
                       </td>
 
