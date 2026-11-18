@@ -38,6 +38,8 @@ import {
   X,
   Activity,
   Clock,
+  Smartphone,
+  Globe,
   Edit3,
   User,
   UserPlus,
@@ -100,6 +102,24 @@ const ROLE_INFO_MAP: Record<string, { label: string; badgeBg: string; badgeText:
     badgeBg: "bg-[#1E1E1E] border border-[#333333]",
     badgeText: "text-[#AAAAAA]",
     icon: Users,
+  },
+};
+
+const PLATFORM_BADGES: Record<string, { label: string; className: string; isMobile: boolean }> = {
+  IOS: {
+    label: "iPhone (iOS)",
+    className: "bg-[#152232] text-sky-300 border-sky-800/50",
+    isMobile: true,
+  },
+  ANDROID: {
+    label: "Android",
+    className: "bg-[#13261B] text-emerald-300 border-emerald-800/50",
+    isMobile: true,
+  },
+  WEB: {
+    label: "Web",
+    className: "bg-[#1E1E1E] text-amber-300 border-[#333333]",
+    isMobile: false,
   },
 };
 
@@ -613,24 +633,42 @@ export default function UsersPage() {
                       {/* Activité & Temps passé */}
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1 items-start">
-                          {user.isOnline ? (
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1DB954]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954]" />
-                              En ligne
-                            </span>
-                          ) : user.lastActiveAt || user.lastLoginAt ? (
-                            <span className="text-xs text-gray-300">
-                              {new Date(user.lastActiveAt || user.lastLoginAt).toLocaleString("fr-FR", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          ) : (
-                            <span className="text-[11px] text-[#666666]">Aucune connexion</span>
-                          )}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {user.isOnline ? (
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1DB954]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954]" />
+                                En ligne
+                              </span>
+                            ) : user.lastActiveAt || user.lastLoginAt ? (
+                              <span className="text-xs text-gray-300">
+                                {new Date(user.lastActiveAt || user.lastLoginAt).toLocaleString("fr-FR", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-[#666666]">Aucune connexion</span>
+                            )}
+                            {user.lastDeviceType && (() => {
+                              const badge = PLATFORM_BADGES[String(user.lastDeviceType).toUpperCase()] || PLATFORM_BADGES.WEB;
+                              return (
+                                <span
+                                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-semibold ${badge.className}`}
+                                  title={user.lastDeviceName || badge.label}
+                                >
+                                  {badge.isMobile ? (
+                                    <Smartphone className="w-2.5 h-2.5" />
+                                  ) : (
+                                    <Globe className="w-2.5 h-2.5" />
+                                  )}
+                                  {badge.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                           <span className="text-[11px] text-[#888888] flex items-center gap-1">
                             <Clock className="w-3 h-3 text-[#FFBF00]" />
                             {formatPlatformDuration(user.totalPlatformSeconds)} sur la plateforme

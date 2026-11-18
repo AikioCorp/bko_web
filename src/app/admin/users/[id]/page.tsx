@@ -454,6 +454,25 @@ export default function UserDetailPage() {
                     )}
                   </div>
                 )}
+                {profile.lastDeviceType && (() => {
+                  const type = String(profile.lastDeviceType).toUpperCase();
+                  const label = type === "IOS" ? "iPhone (iOS)" : type === "ANDROID" ? "Android" : "Web";
+                  const style =
+                    type === "IOS"
+                      ? "bg-[#152232] border-sky-800/50 text-sky-300"
+                      : type === "ANDROID"
+                        ? "bg-[#13261B] border-emerald-800/50 text-emerald-300"
+                        : "bg-[#1E1E1E] border-[#333333] text-amber-300";
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] font-semibold ${style}`}
+                      title={profile.lastDeviceName || label}
+                    >
+                      {type === "WEB" ? <Globe className="w-3 h-3" /> : <Smartphone className="w-3 h-3" />}
+                      Plateforme : {label}
+                    </span>
+                  );
+                })()}
               </div>
 
               {/* Rôles RBAC */}
@@ -1694,8 +1713,25 @@ export default function UserDetailPage() {
                           </span>
                         </td>
                         <td className="px-6 py-3 text-gray-300">
-                          <div>{entry.deviceName || "Navigateur Web"}</div>
-                          <div className="text-[10px] text-[#666666] uppercase">{entry.deviceType || "WEB"}</div>
+                          {(() => {
+                            const type = String(entry.deviceType || "WEB").toUpperCase();
+                            const label = type === "IOS" ? "iPhone (iOS)" : type === "ANDROID" ? "Android" : "Web";
+                            const style =
+                              type === "IOS"
+                                ? "bg-[#152232] border-sky-800/50 text-sky-300"
+                                : type === "ANDROID"
+                                  ? "bg-[#13261B] border-emerald-800/50 text-emerald-300"
+                                  : "bg-[#1E1E1E] border-[#333333] text-amber-300";
+                            return (
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-bold ${style}`}>
+                                  {type === "WEB" ? <Globe className="w-3 h-3" /> : <Smartphone className="w-3 h-3" />}
+                                  {label}
+                                </span>
+                                <div className="text-[11px] text-[#888888]">{entry.deviceName || "Navigateur Web"}</div>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-3 font-mono text-[#888888]">
                           {entry.ipAddress || "Masquée"}

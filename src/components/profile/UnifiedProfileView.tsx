@@ -1527,6 +1527,22 @@ export function UnifiedProfileView({ portalContext = "public" }: UnifiedProfileV
                         <span className="px-2.5 py-1 rounded-lg bg-[#222222] border border-[#303030] text-[10px] font-bold text-[#FFBF00] shrink-0">
                           {methodLabel}
                         </span>
+                        {(() => {
+                          const type = String(entry.deviceType || "WEB").toUpperCase();
+                          const label = type === "IOS" ? "iPhone (iOS)" : type === "ANDROID" ? "Android" : "Web";
+                          const style =
+                            type === "IOS"
+                              ? "bg-[#152232] border-sky-800/50 text-sky-300"
+                              : type === "ANDROID"
+                                ? "bg-[#13261B] border-emerald-800/50 text-emerald-300"
+                                : "bg-[#1E1E1E] border-[#333333] text-amber-300";
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold shrink-0 ${style}`}>
+                              {type === "WEB" ? <Globe className="w-3 h-3" /> : <Smartphone className="w-3 h-3" />}
+                              {label}
+                            </span>
+                          );
+                        })()}
                         <div className="min-w-0">
                           <div className="text-xs font-bold text-white truncate">
                             {entry.deviceName || "Navigateur Web"}

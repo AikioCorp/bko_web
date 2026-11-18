@@ -92,6 +92,28 @@ function loadAppleSignInSdk(): Promise<void> {
   return appleSdkLoadPromise;
 }
 
+const DEFAULT_APPLE_REDIRECT_URI = "https://www.bamakopodcast.studio/login";
+
+function resolveAppleRedirectUri(): string {
+  if (typeof window !== "undefined") {
+    const { protocol, hostname, origin } = window.location;
+    const isLocalHost =
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1";
+    if (protocol === "https:" && !isLocalHost) {
+      return `${origin}/login`;
+    }
+  }
+
+  const configured = process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI?.trim();
+  if (configured) {
+    return configured;
+  }
+
+  return DEFAULT_APPLE_REDIRECT_URI;
+}
+
 export const AppleLoginButton: React.FC<AppleLoginButtonProps> = ({
   mode = "login",
   onNavigating,
@@ -117,11 +139,7 @@ export const AppleLoginButton: React.FC<AppleLoginButtonProps> = ({
 
       const clientId =
         process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || "studio.bamakopodcast.web";
-      const redirectURI =
-        process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI ||
-        (typeof window !== "undefined"
-          ? `${window.location.origin}/login`
-          : "https://bamakopodcast.studio/login");
+      const redirectURI = resolveAppleRedirectUri();
 
       const stateToken =
         typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"

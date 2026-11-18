@@ -154,6 +154,8 @@ function AuthComponent() {
         body: JSON.stringify({
           identifier: trimmed,
           password: loginPassword,
+          deviceType: "WEB",
+          deviceName: "Navigateur Web",
         }),
       });
       const json = await res.json();
