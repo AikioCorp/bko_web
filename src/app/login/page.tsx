@@ -632,8 +632,10 @@ function AuthComponent() {
             </div>
 
             {/* Apple & Google Sign In */}
-            <AppleLoginButton mode="login" onNavigating={() => setIsNavigating(true)} />
-            <GoogleLoginButton mode="login" onNavigating={() => setIsNavigating(true)} />
+            <div className="grid grid-cols-2 gap-3 items-start">
+              <AppleLoginButton mode="login" onNavigating={() => setIsNavigating(true)} />
+              <GoogleLoginButton mode="login" onNavigating={() => setIsNavigating(true)} />
+            </div>
 
             {/* Free Listening Card */}
             <div className="bg-[#0E0E0E] border border-[#242424] rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
@@ -829,8 +831,10 @@ function AuthComponent() {
             </div>
 
             {/* Apple & Google Sign Up */}
-            <AppleLoginButton mode="register" onNavigating={() => setIsNavigating(true)} />
-            <GoogleLoginButton mode="register" onNavigating={() => setIsNavigating(true)} />
+            <div className="grid grid-cols-2 gap-3 items-start">
+              <AppleLoginButton mode="register" onNavigating={() => setIsNavigating(true)} />
+              <GoogleLoginButton mode="register" onNavigating={() => setIsNavigating(true)} />
+            </div>
 
             {/* Assurance note */}
             <p className="text-[10px] text-center text-[#757575] flex items-center justify-center gap-1">
