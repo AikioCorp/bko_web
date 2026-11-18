@@ -29,7 +29,7 @@ import { fetchApi } from "@/lib/api";
 import { ClientPortal } from "@/components/ui/ClientPortal";
 import { useAuthStore } from "@/store/authStore";
 import { backdropPointerDown, useEscapeDismiss } from "@/hooks/useModalDismiss";
-import { StudioDatePicker, formatDateFr } from "@/components/ui/StudioDatePicker";
+import { StudioDatePicker, formatDateFr, isWeekendIsoDate } from "@/components/ui/StudioDatePicker";
 import {
   PHONE_COUNTRIES,
   formatPhoneForCountry,
@@ -132,13 +132,59 @@ function extractSpaceRatesFromOffer(offer: any): Record<string, { hourly: number
   return rates;
 }
 
+const TELEPROMPTER_MIN_PRICE = 7500;
+
 const TIME_SLOTS = [
-  { id: "MATIN", label: "Matin (09h00 — 12h00)", short: "09h00 — 12h00" },
-  { id: "APRES_MIDI", label: "Après-midi (14h00 — 17h00)", short: "14h00 — 17h00" },
-  { id: "SOIREE", label: "Soirée (18h00 — 21h00)", short: "18h00 — 21h00" },
-  { id: "JOURNEE", label: "Journée complète (09h00 — 18h00)", short: "09h00 — 18h00" },
-  { id: "FLEXIBLE", label: "Créneau flexible (à convenir)", short: "À convenir" },
+  {
+    id: "MATIN",
+    label: "Matin (09h00 — 12h00)",
+    short: "09h00 — 12h00",
+    hours: ["09h00", "10h00", "11h00"],
+  },
+  {
+    id: "MIDI",
+    label: "Milieu de journée (12h00 — 15h00)",
+    short: "12h00 — 15h00",
+    hours: ["12h00", "13h00", "14h00"],
+  },
+  {
+    id: "APRES_MIDI",
+    label: "Après-midi (15h00 — 18h00)",
+    short: "15h00 — 18h00",
+    hours: ["15h00", "16h00", "17h00"],
+  },
+  {
+    id: "JOURNEE",
+    label: "Journée complète (09h00 — 18h00)",
+    short: "09h00 — 18h00",
+    hours: ["09h00"],
+  },
+  {
+    id: "ACCORD_COMMUN",
+    label: "Autre horaire / Soirée (sur accord commun)",
+    short: "Sur accord commun",
+    hours: ["Sur accord commun"],
+  },
 ];
+
+const STUDIO_START_HOURS = [
+  "09h00",
+  "10h00",
+  "11h00",
+  "12h00",
+  "13h00",
+  "14h00",
+  "15h00",
+  "16h00",
+  "17h00",
+];
+
+function slotIdForHour(hour: string): string {
+  const num = parseInt(hour.slice(0, 2), 10);
+  if (num < 12) return "MATIN";
+  if (num < 15) return "MIDI";
+  return "APRES_MIDI";
+}
 
 const STUDIO_LOCATIONS = [
   { id: "STUDIO_PRINCIPAL", title: "Studio Principal / Annexe", label: "Studio Principal (1 à 4 micros, acoustique broadcast)" },
@@ -172,6 +218,7 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
   // Podcast Audio / Vidéo
   const [preferredDate, setPreferredDate] = useState<string>("");
   const [timeSlot, setTimeSlot] = useState<string>("MATIN");
+  const [preferredHour, setPreferredHour] = useState<string>("09h00");
   const [durationHours, setDurationHours] = useState<number>(2);
   const [participantsCount, setParticipantsCount] = useState<number>(2);
   const [studioLocation, setStudioLocation] = useState<string>("STUDIO_PRINCIPAL");
@@ -324,6 +371,7 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
           const firstAvailable = TIME_SLOTS.find((slot) => !booked.includes(slot.id));
           if (firstAvailable) {
             setTimeSlot(firstAvailable.id);
+            setPreferredHour(firstAvailable.hours[0]);
           }
         }
       })
@@ -359,11 +407,16 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
     return extractSpaceRatesFromOffer(currentMatchingOffer);
   }, [currentMatchingOffer]);
 
-  // Estimation tarifaire indicative dynamique (tient compte de la formule ET de l'espace choisi)
+  // Estimation tarifaire indicative dynamique (tient compte de la formule, de l'espace et des options)
   const estimatedPricing = useMemo(() => {
     if (selectedNeed === "CUSTOM") {
       return "Sur devis personnalisé";
     }
+    const selectedShootingOptions = shootingNeeds.split(",").filter(Boolean);
+    const hasTeleprompter =
+      selectedNeed === "VIDEO_PODCAST" && selectedShootingOptions.includes("PROMPTER");
+    const teleprompterCost = hasTeleprompter ? TELEPROMPTER_MIN_PRICE : 0;
+
     if (currentMatchingOffer) {
       if (selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST") {
         const spaceRate = spaceRatesMap[studioLocation]?.hourly;
@@ -371,9 +424,10 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
           spaceRate ||
           parseFcfaAmount(currentMatchingOffer.price) ||
           (selectedNeed === "VIDEO_PODCAST" ? 35000 : 20000);
-        return `${(base * durationHours).toLocaleString("fr-FR")} FCFA (${durationHours}h • ${
+        const total = base * durationHours + teleprompterCost;
+        return `${total.toLocaleString("fr-FR")} FCFA (${durationHours}h • ${
           base.toLocaleString("fr-FR")
-        } FCFA/h)`;
+        } FCFA/h${hasTeleprompter ? " + Téléprompteur dès 7 500 FCFA" : ""})`;
       }
       if (selectedNeed === "SNIPPETS") {
         const base = parseFcfaAmount(currentMatchingOffer.price) || 15000;
@@ -382,8 +436,19 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
       }
       return `${currentMatchingOffer.price} ${currentMatchingOffer.unit || "FCFA"}`;
     }
+    if (hasTeleprompter) {
+      return `À partir de ${TELEPROMPTER_MIN_PRICE.toLocaleString("fr-FR")} FCFA (Téléprompteur inclus)`;
+    }
     return "Estimation fournie par l'équipe";
-  }, [selectedNeed, currentMatchingOffer, spaceRatesMap, studioLocation, durationHours, snippetsCount]);
+  }, [
+    selectedNeed,
+    currentMatchingOffer,
+    spaceRatesMap,
+    studioLocation,
+    durationHours,
+    snippetsCount,
+    shootingNeeds,
+  ]);
 
   useEscapeDismiss(isOpen, onClose, !isSubmitting);
 
@@ -408,19 +473,25 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
     );
   };
 
+  const isCommonAgreement =
+    isWeekendIsoDate(preferredDate) ||
+    timeSlot === "ACCORD_COMMUN" ||
+    preferredHour === "Sur accord commun";
+
   const buildExternalSummaryText = (reference?: string) => {
     const needTitle = NEED_OPTIONS.find((n) => n.type === selectedNeed)?.title || selectedNeed;
     const offerName = currentMatchingOffer?.name || "Sur mesure";
     const spaceTitle =
       STUDIO_LOCATIONS.find((l) => l.id === studioLocation)?.title || studioLocation;
     const slotLabel = TIME_SLOTS.find((s) => s.id === timeSlot)?.label || timeSlot;
+    const agreementTag = isCommonAgreement ? " (Sur accord commun)" : "";
     const lines = [
       `Bonjour Bamako Podcast, voici ma demande de réservation studio :`,
       reference ? `• Référence : ${reference}` : null,
       `• Prestation : ${needTitle} (${offerName})`,
-      preferredDate ? `• Date : ${formatDateFr(preferredDate)}` : null,
+      preferredDate ? `• Date : ${formatDateFr(preferredDate)}${isWeekendIsoDate(preferredDate) ? " (Week-end — sur accord commun)" : ""}` : null,
       (selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST")
-        ? `• Créneau : ${slotLabel}`
+        ? `• Créneau : ${slotLabel} • Heure de début : ${preferredHour}${agreementTag}`
         : null,
       (selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST")
         ? `• Durée : ${durationHours}h | Participants : ${participantsCount}`
@@ -451,6 +522,18 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
     setSubmitError("");
 
     try {
+      const isAudioOrVideo =
+        selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST";
+      const composedNotes = [
+        isAudioOrVideo ? `[Heure de début souhaitée : ${preferredHour}]` : null,
+        isAudioOrVideo && isCommonAgreement
+          ? "[Demande hors ouverture standard — à valider sur accord commun avec le studio]"
+          : null,
+        notes.trim() || null,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
       const payload = {
         needType: selectedNeed,
         offerId: currentMatchingOffer?.id || undefined,
@@ -462,9 +545,9 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
         countryCode,
         preferredDate: preferredDate || undefined,
         timeSlot: timeSlot || undefined,
-        durationHours: selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST" ? durationHours : undefined,
-        participantsCount: selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST" ? participantsCount : undefined,
-        studioLocation: selectedNeed === "AUDIO_PODCAST" || selectedNeed === "VIDEO_PODCAST" ? studioLocation : undefined,
+        durationHours: isAudioOrVideo ? durationHours : undefined,
+        participantsCount: isAudioOrVideo ? participantsCount : undefined,
+        studioLocation: isAudioOrVideo ? studioLocation : undefined,
         shootingNeeds: selectedNeed === "VIDEO_PODCAST" ? shootingNeeds : undefined,
         mediaFilesUrl: selectedNeed === "EDITING" || selectedNeed === "SNIPPETS" ? mediaFilesUrl : undefined,
         targetDeadline: targetDeadline || undefined,
@@ -474,7 +557,7 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
         subtitlesNeeded: selectedNeed === "SNIPPETS" ? subtitlesNeeded : undefined,
         coachingGoal: selectedNeed === "COACHING" ? coachingGoal : undefined,
         projectStage: selectedNeed === "COACHING" ? projectStage : undefined,
-        notes: notes.trim() || undefined,
+        notes: composedNotes || undefined,
         estimatedPrice: estimatedPricing,
       };
 
@@ -741,11 +824,11 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
                     </div>
                   )}
 
-                  {/* Date souhaitée (Calendrier custom) */}
+                  {/* Date souhaitée (Calendrier custom Lundi au Vendredi + week-end sur accord commun) */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-[#CCC] flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-[#FFBF00]" />
-                      <span>Date souhaitée *</span>
+                      <span>Date souhaitée (Lun — Ven en standard) *</span>
                     </label>
                     <StudioDatePicker
                       value={preferredDate}
@@ -753,12 +836,12 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
                     />
                   </div>
 
-                  {/* Créneau horaire avec disponibilité temps réel */}
-                  <div className="space-y-1.5">
+                  {/* Créneau horaire (09h00 - 18h00) avec disponibilité temps réel */}
+                  <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-[#CCC] flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-[#FFBF00]" />
-                        <span>Créneau horaire préféré *</span>
+                        <span>Créneau horaire (09h00 — 18h00 en standard) *</span>
                       </label>
                       {loadingAvailability && (
                         <span className="text-[10px] text-[#FFBF00]">Vérification des disponibilités...</span>
@@ -773,7 +856,12 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
                             key={slot.id}
                             type="button"
                             disabled={isBooked}
-                            onClick={() => setTimeSlot(slot.id)}
+                            onClick={() => {
+                              setTimeSlot(slot.id);
+                              if (!slot.hours.includes(preferredHour)) {
+                                setPreferredHour(slot.hours[0]);
+                              }
+                            }}
                             className={`px-3 py-2.5 rounded-xl border text-left text-xs transition-colors flex items-center justify-between gap-2 ${
                               isBooked
                                 ? "bg-[#141414] border-[#222222] text-[#555555] cursor-not-allowed line-through"
@@ -791,6 +879,72 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
                           </button>
                         );
                       })}
+                    </div>
+
+                    {/* Sélection d'heure précise entre 09h00 et 18h00 + option accord commun */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-[#AAA]">
+                          Heure de début souhaitée (09h00 — 18h00)
+                        </span>
+                        <span className="text-[10px] text-[#777]">Fin max standard : 18h00</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {STUDIO_START_HOURS.map((hour) => {
+                          const mappedSlot = slotIdForHour(hour);
+                          const isBooked =
+                            bookedSlots.includes(mappedSlot) ||
+                            bookedSlots.includes("JOURNEE");
+                          const isSelected = preferredHour === hour && !isBooked;
+                          return (
+                            <button
+                              key={hour}
+                              type="button"
+                              disabled={isBooked}
+                              onClick={() => {
+                                setPreferredHour(hour);
+                                if (timeSlot !== "JOURNEE") {
+                                  setTimeSlot(mappedSlot);
+                                }
+                              }}
+                              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
+                                isBooked
+                                  ? "bg-[#141414] border-[#222222] text-[#4A4A4A] cursor-not-allowed line-through"
+                                  : isSelected
+                                  ? "bg-[#FFBF00] text-black border-[#FFBF00]"
+                                  : "bg-[#181818] text-[#CCCCCC] border-[#2E2E2E] hover:border-[#444]"
+                              }`}
+                            >
+                              {hour}
+                            </button>
+                          );
+                        })}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTimeSlot("ACCORD_COMMUN");
+                            setPreferredHour("Sur accord commun");
+                          }}
+                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
+                            preferredHour === "Sur accord commun" || timeSlot === "ACCORD_COMMUN"
+                              ? "bg-[#FFBF00] text-black border-[#FFBF00]"
+                              : "bg-[#181818] text-amber-300 border-dashed border-amber-500/40 hover:border-amber-400"
+                          }`}
+                        >
+                          Autre heure (sur accord commun)
+                        </button>
+                      </div>
+
+                      <p className="text-[10px] text-[#8E8E8E]">
+                        Ouverture standard : Lundi au Vendredi de 09h00 à 18h00. Les autres jours ou heures doivent faire l&apos;objet d&apos;un accord commun.
+                      </p>
+
+                      {isCommonAgreement && (
+                        <div className="p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/30 text-[11px] text-amber-300">
+                          Demande hors plage standard : ce jour ou cet horaire fera l&apos;objet d&apos;un accord commun avec notre régisseur (précisez votre horaire idéal dans les notes ci-dessous si besoin).
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -904,34 +1058,54 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                         {[
                           { id: "MULTI_CAM", label: "Multi-caméras 4K avec réalisation en direct" },
-                          { id: "PROMPTER", label: "Téléprompteur professionnel disponible" },
+                          {
+                            id: "PROMPTER",
+                            label: "Téléprompteur professionnel",
+                            priceBadge: "À partir de 7 500 FCFA",
+                          },
                           { id: "CUSTOM_BRANDING", label: "Incrustation de logo et habillage graphique live" },
                           { id: "RAW_FOOTAGE", label: "Livraison des rushs bruts séparés sur disque" },
-                        ].map((b) => (
-                          <label
-                            key={b.id}
-                            className="p-2.5 rounded-xl bg-[#181818] border border-[#282828] flex items-center gap-2 cursor-pointer hover:border-[#3A3A3A]"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={shootingNeeds.includes(b.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setShootingNeeds((prev) => (prev ? `${prev},${b.id}` : b.id));
-                                } else {
-                                  setShootingNeeds((prev) =>
-                                    prev
-                                      .split(",")
-                                      .filter((x) => x !== b.id)
-                                      .join(",")
-                                  );
-                                }
-                              }}
-                              className="accent-[#FFBF00]"
-                            />
-                            <span className="text-[#DDD] text-[11px]">{b.label}</span>
-                          </label>
-                        ))}
+                        ].map((b) => {
+                          const isChecked = shootingNeeds.split(",").filter(Boolean).includes(b.id);
+                          return (
+                            <label
+                              key={b.id}
+                              className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-colors ${
+                                isChecked
+                                  ? "bg-[#1C1810] border-[#FFBF00]/70"
+                                  : "bg-[#181818] border-[#282828] hover:border-[#3A3A3A]"
+                              }`}
+                            >
+                              <span className="flex items-center gap-2 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setShootingNeeds((prev) =>
+                                        prev ? `${prev},${b.id}` : b.id
+                                      );
+                                    } else {
+                                      setShootingNeeds((prev) =>
+                                        prev
+                                          .split(",")
+                                          .filter((x) => x !== b.id)
+                                          .join(",")
+                                      );
+                                    }
+                                  }}
+                                  className="accent-[#FFBF00] shrink-0"
+                                />
+                                <span className="text-[#DDD] text-[11px]">{b.label}</span>
+                              </span>
+                              {"priceBadge" in b && b.priceBadge && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#222222] text-[#FFBF00] border border-[#FFBF00]/30 shrink-0 whitespace-nowrap">
+                                  {b.priceBadge}
+                                </span>
+                              )}
+                            </label>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1181,15 +1355,15 @@ export function StudioBookingModal({ isOpen, onClose, preselectedService }: Stud
                 </div>
 
                 {preferredDate && (
-                  <div className="flex items-center justify-between text-[#AAA]">
+                  <div className="flex items-center justify-between gap-2 text-[#AAA]">
                     <span>Date & Créneau :</span>
-                    <span className="text-white">
-                      {new Date(preferredDate).toLocaleDateString("fr-FR", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "long",
-                      })}{" "}
-                      — {TIME_SLOTS.find((s) => s.id === timeSlot)?.label.split("(")[0]}
+                    <span className="text-white text-right">
+                      <span className="capitalize">{formatDateFr(preferredDate)}</span> —{" "}
+                      {TIME_SLOTS.find((s) => s.id === timeSlot)?.label.split("(")[0].trim()}
+                      {preferredHour !== "Sur accord commun" ? ` • ${preferredHour}` : ""}
+                      {isCommonAgreement && (
+                        <span className="ml-1.5 text-amber-300 font-semibold">(Sur accord commun)</span>
+                      )}
                     </span>
                   </div>
                 )}

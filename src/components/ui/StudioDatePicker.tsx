@@ -20,6 +20,33 @@ const MONTHS_FR = [
 
 const WEEKDAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+function isWeekendDate(date: Date): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+export function isWeekendIsoDate(isoDate?: string): boolean {
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return false;
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return isWeekendDate(new Date(y, m - 1, d));
+}
+
+function getNextBusinessDay(from: Date): Date {
+  const next = new Date(from);
+  do {
+    next.setDate(next.getDate() + 1);
+  } while (isWeekendDate(next));
+  return next;
+}
+
+function getNextMonday(from: Date): Date {
+  const next = new Date(from);
+  const day = next.getDay();
+  const diffToMon = (1 - day + 7) % 7 || 7;
+  next.setDate(next.getDate() + diffToMon);
+  return next;
+}
+
 function toIsoDate(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -66,17 +93,27 @@ export function StudioDatePicker({ value, onChange, minDate }: StudioDatePickerP
   const [isOpen, setIsOpen] = useState(false);
 
   const quickDates = useMemo(() => {
-    const tmr = new Date(today);
-    tmr.setDate(today.getDate() + 1);
-    const nextSat = new Date(today);
-    const day = nextSat.getDay();
-    const diffToSat = (6 - day + 7) % 7 || 7;
-    nextSat.setDate(today.getDate() + diffToSat);
-    return [
-      { label: "Aujourd'hui", iso: toIsoDate(today) },
-      { label: "Demain", iso: toIsoDate(tmr) },
-      { label: "Samedi prochain", iso: toIsoDate(nextSat) },
-    ];
+    const items: Array<{ label: string; iso: string }> = [];
+    if (!isWeekendDate(today)) {
+      items.push({ label: "Aujourd'hui", iso: toIsoDate(today) });
+    }
+
+    const nextOpen = getNextBusinessDay(today);
+    const diffDays = Math.round(
+      (nextOpen.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    items.push({
+      label: diffDays === 1 ? "Demain" : "Prochain jour ouvré",
+      iso: toIsoDate(nextOpen),
+    });
+
+    const nextMon = getNextMonday(today);
+    const nextMonIso = toIsoDate(nextMon);
+    if (!items.some((item) => item.iso === nextMonIso)) {
+      items.push({ label: "Lundi prochain", iso: nextMonIso });
+    }
+
+    return items;
   }, [today]);
 
   const calendarDays = useMemo(() => {
@@ -86,10 +123,22 @@ export function StudioDatePicker({ value, onChange, minDate }: StudioDatePickerP
     const lastDay = new Date(year, month + 1, 0);
     // Convert Sunday=0..Saturday=6 to Monday=0..Sunday=6
     const startOffset = (firstDay.getDay() + 6) % 7;
-    const cells: Array<{ iso: string; day: number; inMonth: boolean; disabled: boolean }> = [];
+    const cells: Array<{
+      iso: string;
+      day: number;
+      inMonth: boolean;
+      disabled: boolean;
+      isWeekend: boolean;
+    }> = [];
 
     for (let i = 0; i < startOffset; i++) {
-      cells.push({ iso: `empty-start-${i}`, day: 0, inMonth: false, disabled: true });
+      cells.push({
+        iso: `empty-start-${i}`,
+        day: 0,
+        inMonth: false,
+        disabled: true,
+        isWeekend: false,
+      });
     }
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const dt = new Date(year, month, d);
@@ -99,6 +148,7 @@ export function StudioDatePicker({ value, onChange, minDate }: StudioDatePickerP
         day: d,
         inMonth: true,
         disabled: iso < minIso,
+        isWeekend: isWeekendDate(dt),
       });
     }
     return cells;
@@ -108,6 +158,8 @@ export function StudioDatePicker({ value, onChange, minDate }: StudioDatePickerP
     const prevLast = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 0);
     return toIsoDate(prevLast) >= minIso;
   }, [viewMonth, minIso]);
+
+  const selectedIsWeekend = isWeekendIsoDate(value);
 
   return (
     <div className="space-y-2">
@@ -131,6 +183,12 @@ export function StudioDatePicker({ value, onChange, minDate }: StudioDatePickerP
           {isOpen ? "Fermer" : "Calendrier"}
         </span>
       </button>
+
+      {selectedIsWeekend && (
+        <div className="px-3 py-2 rounded-xl bg-amber-950/30 border border-amber-500/30 text-[11px] text-amber-300">
+          Jour hors ouverture standard (Lun–Ven) : cette date fera l&apos;objet d&apos;un accord commun avec le studio.
+        </div>
+      )}
 
       {/* Quick chips */}
       <div className="flex flex-wrap gap-1.5">
@@ -205,6 +263,11 @@ export function StudioDatePicker({ value, onChange, minDate }: StudioDatePickerP
                     onChange(cell.iso);
                     setIsOpen(false);
                   }}
+                  title={
+                    !cell.disabled && cell.isWeekend
+                      ? "Week-end (sur accord commun)"
+                      : undefined
+                  }
                   className={`h-8 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center ${
                     cell.disabled
                       ? "text-[#404040] cursor-not-allowed"
@@ -212,6 +275,8 @@ export function StudioDatePicker({ value, onChange, minDate }: StudioDatePickerP
                       ? "bg-[#FFBF00] text-black font-black"
                       : isToday
                       ? "bg-[#222222] text-[#FFBF00] border border-[#FFBF00]/40 hover:bg-[#2C2C2C]"
+                      : cell.isWeekend
+                      ? "text-amber-300/80 border border-dashed border-amber-500/30 hover:bg-[#242424] hover:text-amber-200"
                       : "text-[#D4D4D4] hover:bg-[#242424] hover:text-white"
                   }`}
                 >
@@ -220,6 +285,10 @@ export function StudioDatePicker({ value, onChange, minDate }: StudioDatePickerP
               );
             })}
           </div>
+
+          <p className="text-[10px] text-[#8E8E8E] text-center pt-1 border-t border-[#242424]">
+            Horaires standards : Lundi au Vendredi • 09h00 à 18h00 — Autres jours ou heures sur accord commun.
+          </p>
         </div>
       )}
     </div>

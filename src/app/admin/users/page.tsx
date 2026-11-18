@@ -39,9 +39,11 @@ import {
   Activity,
   Edit3,
   User,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminEditUserModal } from "@/components/admin/AdminEditUserModal";
+import { AdminCreateUserModal } from "@/components/admin/AdminCreateUserModal";
 import { AdminPasswordModal } from "@/components/admin/AdminPasswordModal";
 
 function classNames(...classes: (string | boolean | undefined | null)[]) {
@@ -91,6 +93,7 @@ const ROLE_INFO_MAP: Record<string, { label: string; badgeBg: string; badgeText:
 
 export default function UsersPage() {
   const {access}=useAdminAccess();
+  const canCreateUsers=hasPermission(access,"users.create");
   const canEditUsers=hasPermission(access,"users.edit");
   const { user: currentUser } = useAuthStore();
   const [search, setSearch] = useState("");
@@ -135,7 +138,8 @@ export default function UsersPage() {
   const [quickSuspendReason, setQuickSuspendReason] = useState("");
   const [isQuickSuspending, setIsQuickSuspending] = useState(false);
 
-  // Modale d'édition et mot de passe
+  // Modale de création, d'édition et mot de passe
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<any>(null);
   const [userToResetPassword, setUserToResetPassword] = useState<any>(null);
 
@@ -345,22 +349,34 @@ export default function UsersPage() {
           </p>
         </div>
 
-        {/* Barre de Recherche */}
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#777777]" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher nom, email, identifiant..."
-            className="w-full bg-[#111111] border border-[#242424] rounded-xl pl-9 pr-9 py-2.5 text-xs md:text-sm text-white outline-none focus:border-[#444444] transition-colors placeholder:text-[#555555]"
-          />
-          {search && (
+        {/* Barre de Recherche + Création */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-72">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#777777]" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher nom, email, identifiant..."
+              className="w-full bg-[#111111] border border-[#242424] rounded-xl pl-9 pr-9 py-2.5 text-xs md:text-sm text-white outline-none focus:border-[#444444] transition-colors placeholder:text-[#555555]"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777777] hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          {canCreateUsers && (
             <button
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777777] hover:text-white"
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#FFBF00] hover:bg-[#FFD038] text-[#0B0B0B] text-xs md:text-sm font-bold transition-colors shrink-0"
             >
-              <X className="w-3.5 h-3.5" />
+              <UserPlus className="w-4 h-4" />
+              Créer un compte
             </button>
           )}
         </div>
@@ -1241,6 +1257,16 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      {/* Modale de création utilisateur */}
+      <AdminCreateUserModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={async (created) => {
+          await mutate();
+          showToast(`Compte ${created?.fullName || created?.email || ""} créé avec succès.`);
+        }}
+      />
 
       {/* Modale d'édition utilisateur */}
       <AdminEditUserModal
